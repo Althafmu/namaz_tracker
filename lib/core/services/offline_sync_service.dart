@@ -1,25 +1,27 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/foundation.dart';
 
+import '../../features/prayer/data/repositories/offline_queue_repository.dart';
 import '../../features/prayer/domain/usecases/log_prayer_usecase.dart';
 
-/// Manages offline synchronization of prayer logs using Hive for local storage
-/// and connectivity_plus to detect when the network is restored.
+/// Coordinates offline→online sync of queued prayer logs.
+///
+/// Listens for connectivity changes and drains the [OfflineQueueRepository]
+/// when the network comes back. Does NOT own storage initialization.
 class OfflineSyncService {
-  static const String _boxName = 'offline_sync_queue';
+  final OfflineQueueRepository _queueRepository;
   final LogPrayerUseCase _logPrayerUseCase;
   bool _isProcessing = false;
 
-  OfflineSyncService(this._logPrayerUseCase);
+  OfflineSyncService({
+    required OfflineQueueRepository queueRepository,
+    required LogPrayerUseCase logPrayerUseCase,
+  })  : _queueRepository = queueRepository,
+        _logPrayerUseCase = logPrayerUseCase;
 
-  /// Initialize Hive and start listening to network changes.
-  Future<void> initialize() async {
-    await Hive.initFlutter();
-    await Hive.openBox<Map<dynamic, dynamic>>(_boxName);
-
-    // Listen for network connectivity changes
+  /// Start listening for connectivity changes.
+  void startListening() {
     Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
-      // If we are connected to mobile or wifi, try processing the queue
       if (results.contains(ConnectivityResult.mobile) ||
           results.contains(ConnectivityResult.wifi)) {
         processQueue();
@@ -27,39 +29,32 @@ class OfflineSyncService {
     });
   }
 
-  /// Adds a failed LogPrayer action to the offline queue.
+  /// Convenience: enqueue an action (delegates to repository).
   Future<void> enqueueAction({
     required String prayerName,
     required bool completed,
     required bool inJamaat,
     required String location,
   }) async {
-    final box = Hive.box<Map<dynamic, dynamic>>(_boxName);
-    final action = {
-      'prayerName': prayerName,
-      'completed': completed,
-      'inJamaat': inJamaat,
-      'location': location,
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-    await box.add(action);
+    await _queueRepository.enqueueAction(
+      prayerName: prayerName,
+      completed: completed,
+      inJamaat: inJamaat,
+      location: location,
+    );
   }
 
-  /// Attempts to process all queued actions.
+  /// Process all queued actions, retrying on network failure.
   Future<void> processQueue() async {
     if (_isProcessing) return;
     _isProcessing = true;
 
     try {
-      final box = Hive.box<Map<dynamic, dynamic>>(_boxName);
-      if (box.isEmpty) return;
+      if (_queueRepository.isEmpty) return;
 
-      // We process items one by one. If one fails, we stop processing (assume network is dead again).
-      final keys = box.keys.toList();
-      for (final key in keys) {
-        final action = box.get(key);
-        if (action == null) continue;
-
+      final actions = _queueRepository.getAllActions();
+      for (final entry in actions) {
+        final action = entry.value;
         try {
           await _logPrayerUseCase(
             prayerName: action['prayerName'] as String,
@@ -67,11 +62,10 @@ class OfflineSyncService {
             inJamaat: action['inJamaat'] as bool,
             location: action['location'] as String,
           );
-          // If successful, remove from queue
-          await box.delete(key);
+          await _queueRepository.dequeueAction(entry.key);
         } catch (e) {
-          // Sync failed (likely network error again), stop processing this batch
-          break;
+          debugPrint('[OfflineSync] Sync failed for queued action: $e');
+          break; // Network still down — stop this batch
         }
       }
     } finally {

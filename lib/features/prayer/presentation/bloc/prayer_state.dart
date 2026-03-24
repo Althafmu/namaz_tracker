@@ -12,9 +12,12 @@ class PrayerState extends Equatable {
   final bool isLoading;
   final SyncStatus syncStatus;
   final String selectedLocation;
-  final String? selectedPrayerForLogger;
   final String calculationMethod;
   final bool useHanafi;
+
+  // Cached GPS coordinates to avoid double-fetching
+  final double? cachedLat;
+  final double? cachedLng;
 
   // Notification settings
   final bool adhanAlerts;
@@ -32,9 +35,10 @@ class PrayerState extends Equatable {
     this.isLoading = false,
     this.syncStatus = SyncStatus.idle,
     this.selectedLocation = 'home',
-    this.selectedPrayerForLogger,
     this.calculationMethod = 'ISNA',
     this.useHanafi = false,
+    this.cachedLat,
+    this.cachedLng,
     this.adhanAlerts = true,
     this.reminderAlerts = true,
     this.reminderMinutes = 15,
@@ -49,9 +53,10 @@ class PrayerState extends Equatable {
     bool? isLoading,
     SyncStatus? syncStatus,
     String? selectedLocation,
-    String? selectedPrayerForLogger,
     String? calculationMethod,
     bool? useHanafi,
+    double? cachedLat,
+    double? cachedLng,
     bool? adhanAlerts,
     bool? reminderAlerts,
     int? reminderMinutes,
@@ -65,10 +70,10 @@ class PrayerState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       syncStatus: syncStatus ?? this.syncStatus,
       selectedLocation: selectedLocation ?? this.selectedLocation,
-      selectedPrayerForLogger:
-          selectedPrayerForLogger ?? this.selectedPrayerForLogger,
       calculationMethod: calculationMethod ?? this.calculationMethod,
       useHanafi: useHanafi ?? this.useHanafi,
+      cachedLat: cachedLat ?? this.cachedLat,
+      cachedLng: cachedLng ?? this.cachedLng,
       adhanAlerts: adhanAlerts ?? this.adhanAlerts,
       reminderAlerts: reminderAlerts ?? this.reminderAlerts,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
@@ -126,6 +131,8 @@ class PrayerState extends Equatable {
       'selectedLocation': selectedLocation,
       'calculationMethod': calculationMethod,
       'useHanafi': useHanafi,
+      'cachedLat': cachedLat,
+      'cachedLng': cachedLng,
       'adhanAlerts': adhanAlerts,
       'reminderAlerts': reminderAlerts,
       'reminderMinutes': reminderMinutes,
@@ -147,6 +154,8 @@ class PrayerState extends Equatable {
       selectedLocation: json['selectedLocation'] as String? ?? 'home',
       calculationMethod: json['calculationMethod'] as String? ?? 'ISNA',
       useHanafi: json['useHanafi'] as bool? ?? false,
+      cachedLat: json['cachedLat'] as double?,
+      cachedLng: json['cachedLng'] as double?,
       adhanAlerts: json['adhanAlerts'] as bool? ?? true,
       reminderAlerts: json['reminderAlerts'] as bool? ?? true,
       reminderMinutes: json['reminderMinutes'] as int? ?? 15,
@@ -164,9 +173,10 @@ class PrayerState extends Equatable {
         isLoading,
         syncStatus,
         selectedLocation,
-        selectedPrayerForLogger,
         calculationMethod,
         useHanafi,
+        cachedLat,
+        cachedLng,
         adhanAlerts,
         reminderAlerts,
         reminderMinutes,

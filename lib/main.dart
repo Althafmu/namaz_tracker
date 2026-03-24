@@ -8,6 +8,7 @@ import 'core/services/notification_service.dart';
 import 'core/services/offline_sync_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/prayer/data/repositories/offline_queue_repository.dart';
 import 'features/prayer/presentation/bloc/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/prayer_event.dart';
 import 'injection_container.dart';
@@ -25,13 +26,17 @@ void main() async {
   // Initialize dependency injection
   await initDependencies();
 
-  // Initialize offline sync queue and local notifications (non-blocking)
+  // Initialize encrypted offline queue (non-blocking)
   try {
-    await sl<OfflineSyncService>().initialize();
+    await sl<OfflineQueueRepository>().initialize();
   } catch (e) {
-    debugPrint('OfflineSyncService init failed: $e');
+    debugPrint('OfflineQueueRepository init failed: $e');
   }
 
+  // Start offline sync listener
+  sl<OfflineSyncService>().startListening();
+
+  // Initialize notification plugin (non-blocking)
   try {
     await sl<NotificationService>().initialize();
   } catch (e) {

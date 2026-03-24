@@ -1,13 +1,15 @@
 import 'package:adhan/adhan.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'prayer_time_service.dart';
 
 /// Handles scheduling and cancelling local OS notifications for Adhan and reminders.
+///
+/// Schedules 7 days ahead so alarms survive overnight and device restarts
+/// (when paired with the BOOT_COMPLETED receiver in AndroidManifest.xml).
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -27,44 +29,32 @@ class NotificationService {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Timezone setup — wrapped to prevent crashes
+    // Timezone setup — no flutter_timezone dependency needed
     try {
       tz.initializeTimeZones();
-      String timeZoneName;
+      final localName = DateTime.now().timeZoneName;
       try {
-        final timeZoneData = await FlutterTimezone.getLocalTimezone()
-            .timeout(const Duration(seconds: 5));
-        timeZoneName = timeZoneData.toString();
-        if (timeZoneName.startsWith("TimezoneInfo(")) {
-          final regex = RegExp(r'TimezoneInfo\(([^,]+),');
-          final match = regex.firstMatch(timeZoneName);
-          if (match != null) {
-            timeZoneName = match.group(1) ?? 'UTC';
-          }
-        }
+        tz.setLocalLocation(tz.getLocation(localName));
       } catch (_) {
-        timeZoneName = 'UTC';
-      }
-      try {
-        tz.setLocalLocation(tz.getLocation(timeZoneName));
-      } catch (_) {
+        // timeZoneName may return abbreviation on some devices — fall back to UTC
         tz.setLocalLocation(tz.getLocation('UTC'));
       }
     } catch (e) {
+      debugPrint('[Notification] Timezone init failed: $e');
       try {
         tz.initializeTimeZones();
         tz.setLocalLocation(tz.getLocation('UTC'));
       } catch (_) {}
     }
 
-    // Plugin setup — wrapped to prevent crashes
+    // Plugin setup
     try {
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
       const DarwinInitializationSettings initializationSettingsDarwin =
           DarwinInitializationSettings(
-        requestSoundPermission: false, // Don't request at init
+        requestSoundPermission: false,
         requestBadgePermission: false,
         requestAlertPermission: false,
       );
@@ -79,7 +69,7 @@ class NotificationService {
         settings: initializationSettings,
       );
     } catch (e) {
-      debugPrint('Notification plugin init failed: $e');
+      debugPrint('[Notification] Plugin init failed: $e');
       _isInitialized = true;
       return;
     }
@@ -88,13 +78,11 @@ class NotificationService {
   }
 
   /// Request notification and exact alarm permissions.
-  /// Call this when the user explicitly enables alerts.
-  /// Returns true if permissions were granted.
+  /// Call from the UI layer when the user explicitly enables alerts.
   Future<bool> requestPermissions() async {
     if (!_isInitialized) await initialize();
 
     try {
-      // Android 13+ notification permission
       final androidImpl = _flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
@@ -107,7 +95,6 @@ class NotificationService {
         _permissionsGranted =
             (notifGranted ?? false) && (alarmGranted ?? false);
       } else {
-        // iOS — request via DarwinNotificationDetails
         final iosImpl = _flutterLocalNotificationsPlugin
             .resolvePlatformSpecificImplementation<
                 IOSFlutterLocalNotificationsPlugin>();
@@ -119,11 +106,11 @@ class NotificationService {
               ) ??
               false;
         } else {
-          _permissionsGranted = true; // Unknown platform, assume granted
+          _permissionsGranted = true;
         }
       }
     } catch (e) {
-      debugPrint('Permission request failed: $e');
+      debugPrint('[Notification] Permission request failed: $e');
       _permissionsGranted = false;
     }
 
@@ -135,12 +122,14 @@ class NotificationService {
     try {
       await _flutterLocalNotificationsPlugin.cancelAll();
     } catch (e) {
-      debugPrint('Cancel notifications failed: $e');
+      debugPrint('[Notification] Cancel all failed: $e');
     }
   }
 
-  /// Calculates prayer times for TODAY and schedules notifications.
-  /// Only schedules for the current day — re-run daily on app launch.
+  /// Schedule prayer notifications for the next 7 days.
+  ///
+  /// ID scheme: (dayOffset * 100) + (prayerIndex * 10) + alertType
+  ///   alertType: 1 = adhan, 2 = reminder
   Future<int> schedulePrayerNotifications({
     required Coordinates coordinates,
     required String methodName,
@@ -157,69 +146,72 @@ class NotificationService {
 
     int scheduledCount = 0;
     final now = DateTime.now();
-    final dateComponents = DateComponents(now.year, now.month, now.day);
 
     final method = PrayerTimeService.calculationMethods[methodName] ??
         CalculationMethod.north_america;
     final params = method.getParameters();
     params.madhab = useHanafi ? Madhab.hanafi : Madhab.shafi;
 
-    final times = PrayerTimes(coordinates, dateComponents, params);
+    // Schedule for 7 days ahead
+    for (int dayOffset = 0; dayOffset < 7; dayOffset++) {
+      final date = now.add(Duration(days: dayOffset));
+      final dateComponents = DateComponents(date.year, date.month, date.day);
+      final times = PrayerTimes(coordinates, dateComponents, params);
 
-    // Schedule for all 5 prayers
-    final prayerTimesMap = {
-      'Fajr': times.fajr,
-      'Dhuhr': times.dhuhr,
-      'Asr': times.asr,
-      'Maghrib': times.maghrib,
-      'Isha': times.isha,
-    };
+      final prayerTimesMap = {
+        'Fajr': times.fajr,
+        'Dhuhr': times.dhuhr,
+        'Asr': times.asr,
+        'Maghrib': times.maghrib,
+        'Isha': times.isha,
+      };
 
-    int prayerIndex = 1;
-    for (final entry in prayerTimesMap.entries) {
-      final prayerName = entry.key;
-      final prayerTime = entry.value;
+      int prayerIndex = 1;
+      for (final entry in prayerTimesMap.entries) {
+        final prayerName = entry.key;
+        final prayerTime = entry.value;
 
-      // Only schedule if the time is in the future
-      if (prayerTime.isAfter(now)) {
-        // 1. Schedule Adhan Alert
-        if (adhanAlerts) {
-          final adhanId = prayerIndex * 10 + 1;
-          final success = await _scheduleAlarm(
-            id: adhanId,
-            title: "Time for $prayerName",
-            body: "It's time to pray $prayerName.",
-            scheduledTime: prayerTime,
-          );
-          if (success) scheduledCount++;
-        }
-
-        // 2. Schedule Reminder Alert
-        if (reminderAlerts) {
-          final reminderTime = reminderIsBefore
-              ? prayerTime.subtract(Duration(minutes: reminderMinutes))
-              : prayerTime.add(Duration(minutes: reminderMinutes));
-
-          if (reminderTime.isAfter(now)) {
-            final reminderId = prayerIndex * 10 + 2;
-            final whenText = reminderIsBefore
-                ? "$reminderMinutes mins before $prayerName"
-                : "$reminderMinutes mins after $prayerName";
-
+        // Only schedule if the time is in the future
+        if (prayerTime.isAfter(now)) {
+          // 1. Schedule Adhan Alert
+          if (adhanAlerts) {
+            final adhanId = (dayOffset * 100) + (prayerIndex * 10) + 1;
             final success = await _scheduleAlarm(
-              id: reminderId,
-              title: "Prayer Reminder",
-              body: whenText,
-              scheduledTime: reminderTime,
+              id: adhanId,
+              title: "Time for $prayerName",
+              body: "It's time to pray $prayerName.",
+              scheduledTime: prayerTime,
             );
             if (success) scheduledCount++;
           }
+
+          // 2. Schedule Reminder Alert
+          if (reminderAlerts) {
+            final reminderTime = reminderIsBefore
+                ? prayerTime.subtract(Duration(minutes: reminderMinutes))
+                : prayerTime.add(Duration(minutes: reminderMinutes));
+
+            if (reminderTime.isAfter(now)) {
+              final reminderId = (dayOffset * 100) + (prayerIndex * 10) + 2;
+              final whenText = reminderIsBefore
+                  ? "$reminderMinutes mins before $prayerName"
+                  : "$reminderMinutes mins after $prayerName";
+
+              final success = await _scheduleAlarm(
+                id: reminderId,
+                title: "Prayer Reminder",
+                body: whenText,
+                scheduledTime: reminderTime,
+              );
+              if (success) scheduledCount++;
+            }
+          }
         }
+        prayerIndex++;
       }
-      prayerIndex++;
     }
 
-    debugPrint('Scheduled $scheduledCount notifications for today');
+    debugPrint('[Notification] Scheduled $scheduledCount notifications for 7 days');
     return scheduledCount;
   }
 
@@ -266,7 +258,7 @@ class NotificationService {
       );
       return true;
     } catch (e) {
-      debugPrint('Failed to schedule alarm $id: $e');
+      debugPrint('[Notification] Failed to schedule alarm $id: $e');
       return false;
     }
   }

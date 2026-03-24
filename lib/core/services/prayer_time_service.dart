@@ -22,19 +22,17 @@ class PrayerTimeService {
 
   /// Get the current device location.
   /// Returns null if permission is denied or location unavailable.
+  /// Finding #8: No longer silently falls back to a hardcoded location.
   static Future<Coordinates?> getCurrentLocation() async {
-    // Fallback coordinates for India (New Delhi)
-    final fallbackCoordinates = Coordinates(28.6139, 77.2090);
-
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return fallbackCoordinates;
+    if (!serviceEnabled) return null;
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return fallbackCoordinates;
+      if (permission == LocationPermission.denied) return null;
     }
-    if (permission == LocationPermission.deniedForever) return fallbackCoordinates;
+    if (permission == LocationPermission.deniedForever) return null;
 
     try {
       final position = await Geolocator.getCurrentPosition(
@@ -45,7 +43,7 @@ class PrayerTimeService {
       );
       return Coordinates(position.latitude, position.longitude);
     } catch (e) {
-      return fallbackCoordinates;
+      return null;
     }
   }
 

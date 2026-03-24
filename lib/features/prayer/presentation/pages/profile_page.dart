@@ -189,7 +189,7 @@ class ProfilePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'This action is irreversible. All your prayer data and streaks will be permanently lost.',
+                'This will log you out locally. Your account and prayer data will remain on our server until server-side deletion is available. To fully delete your data, please contact support.',
                 style: AppTextStyles.bodyMedium,
               ),
               const SizedBox(height: 16),
@@ -246,12 +246,12 @@ class ProfilePage extends StatelessWidget {
               onPressed: confirmController.text == 'DELETE'
                   ? () {
                       Navigator.of(dialogContext).pop();
-                      // For now, logout as backend API for deletion isn't implemented
+                      // Server-side deletion API not yet available — local logout only
                       context.read<AuthBloc>().add(LogoutRequested());
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                              'Account deletion requested. You have been logged out.'),
+                              'You have been logged out. To fully delete your account data, please contact support.'),
                           backgroundColor: Colors.redAccent,
                         ),
                       );

@@ -7,7 +7,6 @@ class AppColors {
   // Primary palette
   static const Color primary = Color(0xFFFF6B6B);
   static const Color backgroundLight = Color(0xFFF4F1DE);
-  static const Color backgroundDark = Color(0xFF230F0F);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color textDark = Color(0xFF2B2D42);
   static const Color muted = Color(0xFF8D99AE);

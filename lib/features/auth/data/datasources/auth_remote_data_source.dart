@@ -81,4 +81,23 @@ class AuthRemoteDataSource {
       throw Exception(message);
     }
   }
+
+  /// Refresh the access token using a refresh token.
+  /// Returns the new access token string.
+  Future<String> refreshToken({required String refreshToken}) async {
+    try {
+      final response = await dio.post(
+        '/api/auth/token/refresh/',
+        data: {'refresh': refreshToken},
+      );
+      return response.data['access'] as String;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      String message = 'Token refresh failed';
+      if (data is Map<String, dynamic>) {
+        message = data['detail']?.toString() ?? data.values.first.toString();
+      }
+      throw Exception(message);
+    }
+  }
 }

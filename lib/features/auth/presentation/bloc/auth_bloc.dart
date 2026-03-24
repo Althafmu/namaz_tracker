@@ -30,11 +30,9 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
-      // Sync token to TokenProvider so Dio interceptor can use it
-      tokenProvider.setToken(response.token);
+      // Token is persisted in secure storage by the repository/tokenProvider
       emit(state.copyWith(
         status: AuthStatus.authenticated,
-        token: response.token,
         user: response.user,
         errorMessage: null,
         hasSeenOnboarding: true,
@@ -71,21 +69,20 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     }
   }
 
-  void _onLogoutRequested(LogoutRequested event, Emitter<AuthState> emit) {
-    tokenProvider.setToken(null);
-    // Explicitly null-out token, user, and errorMessage using sentinel copyWith
+  Future<void> _onLogoutRequested(LogoutRequested event, Emitter<AuthState> emit) async {
+    await tokenProvider.clearAll();
     emit(const AuthState(
       status: AuthStatus.unauthenticated,
-      token: null,
       user: null,
       errorMessage: null,
       hasSeenOnboarding: true, // preserve onboarding seen status
     ));
   }
 
-  void _onInitAuthRequested(InitAuthRequested event, Emitter<AuthState> emit) {
-    // Already handled token sync in constructor, just ensure state reflects truth
-    if (state.token != null) {
+  Future<void> _onInitAuthRequested(InitAuthRequested event, Emitter<AuthState> emit) async {
+    // Token lives in secure storage, not in HydratedBloc state
+    await tokenProvider.loadTokens();
+    if (tokenProvider.token != null) {
       emit(state.copyWith(status: AuthStatus.authenticated));
     } else {
       emit(state.copyWith(status: AuthStatus.unauthenticated));
@@ -124,7 +121,7 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
   @override
   AuthState? fromJson(Map<String, dynamic> json) {
     final restoredState = AuthState.fromJson(json);
-    tokenProvider.setToken(restoredState.token);
+    // Token is loaded via InitAuthRequested, not from HydratedBloc JSON
     return restoredState;
   }
 
