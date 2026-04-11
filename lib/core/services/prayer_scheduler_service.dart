@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'notification_service.dart';
 import 'prayer_time_service.dart';
 import '../../features/prayer/domain/entities/prayer.dart';
-import '../../features/prayer/presentation/bloc/prayer_state.dart';
+import '../../features/prayer/presentation/bloc/settings/settings_state.dart';
 
 /// Service that coordinates GPS location, prayer time calculation, and
 /// notification scheduling. Caches coordinates to avoid the double-GPS-call
@@ -35,12 +35,36 @@ class PrayerSchedulerService {
   /// Get the currently cached coordinates (may be null).
   Coordinates? get cachedCoordinates => _cachedCoordinates;
 
+  /// Seed cached coordinates from persisted state (no GPS call).
+  void seedCachedCoordinates(double? lat, double? lng) {
+    if (lat != null && lng != null && _cachedCoordinates == null) {
+      _cachedCoordinates = Coordinates(lat, lng);
+    }
+  }
+
+  /// Recalculate prayer times using only cached coordinates (zero async wait).
+  /// Returns updated prayer list, or the original list if no coords are cached.
+  List<Prayer> recalculateWithCachedCoords({
+    required List<Prayer> currentPrayers,
+    required String methodName,
+    required bool useHanafi,
+    Map<String, int>? manualOffsets,
+  }) {
+    return calculatePrayerTimes(
+      currentPrayers: currentPrayers,
+      methodName: methodName,
+      useHanafi: useHanafi,
+      manualOffsets: manualOffsets,
+    );
+  }
+
   /// Calculate prayer time ranges using cached (or provided) coordinates.
   /// Returns the updated prayer list with time ranges merged in.
   List<Prayer> calculatePrayerTimes({
     required List<Prayer> currentPrayers,
     required String methodName,
     required bool useHanafi,
+    Map<String, int>? manualOffsets,
     Coordinates? coordinatesOverride,
   }) {
     final coords = coordinatesOverride ?? _cachedCoordinates;
@@ -53,6 +77,7 @@ class PrayerSchedulerService {
       coordinates: coords,
       methodName: methodName,
       useHanafi: useHanafi,
+      manualOffsets: manualOffsets,
     );
 
     return currentPrayers.map((prayer) {
@@ -63,22 +88,26 @@ class PrayerSchedulerService {
 
   /// Schedule prayer notifications using cached coordinates.
   /// Returns the number of notifications scheduled.
-  Future<int> scheduleNotifications(PrayerState state) async {
+  Future<int> scheduleNotifications(SettingsState settings) async {
     final coords = _cachedCoordinates;
     if (coords == null) {
       debugPrint('[PrayerScheduler] No coordinates — skipping notification scheduling');
       return 0;
     }
 
+    if (!settings.notificationsPermitted && !_notificationService.permissionsGranted) {
+      debugPrint('[PrayerScheduler] Permissions not granted — skipping notification scheduling');
+      return 0;
+    }
+
     try {
       return await _notificationService.schedulePrayerNotifications(
         coordinates: coords,
-        methodName: state.calculationMethod,
-        useHanafi: state.useHanafi,
-        adhanAlerts: state.adhanAlerts,
-        reminderAlerts: state.reminderAlerts,
-        reminderMinutes: state.reminderMinutes,
-        reminderIsBefore: state.reminderIsBefore,
+        methodName: settings.calculationMethod,
+        useHanafi: settings.useHanafi,
+        prayerConfigs: settings.prayerConfigs,
+        alarmSound: settings.alarmSound,
+        manualOffsets: settings.manualOffsets,
       );
     } catch (e) {
       debugPrint('[PrayerScheduler] Failed to schedule notifications: $e');
@@ -90,27 +119,34 @@ class PrayerSchedulerService {
   /// Returns (updatedPrayers, lat, lng) or null on total failure.
   Future<({List<Prayer> prayers, double? lat, double? lng})?> refreshPrayersAndAlarms({
     required List<Prayer> currentPrayers,
-    required PrayerState state,
+    required SettingsState settingsState,
+    double? cachedLat,
+    double? cachedLng,
     String? methodOverride,
     bool? hanafiOverride,
   }) async {
     final coords = await fetchAndCacheCoordinates(
-      lastLat: state.cachedLat,
-      lastLng: state.cachedLng,
+      lastLat: cachedLat,
+      lastLng: cachedLng,
     );
 
-    final method = methodOverride ?? state.calculationMethod;
-    final hanafi = hanafiOverride ?? state.useHanafi;
+    final method = methodOverride ?? settingsState.calculationMethod;
+    final hanafi = hanafiOverride ?? settingsState.useHanafi;
 
     final updatedPrayers = calculatePrayerTimes(
       currentPrayers: currentPrayers,
       methodName: method,
       useHanafi: hanafi,
+      manualOffsets: settingsState.manualOffsets,
       coordinatesOverride: coords,
     );
 
-    // Schedule notifications with the same coordinates
-    await scheduleNotifications(state);
+    // Schedule notifications with the updated state overrides
+    final newState = settingsState.copyWith(
+      calculationMethod: method,
+      useHanafi: hanafi,
+    );
+    await scheduleNotifications(newState);
 
     return (
       prayers: updatedPrayers,

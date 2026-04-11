@@ -20,8 +20,19 @@ class PrayerLoggerSheet extends StatefulWidget {
 }
 
 class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
-  bool _inJamaat = false;
-  String _selectedLocation = 'home';
+  late bool _inJamaat;
+  late String _selectedLocation;
+  late String _status;
+  String? _selectedReason;
+
+  @override
+  void initState() {
+    super.initState();
+    _inJamaat = widget.prayer.isCompleted ? widget.prayer.inJamaat : true;
+    _selectedLocation = widget.prayer.isCompleted ? widget.prayer.location : 'mosque';
+    _status = widget.prayer.isCompleted ? widget.prayer.status : 'on_time';
+    _selectedReason = widget.prayer.isCompleted ? widget.prayer.reason : null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,28 +121,213 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                     ),
                   ],
                 ),
+                
+                const SizedBox(height: 24),
+
+                // Prayer Status
+                Text(
+                  'STATUS',
+                  style: AppTextStyles.sectionHeader,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _StatusButton(
+                      icon: Icons.schedule,
+                      label: 'On Time',
+                      color: AppColors.streak,
+                      isSelected: _status == 'on_time',
+                      onTap: () => setState(() {
+                        _status = 'on_time';
+                      }),
+                    ),
+                    const SizedBox(width: 12),
+                    _StatusButton(
+                      icon: Icons.history,
+                      label: 'Late',
+                      color: AppColors.statusLate,
+                      isSelected: _status == 'late',
+                      onTap: () => setState(() {
+                        _status = 'late';
+                      }),
+                    ),
+                    const SizedBox(width: 12),
+                    _StatusButton(
+                      icon: Icons.cancel,
+                      label: 'Missed',
+                      color: AppColors.statusMissed,
+                      isSelected: _status == 'missed',
+                      onTap: () => setState(() {
+                        _status = 'missed';
+                        _inJamaat = false; // Cannot pray in jamaat if missed
+                      }),
+                    ),
+                  ],
+                ),
+
+                // Reasons Section (Conditional)
+                if (!_inJamaat) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'REASON (OPTIONAL)',
+                    style: AppTextStyles.sectionHeader,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      'Work', 'Travel', 'Sleep', 'Family', 'Other'
+                    ].map((reason) {
+                      final isSelected = _selectedReason == reason;
+                      return GestureDetector(
+                        onTap: () => setState(() {
+                          _selectedReason = isSelected ? null : reason;
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.textDark : AppColors.surface,
+                            borderRadius: BorderRadius.circular(9999),
+                            border: Border.all(color: AppColors.border, width: 2),
+                            boxShadow: isSelected ? [] : const [
+                              BoxShadow(color: AppColors.border, offset: Offset(2, 2)),
+                            ],
+                          ),
+                          child: Text(
+                            reason,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: isSelected ? Colors.white : AppColors.textDark,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ],
             ),
           ),
 
-          // ── Complete Button ──
+          // ── Action Buttons ──
           Padding(
             padding: const EdgeInsets.all(24),
-            child: NeoButton(
-              text: 'Complete',
-              icon: Icons.check_circle,
-              onPressed: () {
-                context.read<PrayerBloc>().add(LogPrayer(
-                      prayerName: widget.prayer.name,
-                      completed: !widget.prayer.isCompleted,
-                      inJamaat: _inJamaat,
-                      location: _selectedLocation,
-                    ));
-                Navigator.of(context).pop();
-              },
-            ),
+            child: widget.prayer.isCompleted
+                ? Row(
+                    children: [
+                      Expanded(
+                        child: NeoButton(
+                          text: 'Delete',
+                          icon: Icons.delete_outline,
+                          color: AppColors.error,
+                          onPressed: () {
+                            final nav = Navigator.of(context);
+                            context.read<PrayerBloc>().add(LogPrayer(
+                                  prayerName: widget.prayer.name,
+                                  completed: false,
+                                  inJamaat: false,
+                                  location: 'home',
+                                  status: 'on_time',
+                                  reason: null,
+                                ));
+                            nav.pop();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: NeoButton(
+                          text: 'Save',
+                          icon: Icons.save_outlined,
+                          onPressed: () {
+                            final nav = Navigator.of(context);
+                            context.read<PrayerBloc>().add(LogPrayer(
+                                  prayerName: widget.prayer.name,
+                                  completed: true,
+                                  inJamaat: _inJamaat,
+                                  location: _selectedLocation,
+                                  status: _status,
+                                  reason: _selectedReason,
+                                ));
+                            nav.pop();
+                          },
+                        ),
+                      ),
+                    ],
+                  )
+                : NeoButton(
+                    text: 'Complete',
+                    icon: Icons.check_circle,
+                    onPressed: () {
+                      final nav = Navigator.of(context);
+                      context.read<PrayerBloc>().add(LogPrayer(
+                            prayerName: widget.prayer.name,
+                            completed: true,
+                            inJamaat: _inJamaat,
+                            location: _selectedLocation,
+                            status: _status,
+                            reason: _selectedReason,
+                          ));
+                      nav.pop();
+                    },
+                  ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StatusButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _StatusButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          transform: Matrix4.translationValues(
+            isSelected ? 2.0 : 0.0,
+            isSelected ? 2.0 : 0.0,
+            0.0,
+          ),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isSelected ? color : AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.border,
+                offset: Offset(isSelected ? 0.0 : 4.0, isSelected ? 0.0 : 4.0),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: AppColors.textDark, size: 24),
+              const SizedBox(height: 8),
+              Text(label, style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w700,
+              )),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -151,70 +347,68 @@ class _JamaatToggleButton extends StatelessWidget {
       child: NeoCard(
         color: isActive ? AppColors.jamaat : AppColors.surface,
         borderRadius: 9999,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.group, color: AppColors.textDark, size: 30),
-                  const SizedBox(width: 12),
-                  Text(
-                    "Prayed in Jama'at",
-                    style: AppTextStyles.bodyLarge,
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  if (isActive)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.streak,
-                        borderRadius: BorderRadius.circular(9999),
-                        border:
-                            Border.all(color: AppColors.border, width: 2),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: AppColors.border,
-                            offset: Offset(2, 2),
-                          ),
-                        ],
-                      ),
-                      child: Text('+10XP', style: AppTextStyles.badge),
-                    ),
-                  const SizedBox(width: 12),
-                  // Mini toggle
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.group, color: AppColors.textDark, size: 30),
+                const SizedBox(width: 12),
+                Text(
+                  "Prayed in Jama'at",
+                  style: AppTextStyles.bodyLarge,
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                if (isActive)
                   Container(
-                    width: 48,
-                    height: 28,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: isActive ? AppColors.textDark : AppColors.muted,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: AnimatedAlign(
-                      duration: const Duration(milliseconds: 200),
-                      alignment: isActive
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        width: 20,
-                        height: 20,
-                        margin: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.surface,
-                          shape: BoxShape.circle,
+                      color: AppColors.streak,
+                      borderRadius: BorderRadius.circular(9999),
+                      border:
+                          Border.all(color: AppColors.border, width: 2),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AppColors.border,
+                          offset: Offset(2, 2),
                         ),
+                      ],
+                    ),
+                    child: Text('+10XP', style: AppTextStyles.badge),
+                  ),
+                const SizedBox(width: 12),
+                // Mini toggle
+                Container(
+                  width: 48,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isActive ? AppColors.textDark : AppColors.muted,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 200),
+                    alignment: isActive
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      margin: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AppColors.surface,
+                        shape: BoxShape.circle,
                       ),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -255,7 +449,7 @@ class _LocationButton extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: AppColors.border,
-                offset: Offset(isSelected ? 2.0 : 4.0, isSelected ? 2.0 : 4.0),
+                offset: Offset(isSelected ? 0.0 : 4.0, isSelected ? 0.0 : 4.0),
               ),
             ],
           ),

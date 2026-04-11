@@ -17,6 +17,6 @@ abstract class PrayerRepository {
   /// Get the user's current streak info.
   Future<Streak> getStreak();
 
-  /// Get weekly prayer history (list of daily prayer lists).
-  Future<List<List<Prayer>>> getWeeklyHistory();
+  /// Get prayer history map (date string -> completed count).
+  Future<Map<String, int>> getWeeklyHistory({int days = 90});
 }

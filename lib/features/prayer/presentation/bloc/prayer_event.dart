@@ -19,16 +19,20 @@ class LogPrayer extends PrayerEvent {
   final bool completed;
   final bool inJamaat;
   final String location;
+  final String status;
+  final String? reason;
 
   const LogPrayer({
     required this.prayerName,
     required this.completed,
     this.inJamaat = false,
     this.location = 'home',
+    this.status = 'on_time',
+    this.reason,
   });
 
   @override
-  List<Object?> get props => [prayerName, completed, inJamaat, location];
+  List<Object?> get props => [prayerName, completed, inJamaat, location, status, reason];
 }
 
 /// Toggle jama'at for the prayer logger.
@@ -56,39 +60,8 @@ class SyncWithServer extends PrayerEvent {
   const SyncWithServer();
 }
 
-/// Update calculation method and/or madhab, then recalculate times.
-class UpdateCalculationSettings extends PrayerEvent {
-  final String? calculationMethod;
-  final bool? useHanafi;
-
-  const UpdateCalculationSettings({this.calculationMethod, this.useHanafi});
-
-  @override
-  List<Object?> get props => [calculationMethod, useHanafi];
+/// Refresh prayers and alarms when settings change.
+class RefreshPrayersAndAlarms extends PrayerEvent {
+  const RefreshPrayersAndAlarms();
 }
 
-/// Update local OS notification settings and reschedule alarms.
-class UpdateNotificationSettings extends PrayerEvent {
-  final bool? adhanAlerts;
-  final bool? reminderAlerts;
-  final int? reminderMinutes;
-  final bool? reminderIsBefore;
-  final bool? streakProtection;
-
-  const UpdateNotificationSettings({
-    this.adhanAlerts,
-    this.reminderAlerts,
-    this.reminderMinutes,
-    this.reminderIsBefore,
-    this.streakProtection,
-  });
-
-  @override
-  List<Object?> get props => [
-        adhanAlerts,
-        reminderAlerts,
-        reminderMinutes,
-        reminderIsBefore,
-        streakProtection,
-      ];
-}

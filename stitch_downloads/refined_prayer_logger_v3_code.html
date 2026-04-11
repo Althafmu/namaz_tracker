@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Prayer Logger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#fb5151",
+            "background-light": "#F4F1DE",
+            "background-dark": "#230f0f",
+            "text-main": "#2B2D42",
+            "surface": "#FFFFFF",
+            "muted": "#8D99AE",
+            "jamaat": "#4ECDC4",
+            "streak": "#F9C74F",
+            "late": "#E07A5F",
+            "missed": "#fb5151"
+          },
+          fontFamily: {
+            "display": ["Space Grotesk", "sans-serif"]
+          },
+          borderRadius: {"DEFAULT": "16px", "lg": "16px", "xl": "24px", "full": "9999px"},
+          boxShadow: {
+            'brutal': '4px 4px 0px 0px #2B2D42',
+            'brutal-active': '2px 2px 0px 0px #2B2D42',
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .neobrutalist-border {
+      border: 2px solid #2B2D42;
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-text-main/20 font-display min-h-screen flex items-end justify-center sm:items-center p-0 sm:p-4">
+<!-- Bottom Sheet Container -->
+<div class="w-full max-w-[448px] bg-background-light dark:bg-background-dark rounded-t-xl sm:rounded-xl neobrutalist-border shadow-brutal flex flex-col overflow-hidden relative transition-all duration-300 transform translate-y-0">
+<!-- Drag Handle -->
+<div class="flex justify-center pt-4 pb-2 bg-background-light dark:bg-background-dark w-full">
+<div class="h-1.5 w-12 rounded-full bg-text-main/20"></div>
+</div>
+<!-- Header -->
+<div class="px-6 pb-4">
+<h1 class="text-text-main dark:text-white text-[32px] font-bold leading-tight tracking-tight">Log Asr</h1>
+</div>
+<!-- Scrollable Content -->
+<div class="px-6 pb-6 flex-1 overflow-y-auto flex flex-col gap-6">
+<!-- 1. Location Selector -->
+<div>
+<h2 class="text-text-main dark:text-white text-sm font-bold uppercase tracking-wider mb-3">Location</h2>
+<div class="grid grid-cols-3 gap-3">
+<button class="bg-surface dark:bg-text-main neobrutalist-border shadow-brutal rounded-lg p-3 flex flex-col items-center justify-center gap-2 hover:bg-gray-50 active:shadow-brutal-active active:translate-y-[2px] active:translate-x-[2px] transition-all">
+<span class="material-symbols-outlined text-text-main dark:text-white text-2xl">mosque</span>
+<span class="text-text-main dark:text-white font-bold text-sm">Mosque</span>
+</button>
+<button class="bg-streak dark:bg-streak neobrutalist-border shadow-brutal-active translate-y-[2px] translate-x-[2px] rounded-lg p-3 flex flex-col items-center justify-center gap-2 transition-all">
+<span class="material-symbols-outlined text-text-main text-2xl">home</span>
+<span class="text-text-main font-bold text-sm">Home</span>
+</button>
+<button class="bg-surface dark:bg-text-main neobrutalist-border shadow-brutal rounded-lg p-3 flex flex-col items-center justify-center gap-2 hover:bg-gray-50 active:shadow-brutal-active active:translate-y-[2px] active:translate-x-[2px] transition-all">
+<span class="material-symbols-outlined text-text-main dark:text-white text-2xl">work</span>
+<span class="text-text-main dark:text-white font-bold text-sm">Work</span>
+</button>
+</div>
+</div>
+<!-- 2. Jama'at Toggle -->
+<button class="w-full bg-jamaat neobrutalist-border shadow-brutal rounded-full p-4 flex items-center justify-between transition-transform duration-200 hover:scale-[1.01] active:scale-95 group relative overflow-hidden">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-main text-3xl">group</span>
+<span class="text-text-main font-bold text-lg">Prayed in Jama'at</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="bg-streak text-text-main text-xs font-bold px-2 py-1 rounded-full neobrutalist-border shadow-[2px_2px_0px_0px_#2B2D42]">+10XP</span>
+<div class="w-12 h-7 bg-text-main rounded-full p-1 flex justify-end">
+<div class="w-5 h-5 bg-white rounded-full"></div>
+</div>
+</div>
+</button>
+<!-- 3. Prayer Status -->
+<div>
+<h2 class="text-text-main dark:text-white text-sm font-bold uppercase tracking-wider mb-3">Status</h2>
+<div class="grid grid-cols-3 gap-3">
+<!-- On Time Button (Selected) -->
+<button class="bg-streak neobrutalist-border shadow-brutal-active translate-y-[2px] translate-x-[2px] rounded-lg p-3 flex flex-col items-center justify-center gap-2 transition-all">
+<span class="material-symbols-outlined text-text-main text-2xl">schedule</span>
+<span class="text-text-main font-bold text-sm">On Time</span>
+</button>
+<!-- Late Button -->
+<button class="bg-surface dark:bg-text-main neobrutalist-border shadow-brutal rounded-lg p-3 flex flex-col items-center justify-center gap-2 hover:bg-late/20 active:shadow-brutal-active active:translate-y-[2px] active:translate-x-[2px] transition-all group">
+<span class="material-symbols-outlined text-text-main dark:text-white text-2xl group-hover:text-late">history</span>
+<span class="text-text-main dark:text-white font-bold text-sm">Late</span>
+</button>
+<!-- Missed Button -->
+<button class="bg-surface dark:bg-text-main neobrutalist-border shadow-brutal rounded-lg p-3 flex flex-col items-center justify-center gap-2 hover:bg-missed/20 active:shadow-brutal-active active:translate-y-[2px] active:translate-x-[2px] transition-all group">
+<span class="material-symbols-outlined text-text-main dark:text-white text-2xl group-hover:text-missed">cancel</span>
+<span class="text-text-main dark:text-white font-bold text-sm">Missed</span>
+</button>
+</div>
+</div>
+<!-- 4. Reasons Section -->
+<div id="reasons-section">
+<h2 class="text-text-main dark:text-white text-sm font-bold uppercase tracking-wider mb-3">Reason (Optional)</h2>
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-2 bg-surface dark:bg-text-main neobrutalist-border shadow-brutal rounded-full text-sm font-bold text-text-main dark:text-white active:shadow-brutal-active active:translate-y-[2px] active:translate-x-[2px]">Work</button>
+<button class="px-4 py-2 bg-surface dark:bg-text-main neobrutalist-border shadow-brutal rounded-full text-sm font-bold text-text-main dark:text-white active:shadow-brutal-active active:translate-y-[2px] active:translate-x-[2px]">Travel</button>
+<button class="px-4 py-2 bg-surface dark:bg-text-main neobrutalist-border shadow-brutal rounded-full text-sm font-bold text-text-main dark:text-white active:shadow-brutal-active active:translate-y-[2px] active:translate-x-[2px]">Sleep</button>
+<button class="px-4 py-2 bg-surface dark:bg-text-main neobrutalist-border shadow-brutal rounded-full text-sm font-bold text-text-main dark:text-white active:shadow-brutal-active active:translate-y-[2px] active:translate-x-[2px]">Family</button>
+<button class="px-4 py-2 bg-surface dark:bg-text-main neobrutalist-border shadow-brutal rounded-full text-sm font-bold text-text-main dark:text-white active:shadow-brutal-active active:translate-y-[2px] active:translate-x-[2px]">Other</button>
+</div>
+</div>
+</div>
+<!-- Bottom Fixed CTA -->
+<div class="p-6 pt-2 bg-background-light dark:bg-background-dark mt-auto">
+<button class="w-full h-14 bg-primary text-white neobrutalist-border shadow-brutal rounded-lg font-bold text-lg tracking-wide hover:brightness-110 active:shadow-brutal-active active:translate-y-[2px] active:translate-x-[2px] transition-all flex items-center justify-center gap-2">
+<span>Complete</span>
+<span class="material-symbols-outlined">check_circle</span>
+</button>
+</div>
+</div>
+</body></html>

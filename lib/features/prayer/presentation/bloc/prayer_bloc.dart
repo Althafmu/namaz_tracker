@@ -1,36 +1,62 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import '../../../../core/services/prayer_scheduler_service.dart';
+import '../../../../core/services/prayer_time_service.dart';
 import '../../domain/entities/prayer.dart';
 import '../../domain/usecases/log_prayer_usecase.dart';
 import '../../domain/usecases/get_daily_status_usecase.dart';
+import '../../domain/usecases/get_streak_usecase.dart';
+import '../../domain/usecases/get_weekly_history_usecase.dart';
 import 'prayer_event.dart';
 import 'prayer_state.dart';
-
+import 'settings/settings_bloc.dart';
+import 'settings/settings_event.dart';
+import 'settings/settings_state.dart';
 /// PrayerBloc — orchestrates domain use cases and delegates GPS/notification
 /// work to PrayerSchedulerService.
 class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
   final LogPrayerUseCase logPrayerUseCase;
   final GetDailyStatusUseCase getDailyStatusUseCase;
+  final GetStreakUseCase getStreakUseCase;
+  final GetWeeklyHistoryUseCase getWeeklyHistoryUseCase;
   final OfflineSyncService offlineSyncService;
   final PrayerSchedulerService prayerSchedulerService;
+  final NotificationService notificationService;
+  final SettingsBloc settingsBloc;
+
+  late final StreamSubscription<SettingsState> _settingsSubscription;
 
   PrayerBloc({
     required this.logPrayerUseCase,
     required this.getDailyStatusUseCase,
+    required this.getStreakUseCase,
+    required this.getWeeklyHistoryUseCase,
     required this.offlineSyncService,
     required this.prayerSchedulerService,
+    required this.notificationService,
+    required this.settingsBloc,
   }) : super(PrayerState(prayers: Prayer.defaultPrayers())) {
     on<LoadDailyStatus>(_onLoadDailyStatus);
     on<LogPrayer>(_onLogPrayer, transformer: droppable());
     on<ToggleJamaat>(_onToggleJamaat);
     on<SetPrayerLocation>(_onSetPrayerLocation);
     on<SyncWithServer>(_onSyncWithServer);
-    on<UpdateCalculationSettings>(_onUpdateCalculationSettings);
-    on<UpdateNotificationSettings>(_onUpdateNotificationSettings);
+    on<RefreshPrayersAndAlarms>(_onRefreshPrayersAndAlarms);
+
+    _settingsSubscription = settingsBloc.stream.listen((_) {
+      add(const RefreshPrayersAndAlarms());
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _settingsSubscription.cancel();
+    return super.close();
   }
 
   Future<void> _onLoadDailyStatus(
@@ -44,16 +70,50 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       ));
     }
 
+    // Seed cached coordinates from persisted state so they're available
+    // before GPS resolves (allows instant recalc on method change).
+    prayerSchedulerService.seedCachedCoordinates(
+      state.cachedLat,
+      state.cachedLng,
+    );
+
+    // Check current permission status (non-prompting) so SettingsState is correct.
+    final hasPerms = await notificationService.checkPermissions();
+    if (hasPerms != settingsBloc.state.notificationsPermitted) {
+      settingsBloc.add(UpdateGlobalNotificationSettings(notificationsPermitted: hasPerms));
+    }
+
     // 1. Single GPS call → calculate times + schedule notifications
     final result = await prayerSchedulerService.refreshPrayersAndAlarms(
       currentPrayers: state.prayers,
-      state: state,
+      settingsState: settingsBloc.state,
+      cachedLat: state.cachedLat,
+      cachedLng: state.cachedLng,
     );
     if (result != null) {
+      final lat = result.lat;
+      final lng = result.lng;
+
+      // Auto-detect regional calculation method if not detected before
+      if (!settingsBloc.state.methodAutoDetected) {
+        final isOldDefault = settingsBloc.state.calculationMethod == 'ISNA' ||
+            settingsBloc.state.calculationMethod == 'MWL';
+        if (isOldDefault && lat != null && lng != null) {
+          final detectedMethod = PrayerTimeService.methodFromCoordinates(lat, lng);
+          settingsBloc.add(UpdateCalculationSettings(
+            calculationMethod: detectedMethod,
+            methodAutoDetected: true,
+          ));
+          debugPrint(
+              '[PrayerBloc] Auto-detected method: $detectedMethod '
+              'for ($lat, $lng)');
+        }
+      }
+
       emit(state.copyWith(
         prayers: result.prayers,
-        cachedLat: result.lat,
-        cachedLng: result.lng,
+        cachedLat: lat,
+        cachedLng: lng,
         isLoading: false,
       ));
     } else {
@@ -76,7 +136,37 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         }
         return local;
       }).toList();
-      emit(state.copyWith(prayers: merged));
+
+      // Sync streak and history
+      final streak = await getStreakUseCase();
+      final history = await getWeeklyHistoryUseCase(days: 90);
+
+      // Reconstruct missing historicalLog entries from the backend summary.
+      // We do not overwrite existing local records as they possess richer data 
+      // (exact time, inJamaat, location, etc.).
+      final updatedLog = Map<String, List<Prayer>>.from(state.historicalLog);
+      
+      history.forEach((dateString, completedCount) {
+        if (!updatedLog.containsKey(dateString)) {
+          final names = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+          final List<Prayer> syntheticPrayers = [];
+          for (int i = 0; i < 5; i++) {
+            // Create dummy prayers just so the renderer has completed statuses
+            syntheticPrayers.add(Prayer(
+              name: names[i],
+              timeRange: '', // Ignored by progress renderer
+              isCompleted: i < completedCount,
+            ));
+          }
+          updatedLog[dateString] = syntheticPrayers;
+        }
+      });
+
+      emit(state.copyWith(
+        prayers: merged,
+        streak: streak,
+        historicalLog: updatedLog,
+      ));
     } catch (e) {
       debugPrint('[PrayerBloc] Server sync failed (likely offline): $e');
     }
@@ -93,6 +183,8 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
           isCompleted: event.completed,
           inJamaat: event.inJamaat,
           location: event.location,
+          status: event.status,
+          reason: event.reason,
         );
       }
       return prayer;
@@ -108,14 +200,14 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       );
     }
 
-    // 3. Update weekly history
-    final updatedHistory = Map<String, int>.from(state.weeklyHistory);
-    updatedHistory[PrayerState.todayKey] = completedCount;
+    // 3. Update historical log with full details
+    final updatedLog = Map<String, List<Prayer>>.from(state.historicalLog);
+    updatedLog[PrayerState.todayKey] = updatedPrayers;
 
     emit(state.copyWith(
       prayers: updatedPrayers,
       streak: updatedStreak,
-      weeklyHistory: updatedHistory,
+      historicalLog: updatedLog,
       syncStatus: SyncStatus.syncing,
     ));
 
@@ -176,61 +268,28 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     }
   }
 
-  /// When user changes calculation method or madhab in settings.
-  Future<void> _onUpdateCalculationSettings(
-    UpdateCalculationSettings event,
+  Future<void> _onRefreshPrayersAndAlarms(
+    RefreshPrayersAndAlarms event,
     Emitter<PrayerState> emit,
   ) async {
-    final newMethod = event.calculationMethod ?? state.calculationMethod;
-    final newHanafi = event.useHanafi ?? state.useHanafi;
-
-    emit(state.copyWith(
-      calculationMethod: newMethod,
-      useHanafi: newHanafi,
-      isLoading: true,
-    ));
-
-    // Recalculate with new settings, using cached coords
     final result = await prayerSchedulerService.refreshPrayersAndAlarms(
       currentPrayers: state.prayers,
-      state: state,
-      methodOverride: newMethod,
-      hanafiOverride: newHanafi,
+      settingsState: settingsBloc.state,
+      cachedLat: state.cachedLat,
+      cachedLng: state.cachedLng,
     );
+
     if (result != null) {
       emit(state.copyWith(
         prayers: result.prayers,
         cachedLat: result.lat,
         cachedLng: result.lng,
-        isLoading: false,
       ));
-    } else {
-      emit(state.copyWith(isLoading: false));
     }
   }
 
-  Future<void> _onUpdateNotificationSettings(
-    UpdateNotificationSettings event,
-    Emitter<PrayerState> emit,
-  ) async {
-    // NOTE: Permission request has been moved to the UI layer (settings page).
-    // The bloc assumes permissions are already granted when this event fires.
-    final newState = state.copyWith(
-      adhanAlerts: event.adhanAlerts ?? state.adhanAlerts,
-      reminderAlerts: event.reminderAlerts ?? state.reminderAlerts,
-      reminderMinutes: event.reminderMinutes ?? state.reminderMinutes,
-      reminderIsBefore: event.reminderIsBefore ?? state.reminderIsBefore,
-      streakProtection: event.streakProtection ?? state.streakProtection,
-    );
-    emit(newState);
 
-    // Reschedule (or cancel if both off)
-    try {
-      await prayerSchedulerService.scheduleNotifications(newState);
-    } catch (e) {
-      debugPrint('[PrayerBloc] Notification reschedule error: $e');
-    }
-  }
+
 
   // ── HydratedBloc overrides ──
 

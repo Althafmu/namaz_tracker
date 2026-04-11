@@ -56,14 +56,19 @@ class PrayerRepositoryImpl implements PrayerRepository {
   }
 
   @override
-  Future<List<List<Prayer>>> getWeeklyHistory() async {
+  Future<Map<String, int>> getWeeklyHistory({int days = 90}) async {
     try {
-      final data = await remoteDataSource.getWeeklyHistory();
-      return data.map<List<Prayer>>((dayData) {
-        return PrayerModel.fromApiResponse(dayData as Map<String, dynamic>);
-      }).toList();
+      final data = await remoteDataSource.getWeeklyHistory(days: days);
+      final Map<String, int> history = {};
+      for (final dayData in data) {
+        final json = dayData as Map<String, dynamic>;
+        if (json['date'] != null && json['completed_count'] != null) {
+          history[json['date'] as String] = json['completed_count'] as int;
+        }
+      }
+      return history;
     } catch (e) {
-      return [];
+      return {};
     }
   }
 }

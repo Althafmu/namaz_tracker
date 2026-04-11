@@ -30,6 +30,7 @@ class HomePage extends StatelessWidget {
                 // ── Prayer List ──
                 Expanded(
                   child: ListView.builder(
+                    padding: EdgeInsets.zero,
                     itemCount: state.prayers.length + 1, // +1 for quote
                     itemBuilder: (context, index) {
                       // Insert motivational quote after Maghrib (index 3)
@@ -41,7 +42,7 @@ class HomePage extends StatelessWidget {
                       final prayer = state.prayers[prayerIndex];
 
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.only(bottom: 16, right: 6),
                         child: _PrayerCard(
                           prayer: prayer,
                           onTap: () => _showPrayerLogger(context, prayer),
@@ -63,6 +64,7 @@ class HomePage extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      useRootNavigator: true,
       builder: (_) => BlocProvider.value(
         value: context.read<PrayerBloc>(),
         child: PrayerLoggerSheet(prayer: prayer),
@@ -93,9 +95,7 @@ class _StreakHeader extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               '$streak Day Streak!',
-              style: AppTextStyles.headlineMedium.copyWith(
-                letterSpacing: 1.5,
-              ),
+              style: AppTextStyles.headlineMedium.copyWith(letterSpacing: 1.5),
             ),
           ],
         ),
@@ -133,7 +133,9 @@ class _PrayerCard extends StatelessWidget {
                   Text(
                     prayer.name.toUpperCase(),
                     style: AppTextStyles.prayerTitle.copyWith(
-                      color: isCompleted ? AppColors.surface : AppColors.textDark,
+                      color: isCompleted
+                          ? AppColors.surface
+                          : AppColors.textDark,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -164,7 +166,9 @@ class _PrayerCard extends StatelessWidget {
                   ],
                 ),
                 child: Icon(
-                  isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+                  isCompleted
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
                   color: isCompleted ? AppColors.jamaat : AppColors.muted,
                   size: 30,
                 ),
@@ -182,7 +186,7 @@ class _MotivationalBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 16, right: 6),
       child: NeoCard(
         color: AppColors.backgroundLight,
         padding: const EdgeInsets.all(20),

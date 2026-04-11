@@ -5,12 +5,13 @@ import '../theme/app_colors.dart';
 /// A reusable Neo-brutalist card widget.
 ///
 /// Replicates the CSS design:
-/// - border: 2px solid #2B2D42
-/// - box-shadow: 4px 4px 0px 0px #2B2D42
+/// - border: 2px solid [borderColor] (default #2B2D42)
+/// - box-shadow: 4px 4px 0px 0px [borderColor]
 /// - border-radius: 16px
 class NeoCard extends StatefulWidget {
   final Widget child;
   final Color color;
+  final Color? borderColor;
   final double borderRadius;
   final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
@@ -21,6 +22,7 @@ class NeoCard extends StatefulWidget {
     super.key,
     required this.child,
     this.color = AppColors.surface,
+    this.borderColor,
     this.borderRadius = 16.0,
     this.padding,
     this.onTap,
@@ -38,6 +40,7 @@ class _NeoCardState extends State<NeoCard> {
   @override
   Widget build(BuildContext context) {
     final bool isTappable = widget.onTap != null;
+    final effectiveBorderColor = widget.borderColor ?? AppColors.border;
 
     return GestureDetector(
       onTapDown: isTappable
@@ -65,12 +68,12 @@ class _NeoCardState extends State<NeoCard> {
           color: widget.color,
           borderRadius: BorderRadius.circular(widget.borderRadius),
           border: Border.all(
-            color: AppColors.border,
+            color: effectiveBorderColor,
             width: widget.borderWidth,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.border,
+              color: effectiveBorderColor,
               offset: Offset(
                 _isPressed ? 0.0 : widget.shadowOffset,
                 _isPressed ? 0.0 : widget.shadowOffset,

@@ -22,6 +22,7 @@ class NeoTextField extends StatefulWidget {
 
 class _NeoTextFieldState extends State<NeoTextField> {
   bool _isFocused = false;
+  bool _obscureText = true;
   late FocusNode _focusNode;
 
   @override
@@ -66,13 +67,29 @@ class _NeoTextFieldState extends State<NeoTextField> {
           child: TextField(
             controller: widget.controller,
             focusNode: _focusNode,
-            obscureText: widget.isPassword,
+            obscureText: widget.isPassword ? _obscureText : false,
             style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textDark),
             decoration: InputDecoration(
               hintText: widget.hint,
               hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              suffixIcon: widget.isPassword
+                  ? IconButton(
+                      icon: Icon(
+                        _obscureText
+                            ? Icons.visibility_off_rounded
+                            : Icons.visibility_rounded,
+                        color: AppColors.muted,
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureText = !_obscureText;
+                        });
+                      },
+                    )
+                  : null,
             ),
           ),
         ),

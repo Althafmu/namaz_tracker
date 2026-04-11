@@ -11,17 +11,37 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/prayer/data/repositories/offline_queue_repository.dart';
 import 'features/prayer/presentation/bloc/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/prayer_event.dart';
+import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'injection_container.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize HydratedBloc storage for offline persistence
-  HydratedBloc.storage = await HydratedStorage.build(
-    storageDirectory: HydratedStorageDirectory(
-      (await getApplicationDocumentsDirectory()).path,
-    ),
-  );
+  // If storage is corrupted (e.g. after an upgrade), clear it and retry.
+  final docDir = await getApplicationDocumentsDirectory();
+  final storageDir = HydratedStorageDirectory(docDir.path);
+  try {
+    HydratedBloc.storage = await HydratedStorage.build(
+      storageDirectory: storageDir,
+    );
+  } catch (e) {
+    debugPrint('[Main] HydratedStorage corrupted, wiping and retrying: $e');
+    // Delete all .hive files in the documents dir to clear corrupted data
+    try {
+      final dir = docDir;
+      if (dir.existsSync()) {
+        for (final file in dir.listSync()) {
+          if (file.path.endsWith('.hive') || file.path.endsWith('.lock')) {
+            file.deleteSync();
+          }
+        }
+      }
+    } catch (_) {}
+    HydratedBloc.storage = await HydratedStorage.build(
+      storageDirectory: storageDir,
+    );
+  }
 
   // Initialize dependency injection
   await initDependencies();
@@ -54,6 +74,7 @@ class NamazTrackerApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: sl<AuthBloc>()),
+        BlocProvider.value(value: sl<SettingsBloc>()),
         BlocProvider(create: (_) => sl<PrayerBloc>()..add(const LoadDailyStatus())),
       ],
       child: MaterialApp.router(

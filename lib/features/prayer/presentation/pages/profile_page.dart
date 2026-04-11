@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:namaz_tracker/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:namaz_tracker/features/auth/presentation/bloc/auth_event.dart';
 import 'package:namaz_tracker/features/auth/presentation/bloc/auth_state.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart' as fp;
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/prayer_time_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -10,9 +14,12 @@ import '../../../../core/widgets/neo_button.dart';
 import '../../../../core/widgets/neo_card.dart';
 import '../../../../core/widgets/neo_text_field.dart';
 import '../../../../core/widgets/neo_toggle.dart';
+import '../../../../core/widgets/neo_settings_tile.dart';
 import '../bloc/prayer_bloc.dart';
 import '../bloc/prayer_event.dart';
 import '../bloc/prayer_state.dart';
+import 'settings/notifications_settings_page.dart';
+import 'settings/calculation_settings_page.dart';
 
 /// Profile Page — matches profile.html Stitch mockup.
 class ProfilePage extends StatelessWidget {
@@ -33,6 +40,50 @@ class ProfilePage extends StatelessWidget {
     'Turkey': 'Diyanet İşleri Başkanlığı (Turkey)',
   };
 
+  // ─── Placeholder Sheet ───
+  void _showPlaceholderSheet(BuildContext context, String title) {
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        side: BorderSide(color: AppColors.border, width: 2),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.muted,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(title, style: AppTextStyles.headlineMedium),
+              const SizedBox(height: 16),
+              Text('This feature is coming soon!', style: AppTextStyles.bodyMedium),
+              const SizedBox(height: 24),
+              NeoButton(
+                text: 'Got it',
+                color: AppColors.primary,
+                onPressed: () => Navigator.of(sheetContext).pop(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // ─── Edit Profile Bottom Sheet ───
   void _showEditProfileSheet(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
@@ -43,6 +94,7 @@ class ProfilePage extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -303,75 +355,105 @@ class ProfilePage extends StatelessWidget {
                         color: AppColors.streak,
                         padding: const EdgeInsets.all(24),
                         borderRadius: 24,
-                        child: Row(
+                        child: Stack(
+                          clipBehavior: Clip.none,
                           children: [
-                            // Avatar
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: AppColors.border, width: 2),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  initials,
-                                  style:
-                                      AppTextStyles.headlineMedium.copyWith(
-                                    color: AppColors.primary,
+                            Row(
+                              children: [
+                                // Avatar
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: AppColors.border, width: 2),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      initials,
+                                      style:
+                                          AppTextStyles.headlineMedium.copyWith(
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(name,
-                                      style: AppTextStyles.headlineMedium),
-                                  Text(
-                                    email,
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.textDark
-                                          .withValues(alpha: 0.8),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Streak badge
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surface,
-                                      borderRadius:
-                                          BorderRadius.circular(9999),
-                                      border: Border.all(
-                                          color: AppColors.border, width: 2),
-                                      boxShadow: const [
-                                        BoxShadow(
-                                          color: AppColors.border,
-                                          offset: Offset(2, 2),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(name,
+                                          style: AppTextStyles.headlineMedium),
+                                      Text(
+                                        email,
+                                        style: AppTextStyles.bodyMedium.copyWith(
+                                          color: AppColors.textDark
+                                              .withValues(alpha: 0.8),
                                         ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                            Icons.local_fire_department,
-                                            color: AppColors.primary,
-                                            size: 16),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                            '${state.streak.currentStreak} Day Streak!',
-                                            style: AppTextStyles.badge),
-                                      ],
-                                    ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      // Streak badge
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surface,
+                                          borderRadius:
+                                              BorderRadius.circular(9999),
+                                          border: Border.all(
+                                              color: AppColors.border, width: 2),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: AppColors.border,
+                                              offset: Offset(2, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                                Icons.local_fire_department,
+                                                color: AppColors.primary,
+                                                size: 16),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                                '${state.streak.currentStreak} Day Streak!',
+                                                style: AppTextStyles.badge),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
+                              ],
+                            ),
+                            // Edit Icon Button
+                            Positioned(
+                              top: -8,
+                              right: -8,
+                              child: GestureDetector(
+                                onTap: () => _showEditProfileSheet(context),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: AppColors.border, width: 2),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: AppColors.border,
+                                        offset: Offset(2, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.edit,
+                                      size: 18, color: AppColors.textDark),
+                                ),
                               ),
                             ),
                           ],
@@ -383,132 +465,83 @@ class ProfilePage extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
-                // ── Prayer Settings ──
+                // ── Settings List ──
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: Text('PRAYER SETTINGS',
-                            style: AppTextStyles.sectionHeader),
+                      NeoSettingsTile(
+                        title: 'Notifications',
+                        subtitle: 'Manage prayer alerts & reminders',
+                        icon: Icons.notifications,
+                        iconColor: AppColors.primary,
+                        iconBg: AppColors.primaryLight,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationsSettingsPage(),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
-
-                      // Calculation Method — functional dropdown
-                      NeoCard(
-                        color: AppColors.surface,
-                        padding: const EdgeInsets.all(20),
-                        borderRadius: 24,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Calculation Method',
-                                style: AppTextStyles.bodyLarge),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Determines prayer times based on region.',
-                              style: AppTextStyles.bodySmall,
-                            ),
-                            const SizedBox(height: 12),
-                            Container(
-                              width: double.infinity,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundLight,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: AppColors.border, width: 2),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: AppColors.border,
-                                    offset: Offset(2, 2),
-                                  ),
-                                ],
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: state.calculationMethod,
-                                  isExpanded: true,
-                                  icon: const Icon(Icons.expand_more,
-                                      color: AppColors.textDark),
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textDark,
-                                  ),
-                                  dropdownColor: AppColors.backgroundLight,
-                                  items: PrayerTimeService
-                                      .calculationMethods.keys
-                                      .map((key) => DropdownMenuItem(
-                                            value: key,
-                                            child: Text(
-                                              _methodLabels[key] ?? key,
-                                              style: AppTextStyles.bodyMedium
-                                                  .copyWith(
-                                                fontWeight: FontWeight.w700,
-                                                color: AppColors.textDark,
-                                              ),
-                                            ),
-                                          ))
-                                      .toList(),
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      context.read<PrayerBloc>().add(
-                                            UpdateCalculationSettings(
-                                                calculationMethod: value),
-                                          );
-                                    }
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      NeoSettingsTile(
+                        title: 'Theme',
+                        subtitle: 'Change app appearance',
+                        icon: Icons.color_lens,
+                        iconColor: AppColors.jamaat,
+                        iconBg: AppColors.jamaatLight,
+                        onTap: () => _showPlaceholderSheet(context, 'Theme'),
                       ),
-
                       const SizedBox(height: 16),
-
-                      // Asr Method — functional toggle
-                      NeoCard(
-                        color: AppColors.surface,
-                        padding: const EdgeInsets.all(20),
-                        borderRadius: 24,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Asr Calculation',
-                                      style: AppTextStyles.bodyLarge),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    state.useHanafi
-                                        ? 'Hanafi (Later Asr time)'
-                                        : 'Standard (Shafi, Maliki, Hanbali)',
-                                    style: AppTextStyles.bodySmall,
-                                  ),
-                                ],
-                              ),
+                      NeoSettingsTile(
+                        title: 'Salah Times Settings',
+                        subtitle: 'Manage calculation methods and offsets',
+                        icon: Icons.access_time,
+                        iconColor: AppColors.streak,
+                        iconBg: AppColors.streakLight,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CalculationSettingsPage(),
                             ),
-                            NeoButton(
-                              text: state.useHanafi ? 'Hanafi' : 'Standard',
-                              isFullWidth: false,
-                              height: 40,
-                              color: state.useHanafi
-                                  ? AppColors.jamaat
-                                  : AppColors.primary,
-                              onPressed: () {
-                                context.read<PrayerBloc>().add(
-                                      UpdateCalculationSettings(
-                                          useHanafi: !state.useHanafi),
-                                    );
-                              },
-                            ),
-                          ],
-                        ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      NeoSettingsTile(
+                        title: 'Missed Salah Counter',
+                        subtitle: 'Include tracker for Qaza prayers',
+                        icon: Icons.assignment_late,
+                        iconColor: AppColors.error,
+                        iconBg: AppColors.error.withValues(alpha: 0.2),
+                        isToggle: true,
+                        toggleValue: false, // Placeholder for future state
+                        onToggleChanged: (val) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Counter toggle coming soon!')),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      NeoSettingsTile(
+                        title: 'Edit Reasons',
+                        subtitle: 'Manage reasons for missing or being late',
+                        icon: Icons.edit_note,
+                        iconColor: AppColors.textDark,
+                        iconBg: AppColors.backgroundLight,
+                        onTap: () => _showPlaceholderSheet(context, 'Edit Reasons'),
+                      ),
+                      const SizedBox(height: 16),
+                      NeoSettingsTile(
+                        title: 'Change Start Date',
+                        subtitle: 'Adjust the date your tracking began',
+                        icon: Icons.date_range,
+                        iconColor: AppColors.primary,
+                        iconBg: AppColors.primaryLight,
+                        onTap: () => _showPlaceholderSheet(context, 'Change Start Date'),
                       ),
                     ],
                   ),
@@ -516,7 +549,7 @@ class ProfilePage extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
-                // ── Notifications ──
+                // ── Data Management ──
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
@@ -524,95 +557,39 @@ class ProfilePage extends StatelessWidget {
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(left: 8),
-                        child: Text('NOTIFICATIONS',
-                            style: AppTextStyles.sectionHeader),
+                        child: Text('DATA & COMMUNITY', style: AppTextStyles.sectionHeader),
                       ),
                       const SizedBox(height: 16),
-                      NeoCard(
-                        color: AppColors.surface,
-                        borderRadius: 24,
-                        child: Column(
-                          children: [
-                            // ── Adhan Alerts ──
-                            _NotificationRow(
-                              icon: Icons.notifications_active,
-                              iconColor: AppColors.primary,
-                              iconBg: AppColors.primaryLight,
-                              title: 'Adhan Alerts',
-                              subtitle: state.adhanAlerts
-                                  ? 'Active — notification at each prayer time'
-                                  : 'Push notifications at prayer time',
-                              value: state.adhanAlerts,
-                              onChanged: (v) {
-                                context.read<PrayerBloc>().add(
-                                      UpdateNotificationSettings(
-                                          adhanAlerts: v),
-                                    );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(v
-                                        ? '✅ Adhan alerts enabled for all 5 prayers'
-                                        : '🔕 Adhan alerts turned off'),
-                                    backgroundColor:
-                                        v ? AppColors.success : AppColors.muted,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              },
-                              showBorder: true,
-                            ),
-
-                            // ── Prayer Reminder ──
-                            _NotificationRow(
-                              icon: Icons.timer,
-                              iconColor: AppColors.jamaat,
-                              iconBg: AppColors.jamaatLight,
-                              title: 'Prayer Reminder',
-                              subtitle: state.reminderAlerts
-                                  ? '${state.reminderMinutes} mins ${state.reminderIsBefore ? "before" : "after"} each prayer'
-                                  : 'Customizable alert for each prayer',
-                              value: state.reminderAlerts,
-                              onChanged: (v) {
-                                context.read<PrayerBloc>().add(
-                                      UpdateNotificationSettings(
-                                          reminderAlerts: v),
-                                    );
-                                if (!v) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content:
-                                          Text('🔕 Prayer reminders turned off'),
-                                      backgroundColor: AppColors.muted,
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              },
-                              showBorder: state.reminderAlerts,
-                            ),
-
-                            // ── Reminder Settings Card (expanded) ──
-                            if (state.reminderAlerts)
-                              _ReminderSettingsCard(state: state),
-
-                            // ── Streak Protection ──
-                            _NotificationRow(
-                              icon: Icons.shield,
-                              iconColor: AppColors.streak,
-                              iconBg: AppColors.streakLight,
-                              title: 'Streak Protection',
-                              subtitle: 'Alert if missing last prayer',
-                              value: state.streakProtection,
-                              onChanged: (v) {
-                                context.read<PrayerBloc>().add(
-                                      UpdateNotificationSettings(
-                                          streakProtection: v),
-                                    );
-                              },
-                              showBorder: false,
-                            ),
-                          ],
-                        ),
+                      NeoSettingsTile(
+                        title: 'Import Data',
+                        icon: Icons.file_download,
+                        iconColor: AppColors.textDark,
+                        iconBg: AppColors.backgroundLight,
+                        onTap: () => _showPlaceholderSheet(context, 'Import Data'),
+                      ),
+                      const SizedBox(height: 16),
+                      NeoSettingsTile(
+                        title: 'Export Data',
+                        icon: Icons.file_upload,
+                        iconColor: AppColors.textDark,
+                        iconBg: AppColors.backgroundLight,
+                        onTap: () => _showPlaceholderSheet(context, 'Export Data'),
+                      ),
+                      const SizedBox(height: 16),
+                      NeoSettingsTile(
+                        title: 'Leave a Review',
+                        icon: Icons.star_rate,
+                        iconColor: Colors.amber,
+                        iconBg: Colors.amber.withValues(alpha: 0.2),
+                        onTap: () => _showPlaceholderSheet(context, 'Review'),
+                      ),
+                      const SizedBox(height: 16),
+                      NeoSettingsTile(
+                        title: 'Share the App',
+                        icon: Icons.share,
+                        iconColor: AppColors.primary,
+                        iconBg: AppColors.primaryLight,
+                        onTap: () => _showPlaceholderSheet(context, 'Share'),
                       ),
                     ],
                   ),
@@ -625,14 +602,6 @@ class ProfilePage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     children: [
-                      NeoButton(
-                        text: 'Edit Profile Details',
-                        color: AppColors.surface,
-                        textColor: AppColors.textDark,
-                        icon: Icons.person,
-                        onPressed: () => _showEditProfileSheet(context),
-                      ),
-                      const SizedBox(height: 16),
                       NeoButton(
                         text: 'Log Out',
                         icon: Icons.logout,
@@ -672,190 +641,6 @@ class ProfilePage extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-/// Expanded reminder settings with local editing + Save button.
-class _ReminderSettingsCard extends StatefulWidget {
-  final PrayerState state;
-  const _ReminderSettingsCard({required this.state});
-
-  @override
-  State<_ReminderSettingsCard> createState() => _ReminderSettingsCardState();
-}
-
-class _ReminderSettingsCardState extends State<_ReminderSettingsCard> {
-  late int _minutes;
-  late bool _isBefore;
-
-  @override
-  void initState() {
-    super.initState();
-    _minutes = widget.state.reminderMinutes;
-    _isBefore = widget.state.reminderIsBefore;
-  }
-
-  @override
-  void didUpdateWidget(_ReminderSettingsCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.state.reminderMinutes != widget.state.reminderMinutes) {
-      _minutes = widget.state.reminderMinutes;
-    }
-    if (oldWidget.state.reminderIsBefore != widget.state.reminderIsBefore) {
-      _isBefore = widget.state.reminderIsBefore;
-    }
-  }
-
-  bool get _hasChanges =>
-      _minutes != widget.state.reminderMinutes ||
-      _isBefore != widget.state.reminderIsBefore;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: AppColors.border, width: 2),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Time stepper
-          Row(
-            children: [
-              // Decrease
-              IconButton(
-                icon: const Icon(Icons.remove_circle_outline,
-                    color: AppColors.textDark),
-                onPressed: () {
-                  if (_minutes > 1) setState(() => _minutes--);
-                },
-              ),
-              // Minutes display
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundLight,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border, width: 2),
-                ),
-                child: Text(
-                  '$_minutes mins',
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-              // Increase
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline,
-                    color: AppColors.textDark),
-                onPressed: () {
-                  if (_minutes < 120) setState(() => _minutes++);
-                },
-              ),
-              const Spacer(),
-              // Before/After toggle
-              NeoButton(
-                text: _isBefore ? 'Before' : 'After',
-                isFullWidth: false,
-                height: 40,
-                color: _isBefore ? AppColors.jamaat : AppColors.primary,
-                onPressed: () => setState(() => _isBefore = !_isBefore),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Save button
-          NeoButton(
-            text: _hasChanges
-                ? 'Save Reminder Settings'
-                : '✓ Settings Saved',
-            color: _hasChanges ? AppColors.primary : AppColors.success,
-            icon: _hasChanges ? Icons.save : Icons.check_circle,
-            onPressed: () {
-              context.read<PrayerBloc>().add(
-                    UpdateNotificationSettings(
-                      reminderMinutes: _minutes,
-                      reminderIsBefore: _isBefore,
-                    ),
-                  );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                      '✅ Reminder set: $_minutes mins ${_isBefore ? "before" : "after"} each prayer'),
-                  backgroundColor: AppColors.success,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Notification row with icon, title, subtitle, and toggle.
-class _NotificationRow extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBg;
-  final String title;
-  final String subtitle;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  final bool showBorder;
-
-  const _NotificationRow({
-    required this.icon,
-    required this.iconColor,
-    required this.iconBg,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    required this.onChanged,
-    required this.showBorder,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        border: showBorder
-            ? const Border(
-                bottom: BorderSide(color: AppColors.border, width: 2),
-              )
-            : null,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconBg,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.border, width: 2),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: AppTextStyles.bodyLarge),
-                Text(subtitle, style: AppTextStyles.bodySmall),
-              ],
-            ),
-          ),
-          NeoToggle(value: value, onChanged: onChanged),
-        ],
-      ),
     );
   }
 }

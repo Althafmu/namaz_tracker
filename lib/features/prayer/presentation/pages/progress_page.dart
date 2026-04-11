@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:share_plus/share_plus.dart';
@@ -9,6 +10,8 @@ import '../../../../core/widgets/neo_card.dart';
 import '../bloc/prayer_bloc.dart';
 import '../bloc/prayer_state.dart';
 
+import '../../domain/entities/prayer.dart';
+
 /// Progress Room — functional version with live data and share.
 class ProgressPage extends StatelessWidget {
   const ProgressPage({super.key});
@@ -17,8 +20,6 @@ class ProgressPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<PrayerBloc, PrayerState>(
       builder: (context, state) {
-        final completedToday = state.completedCount;
-
         return SafeArea(
           child: SingleChildScrollView(
             child: Column(
@@ -30,7 +31,10 @@ class ProgressPage extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Progress Room', style: AppTextStyles.headlineMedium),
+                      Text(
+                        'Progress Room',
+                        style: AppTextStyles.headlineMedium,
+                      ),
                       GestureDetector(
                         onTap: () => _shareProgress(context, state),
                         child: Container(
@@ -39,7 +43,10 @@ class ProgressPage extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppColors.surface,
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.border, width: 2),
+                            border: Border.all(
+                              color: AppColors.border,
+                              width: 2,
+                            ),
                             boxShadow: const [
                               BoxShadow(
                                 color: AppColors.border,
@@ -47,7 +54,11 @@ class ProgressPage extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.share, color: AppColors.textDark, size: 20),
+                          child: const Icon(
+                            Icons.share,
+                            color: AppColors.textDark,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ],
@@ -66,9 +77,7 @@ class ProgressPage extends StatelessWidget {
                       children: [
                         CustomPaint(
                           size: const Size(200, 200),
-                          painter: _StreakRingPainter(
-                            progress: completedToday / 5.0,
-                          ),
+                          painter: _StreakRingPainter(prayers: state.prayers),
                         ),
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -95,7 +104,8 @@ class ProgressPage extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
-                // ── Weekly Chart ──
+                // ── Weekly Chart (Commented out per request) ──
+                /*
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: _WeeklyChart(
@@ -103,6 +113,31 @@ class ProgressPage extends StatelessWidget {
                     dayLabels: state.weeklyDayLabels,
                     totalPrayers: state.weeklyPrayerCount,
                   ),
+                ),
+                */
+                // const SizedBox(height: 24),
+
+                // ── Contribution Heatmap (Commented out per request) ──
+                /*
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ContributionMap(history: state.weeklyHistory),
+                ),
+                */
+                // const SizedBox(height: 32),
+
+                // ── Monthly Calendar Heatmap ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _MonthlyCalendar(historicalLog: state.historicalLog),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Top Reasons ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _TopReasons(historicalLog: state.historicalLog),
                 ),
 
                 const SizedBox(height: 32),
@@ -113,7 +148,12 @@ class ProgressPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Badges', style: AppTextStyles.headlineMedium.copyWith(fontSize: 20)),
+                      Text(
+                        'Badges',
+                        style: AppTextStyles.headlineMedium.copyWith(
+                          fontSize: 20,
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       _BadgesGrid(state: state),
                     ],
@@ -143,49 +183,114 @@ class ProgressPage extends StatelessWidget {
     message.writeln('');
     message.writeln('Keep up the consistency! 💪');
 
-    SharePlus.instance.share(
-      ShareParams(text: message.toString()),
-    );
+    SharePlus.instance.share(ShareParams(text: message.toString()));
   }
 }
 
-/// Custom painter for the circular streak ring.
 class _StreakRingPainter extends CustomPainter {
-  final double progress;
-  _StreakRingPainter({required this.progress});
+  final List<Prayer> prayers;
+  final double strokeWidth;
+  final double gapAngle;
+
+  _StreakRingPainter({
+    required this.prayers,
+    this.strokeWidth = 8.0,
+    this.gapAngle = 0.08,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (prayers.isEmpty) return;
+
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 16;
-    const strokeWidth = 8.0;
+    final radius = size.width / 2 - strokeWidth - 2;
 
-    // Background ring
-    final bgPaint = Paint()
-      ..color = const Color(0xFFE2DADA)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
-    canvas.drawCircle(center, radius, bgPaint);
+    final totalSegments = prayers.length;
 
-    // Progress arc
-    final progressPaint = Paint()
-      ..color = AppColors.primary
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
+    // If only one prayer, draw a full circle without gaps
+    if (totalSegments == 1) {
+      final prayer = prayers.first;
+      Color segmentColor = AppColors.statusNotLogged;
 
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -pi / 2, // Start from top
-      2 * pi * progress,
-      false,
-      progressPaint,
-    );
+      if (prayer.isCompleted) {
+        if (prayer.status == 'late') {
+          segmentColor = AppColors.statusLate;
+        } else if (prayer.status == 'missed') {
+          segmentColor = AppColors.statusMissed;
+        } else {
+          segmentColor = prayer.inJamaat
+              ? AppColors.statusGroup
+              : AppColors.statusAlone;
+        }
+      }
+
+      final paint = Paint()
+        ..color = segmentColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -pi / 2,
+        2 * pi,
+        false,
+        paint,
+      );
+      return;
+    }
+
+    final visualGap = gapAngle;
+    final visibleSweep = (2 * pi / totalSegments) - visualGap;
+
+    // The round caps stick out on both sides by strokeWidth / 2 mathematically (along the stroke).
+    // The angle they occupy is approximately (strokeWidth / radius) radians total (both caps).
+    final capAngle = strokeWidth / radius;
+    // We must draw a shorter mathematical arc so visual length (sweep + caps) == visibleSweep
+    final sweepAngle = max(0.0, visibleSweep - capAngle);
+
+    double startAngle = -pi / 2; // Start from top
+
+    for (int i = 0; i < totalSegments; i++) {
+      final prayer = prayers[i];
+      Color segmentColor = AppColors.statusNotLogged;
+
+      if (prayer.isCompleted) {
+        if (prayer.status == 'late') {
+          segmentColor = AppColors.statusLate;
+        } else if (prayer.status == 'missed') {
+          segmentColor = AppColors.statusMissed;
+        } else {
+          segmentColor = prayer.inJamaat
+              ? AppColors.statusGroup
+              : AppColors.statusAlone;
+        }
+      }
+
+      final paint = Paint()
+        ..color = segmentColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+
+      // Shift the actual drawn arc start point forward by capAngle / 2 so the visible round
+      // cap begins exactly at 'startAngle' instead of sticking backwards into the gap space.
+      final drawStart = startAngle + capAngle / 2;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        drawStart,
+        sweepAngle,
+        false,
+        paint,
+      );
+
+      startAngle += visibleSweep + visualGap;
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _StreakRingPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+  bool shouldRepaint(covariant _StreakRingPainter oldDelegate) => true;
 }
 
 /// Weekly bar chart — now driven by real data.
@@ -227,7 +332,9 @@ class _WeeklyChart extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(7, (index) {
                 final isToday = index == 6;
-                final pct = percentages.length > index ? percentages[index] : 0.0;
+                final pct = percentages.length > index
+                    ? percentages[index]
+                    : 0.0;
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -429,6 +536,304 @@ class _BadgeTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MonthlyCalendar extends StatelessWidget {
+  final Map<String, List<Prayer>> historicalLog;
+
+  const _MonthlyCalendar({required this.historicalLog});
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final firstDayOfMonth = DateTime(now.year, now.month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
+    final startWeekday = firstDayOfMonth.weekday; // 1=Monday, 7=Sunday
+
+    // Calculate total grid items (padding before 1st day + days in month)
+    final totalGridItems = (startWeekday - 1) + daysInMonth;
+
+    return NeoCard(
+      color: AppColors.primary,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${_getMonthName(now.month)} ${now.year}',
+                style: AppTextStyles.headlineMedium,
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentFocus.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.arrow_back_ios,
+                      size: 16,
+                      color: AppColors.textDark.withOpacity(0.3),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentFocus.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: AppColors.textDark.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Days of the week header
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.accentFocus,
+              border: Border.all(color: AppColors.textDark, width: 2),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+            ),
+            child: Row(
+              children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                  .map(
+                    (day) => Expanded(
+                      child: Text(
+                        day,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          // Tabular Date Grid
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.backgroundLight,
+              border: const Border(
+                left: BorderSide(color: AppColors.textDark, width: 2),
+                right: BorderSide(color: AppColors.textDark, width: 2),
+                bottom: BorderSide(color: AppColors.textDark, width: 2),
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(8),
+                bottomRight: Radius.circular(8),
+              ),
+              boxShadow: const [
+                BoxShadow(color: AppColors.textDark, offset: Offset(4, 4)),
+              ],
+            ),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                mainAxisSpacing: 0,
+                crossAxisSpacing: 0,
+                childAspectRatio: 1,
+              ),
+              // We pad the total grid items to always complete the last row
+              itemCount: totalGridItems + (7 - (totalGridItems % 7)) % 7,
+              itemBuilder: (context, index) {
+                // Empty padding cell (before month start or after month end)
+                if (index < startWeekday - 1 || index >= totalGridItems) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.backgroundLight,
+                      border: Border.all(color: AppColors.textDark, width: 0.5),
+                    ),
+                  );
+                }
+
+                final dayIndex = index - (startWeekday - 1) + 1;
+                final date = DateTime(now.year, now.month, dayIndex);
+                final m = date.month.toString().padLeft(2, '0');
+                final d = date.day.toString().padLeft(2, '0');
+                final dateString = '${date.year}-$m-$d';
+                final prayers = historicalLog[dateString] ?? [];
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: prayers.isNotEmpty
+                        ? AppColors.surface
+                        : AppColors.backgroundLight,
+                    border: Border.all(color: AppColors.textDark, width: 0.5),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (prayers.isNotEmpty)
+                        CustomPaint(
+                          size: const Size.square(42),
+                          painter: _StreakRingPainter(
+                            prayers: prayers,
+                            strokeWidth: 3.0,
+                            gapAngle: 0.1,
+                          ),
+                        ),
+                      Text(
+                        '$dayIndex',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: prayers.isNotEmpty
+                              ? AppColors.textDark
+                              : AppColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getMonthName(int month) {
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return monthNames[month - 1];
+  }
+}
+
+class _TopReasons extends StatelessWidget {
+  final Map<String, List<Prayer>> historicalLog;
+
+  const _TopReasons({required this.historicalLog});
+
+  @override
+  Widget build(BuildContext context) {
+    // Determine top reasons
+    final Map<String, int> reasonCounts = {};
+    for (var dateLog in historicalLog.values) {
+      for (var prayer in dateLog) {
+        if (prayer.isCompleted &&
+            (prayer.status == 'late' || prayer.status == 'missed')) {
+          final reason = prayer.reason ?? 'Unknown';
+          reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
+        }
+      }
+    }
+
+    final sortedReasons = reasonCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final topReasonsList = sortedReasons.take(3).toList();
+
+    return NeoCard(
+      color: AppColors.surface,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Top Reasons', style: AppTextStyles.headlineMedium),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.accentFocus.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Missed/Late',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (topReasonsList.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Text(
+                  'No missed or late prayers logged yet. Great job!',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.muted,
+                  ),
+                ),
+              ),
+            )
+          else
+            ...topReasonsList.map((entry) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppColors.statusMissed,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        entry.key,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${entry.value}',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
       ),
     );
   }

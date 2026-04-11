@@ -34,10 +34,10 @@ class PrayerRemoteDataSource {
     return response.data as Map<String, dynamic>;
   }
 
-  /// GET /api/prayers/history/?days=7
-  Future<List<dynamic>> getWeeklyHistory() async {
+  /// GET /api/prayers/history/?days=90
+  Future<List<dynamic>> getWeeklyHistory({int days = 90}) async {
     final response = await dio.get('/api/prayers/history/', queryParameters: {
-      'days': 7,
+      'days': days,
     });
     return response.data as List<dynamic>;
   }

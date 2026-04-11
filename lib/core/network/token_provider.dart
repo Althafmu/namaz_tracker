@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Provides JWT access & refresh tokens backed by flutter_secure_storage.
@@ -24,8 +25,17 @@ class TokenProvider {
 
   /// Load tokens from secure storage into memory. Call once at app startup.
   Future<void> loadTokens() async {
-    _token = await _secureStorage.read(key: _accessKey);
-    _refreshToken = await _secureStorage.read(key: _refreshKey);
+    try {
+      _token = await _secureStorage.read(key: _accessKey);
+      _refreshToken = await _secureStorage.read(key: _refreshKey);
+    } catch (e) {
+      debugPrint('[TokenProvider] Keystore error loading tokens: $e. Wiping secure storage.');
+      try {
+        await _secureStorage.deleteAll();
+      } catch (_) {}
+      _token = null;
+      _refreshToken = null;
+    }
   }
 
   /// Single write path: persist both tokens atomically.

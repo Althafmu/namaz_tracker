@@ -7,6 +7,8 @@ class Prayer extends Equatable {
   final bool isCompleted;
   final bool inJamaat;
   final String location;
+  final String status;
+  final String? reason;
 
   const Prayer({
     required this.name,
@@ -14,6 +16,8 @@ class Prayer extends Equatable {
     this.isCompleted = false,
     this.inJamaat = false,
     this.location = 'home',
+    this.status = 'on_time',
+    this.reason,
   });
 
   Prayer copyWith({
@@ -22,6 +26,8 @@ class Prayer extends Equatable {
     bool? isCompleted,
     bool? inJamaat,
     String? location,
+    String? status,
+    String? reason,
   }) {
     return Prayer(
       name: name ?? this.name,
@@ -29,6 +35,8 @@ class Prayer extends Equatable {
       isCompleted: isCompleted ?? this.isCompleted,
       inJamaat: inJamaat ?? this.inJamaat,
       location: location ?? this.location,
+      status: status ?? this.status,
+      reason: reason ?? this.reason,
     );
   }
 
@@ -50,6 +58,8 @@ class Prayer extends Equatable {
       'isCompleted': isCompleted,
       'inJamaat': inJamaat,
       'location': location,
+      'status': status,
+      'reason': reason,
     };
   }
 
@@ -60,9 +70,11 @@ class Prayer extends Equatable {
       isCompleted: json['isCompleted'] as bool? ?? false,
       inJamaat: json['inJamaat'] as bool? ?? false,
       location: json['location'] as String? ?? 'home',
+      status: json['status'] as String? ?? 'on_time',
+      reason: json['reason'] as String?,
     );
   }
 
   @override
-  List<Object?> get props => [name, timeRange, isCompleted, inJamaat, location];
+  List<Object?> get props => [name, timeRange, isCompleted, inJamaat, location, status, reason];
 }

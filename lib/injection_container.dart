@@ -16,6 +16,7 @@ import 'features/prayer/domain/usecases/get_streak_usecase.dart';
 import 'features/prayer/domain/usecases/get_weekly_history_usecase.dart';
 import 'features/prayer/domain/usecases/log_prayer_usecase.dart';
 import 'features/prayer/presentation/bloc/prayer_bloc.dart';
+import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 
 import 'core/network/token_provider.dart';
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
@@ -133,11 +134,19 @@ Future<void> initDependencies() async {
       ));
 
   // ── BLoC ──
+  sl.registerLazySingleton(() => SettingsBloc(
+        notificationService: sl(),
+      ));
+      
   sl.registerFactory(() => PrayerBloc(
         logPrayerUseCase: sl(),
         getDailyStatusUseCase: sl(),
+        getStreakUseCase: sl(),
+        getWeeklyHistoryUseCase: sl(),
         offlineSyncService: sl(),
         prayerSchedulerService: sl(),
+        notificationService: sl(),
+        settingsBloc: sl(),
       ));
   sl.registerLazySingleton(() => AuthBloc(
         authRepository: sl(),

@@ -12,22 +12,12 @@ class PrayerState extends Equatable {
   final bool isLoading;
   final SyncStatus syncStatus;
   final String selectedLocation;
-  final String calculationMethod;
-  final bool useHanafi;
-
   // Cached GPS coordinates to avoid double-fetching
   final double? cachedLat;
   final double? cachedLng;
 
-  // Notification settings
-  final bool adhanAlerts;
-  final bool reminderAlerts;
-  final int reminderMinutes;
-  final bool reminderIsBefore;
-  final bool streakProtection;
-
-  // Weekly history: date string ('2026-03-18') -> completed count (0-5)
-  final Map<String, int> weeklyHistory;
+  // Historical log: date string ('2026-03-18') -> list of individual prayers
+  final Map<String, List<Prayer>> historicalLog;
 
   const PrayerState({
     this.prayers = const [],
@@ -35,16 +25,9 @@ class PrayerState extends Equatable {
     this.isLoading = false,
     this.syncStatus = SyncStatus.idle,
     this.selectedLocation = 'home',
-    this.calculationMethod = 'ISNA',
-    this.useHanafi = false,
     this.cachedLat,
     this.cachedLng,
-    this.adhanAlerts = true,
-    this.reminderAlerts = true,
-    this.reminderMinutes = 15,
-    this.reminderIsBefore = true,
-    this.streakProtection = false,
-    this.weeklyHistory = const {},
+    this.historicalLog = const {},
   });
 
   PrayerState copyWith({
@@ -53,16 +36,9 @@ class PrayerState extends Equatable {
     bool? isLoading,
     SyncStatus? syncStatus,
     String? selectedLocation,
-    String? calculationMethod,
-    bool? useHanafi,
     double? cachedLat,
     double? cachedLng,
-    bool? adhanAlerts,
-    bool? reminderAlerts,
-    int? reminderMinutes,
-    bool? reminderIsBefore,
-    bool? streakProtection,
-    Map<String, int>? weeklyHistory,
+    Map<String, List<Prayer>>? historicalLog,
   }) {
     return PrayerState(
       prayers: prayers ?? this.prayers,
@@ -70,16 +46,9 @@ class PrayerState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       syncStatus: syncStatus ?? this.syncStatus,
       selectedLocation: selectedLocation ?? this.selectedLocation,
-      calculationMethod: calculationMethod ?? this.calculationMethod,
-      useHanafi: useHanafi ?? this.useHanafi,
       cachedLat: cachedLat ?? this.cachedLat,
       cachedLng: cachedLng ?? this.cachedLng,
-      adhanAlerts: adhanAlerts ?? this.adhanAlerts,
-      reminderAlerts: reminderAlerts ?? this.reminderAlerts,
-      reminderMinutes: reminderMinutes ?? this.reminderMinutes,
-      reminderIsBefore: reminderIsBefore ?? this.reminderIsBefore,
-      streakProtection: streakProtection ?? this.streakProtection,
-      weeklyHistory: weeklyHistory ?? this.weeklyHistory,
+      historicalLog: historicalLog ?? this.historicalLog,
     );
   }
 
@@ -98,7 +67,9 @@ class PrayerState extends Equatable {
     return List.generate(7, (i) {
       final date = now.subtract(Duration(days: 6 - i));
       final key = DateFormat('yyyy-MM-dd').format(date);
-      return (weeklyHistory[key] ?? 0) / 5.0;
+      final pastPrayers = historicalLog[key] ?? [];
+      final completed = pastPrayers.where((p) => p.isCompleted).length;
+      return completed / 5.0;
     });
   }
 
@@ -109,7 +80,8 @@ class PrayerState extends Equatable {
     for (int i = 0; i < 7; i++) {
       final date = now.subtract(Duration(days: i));
       final key = DateFormat('yyyy-MM-dd').format(date);
-      total += weeklyHistory[key] ?? 0;
+      final pastPrayers = historicalLog[key] ?? [];
+      total += pastPrayers.where((p) => p.isCompleted).length;
     }
     return total;
   }
@@ -129,16 +101,9 @@ class PrayerState extends Equatable {
       'prayers': prayers.map((p) => p.toJson()).toList(),
       'streak': streak.toJson(),
       'selectedLocation': selectedLocation,
-      'calculationMethod': calculationMethod,
-      'useHanafi': useHanafi,
       'cachedLat': cachedLat,
       'cachedLng': cachedLng,
-      'adhanAlerts': adhanAlerts,
-      'reminderAlerts': reminderAlerts,
-      'reminderMinutes': reminderMinutes,
-      'reminderIsBefore': reminderIsBefore,
-      'streakProtection': streakProtection,
-      'weeklyHistory': weeklyHistory,
+      'historicalLog': historicalLog.map((k, v) => MapEntry(k, v.map((p) => p.toJson()).toList())),
     };
   }
 
@@ -152,17 +117,9 @@ class PrayerState extends Equatable {
           ? Streak.fromJson(json['streak'] as Map<String, dynamic>)
           : const Streak(),
       selectedLocation: json['selectedLocation'] as String? ?? 'home',
-      calculationMethod: json['calculationMethod'] as String? ?? 'ISNA',
-      useHanafi: json['useHanafi'] as bool? ?? false,
       cachedLat: json['cachedLat'] as double?,
       cachedLng: json['cachedLng'] as double?,
-      adhanAlerts: json['adhanAlerts'] as bool? ?? true,
-      reminderAlerts: json['reminderAlerts'] as bool? ?? true,
-      reminderMinutes: json['reminderMinutes'] as int? ?? 15,
-      reminderIsBefore: json['reminderIsBefore'] as bool? ?? true,
-      streakProtection: json['streakProtection'] as bool? ?? false,
-      weeklyHistory: (json['weeklyHistory'] as Map<String, dynamic>?)
-          ?.map((k, v) => MapEntry(k, v as int)) ?? {},
+      historicalLog: _parseHistoricalLog(json['historicalLog'], json['weeklyHistory']),
     );
   }
 
@@ -173,15 +130,38 @@ class PrayerState extends Equatable {
         isLoading,
         syncStatus,
         selectedLocation,
-        calculationMethod,
-        useHanafi,
         cachedLat,
         cachedLng,
-        adhanAlerts,
-        reminderAlerts,
-        reminderMinutes,
-        reminderIsBefore,
-        streakProtection,
-        weeklyHistory,
+        historicalLog,
       ];
+}
+
+Map<String, List<Prayer>> _parseHistoricalLog(dynamic historicalJson, dynamic legacyWeeklyJson) {
+  final Map<String, List<Prayer>> log = {};
+  
+  if (historicalJson != null && historicalJson is Map) {
+    historicalJson.forEach((key, value) {
+      if (value is List) {
+        log[key as String] = value.map((p) => Prayer.fromJson(p as Map<String, dynamic>)).toList();
+      }
+    });
+  } else if (legacyWeeklyJson != null && legacyWeeklyJson is Map) {
+    // Migration: generate dummy completed prayers based on the integer count
+    legacyWeeklyJson.forEach((key, value) {
+      if (value is int) {
+        final List<Prayer> base = Prayer.defaultPrayers();
+        final List<Prayer> migrated = [];
+        for (int i = 0; i < 5; i++) {
+          if (i < value) {
+            migrated.add(base[i].copyWith(isCompleted: true, status: 'on_time'));
+          } else {
+            migrated.add(base[i].copyWith(isCompleted: false, status: 'not_logged'));
+          }
+        }
+        log[key as String] = migrated;
+      }
+    });
+  }
+  
+  return log;
 }

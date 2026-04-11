@@ -15,39 +15,57 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
+  bool _navigated = false;
+
   @override
   void initState() {
     super.initState();
     context.read<AuthBloc>().add(InitAuthRequested());
 
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      final authState = context.read<AuthBloc>().state;
-      if (authState.status == AuthStatus.authenticated) {
-        context.go('/');
-      } else if (authState.hasSeenOnboarding) {
-        context.go('/login');
-      } else {
-        context.go('/onboarding1');
-      }
+    // Safety fallback: if auth never resolves within 5 seconds,
+    // force navigation to login to avoid black screen forever.
+    Future.delayed(const Duration(seconds: 5), () {
+      _navigateIfNeeded();
     });
+  }
+
+  void _navigateIfNeeded() {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    final authState = context.read<AuthBloc>().state;
+    if (authState.status == AuthStatus.authenticated) {
+      context.go('/');
+    } else if (authState.hasSeenOnboarding) {
+      context.go('/login');
+    } else {
+      context.go('/onboarding1');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Using a simple icon for the moon in Splash, or text if needed.
-            // As per stitch, it's a big moon icon. We use Icons.nightlight_round
-            Icon(Icons.nightlight_round, size: 120, color: AppColors.primary),
-            SizedBox(height: 24),
-            Text('NAMAZ', style: AppTextStyles.headlineLarge),
-            Text('TRACKER', style: AppTextStyles.headlineMedium),
-          ],
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (prev, curr) =>
+          curr.status == AuthStatus.authenticated ||
+          curr.status == AuthStatus.unauthenticated,
+      listener: (context, state) {
+        // Wait a minimum 1.5s so the splash is visible, then navigate
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          _navigateIfNeeded();
+        });
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundLight,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.nightlight_round, size: 120, color: AppColors.primary),
+              const SizedBox(height: 24),
+              Text('NAMAZ', style: AppTextStyles.headlineLarge),
+              Text('TRACKER', style: AppTextStyles.headlineMedium),
+            ],
+          ),
         ),
       ),
     );

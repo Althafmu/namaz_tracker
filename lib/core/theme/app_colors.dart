@@ -19,9 +19,14 @@ class AppColors {
   // Neo-brutalist border color
   static const Color border = Color(0xFF2B2D42);
 
-  // Status
+  // Status (Donut & Calendar Heatmap)
   static const Color success = Color(0xFF4ECDC4);
   static const Color error = Color(0xFFFF6B6B);
+  static const Color statusGroup = Color(0xFF4ECDC4); // In Jamaat / Prayed (Female)
+  static const Color statusAlone = Color(0xFFF9C74F); // Alone (Male) / Excused (Female)
+  static const Color statusLate = Color(0xFFE07A5F); // Late
+  static const Color statusMissed = Color(0xFFFF6B6B); // Missed
+  static const Color statusNotLogged = Color(0xFFE2DADA); // Base gray ring or unlogged dots
 
   // Opacity helpers
   static Color primaryLight = primary.withValues(alpha: 0.1);

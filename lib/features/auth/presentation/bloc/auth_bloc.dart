@@ -120,9 +120,14 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
 
   @override
   AuthState? fromJson(Map<String, dynamic> json) {
-    final restoredState = AuthState.fromJson(json);
-    // Token is loaded via InitAuthRequested, not from HydratedBloc JSON
-    return restoredState;
+    try {
+      final restoredState = AuthState.fromJson(json);
+      // Token is loaded via InitAuthRequested, not from HydratedBloc JSON
+      return restoredState;
+    } catch (e) {
+      // Corrupted storage from a previous version — start fresh
+      return null;
+    }
   }
 
   @override
