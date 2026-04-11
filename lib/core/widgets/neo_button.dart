@@ -17,6 +17,7 @@ class NeoButton extends StatefulWidget {
   final double borderRadius;
   final double height;
   final bool isFullWidth;
+  final bool disabled;
 
   const NeoButton({
     super.key,
@@ -28,6 +29,7 @@ class NeoButton extends StatefulWidget {
     this.borderRadius = 16.0,
     this.height = 56.0,
     this.isFullWidth = true,
+    this.disabled = false,
   });
 
   @override
@@ -39,12 +41,16 @@ class _NeoButtonState extends State<NeoButton> {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = widget.disabled ? AppColors.muted : widget.color;
+    final effectiveTextColor = widget.disabled ? AppColors.textDark.withValues(alpha: 0.5) : widget.textColor;
+    final effectiveBorderColor = widget.disabled ? AppColors.muted : AppColors.border;
+
     return GestureDetector(
-      onTapDown: (_) {
+      onTapDown: widget.disabled ? null : (_) {
         HapticFeedback.lightImpact();
         setState(() => _isPressed = true);
       },
-      onTapUp: (_) {
+      onTapUp: widget.disabled ? null : (_) {
         setState(() => _isPressed = false);
         widget.onPressed?.call();
       },
@@ -61,22 +67,23 @@ class _NeoButtonState extends State<NeoButton> {
         height: widget.height,
         padding: EdgeInsets.symmetric(horizontal: widget.isFullWidth ? 0 : 20.0),
         decoration: BoxDecoration(
-          color: widget.color,
+          color: effectiveColor,
           borderRadius: BorderRadius.circular(widget.borderRadius),
           border: Border.all(
-            color: AppColors.border,
+            color: effectiveBorderColor,
             width: 2.0,
           ),
           boxShadow: [
-            BoxShadow(
-              color: AppColors.border,
-              offset: Offset(
-                _isPressed ? 0.0 : 4.0,
-                _isPressed ? 0.0 : 4.0,
+            if (!widget.disabled)
+              BoxShadow(
+                color: AppColors.border,
+                offset: Offset(
+                  _isPressed ? 0.0 : 4.0,
+                  _isPressed ? 0.0 : 4.0,
+                ),
+                blurRadius: 0,
+                spreadRadius: 0,
               ),
-              blurRadius: 0,
-              spreadRadius: 0,
-            ),
           ],
         ),
         child: Row(
@@ -87,13 +94,13 @@ class _NeoButtonState extends State<NeoButton> {
             Text(
               widget.text,
               style: AppTextStyles.bodyLarge.copyWith(
-                color: widget.textColor,
+                color: effectiveTextColor,
                 letterSpacing: 0.5,
               ),
             ),
             if (widget.icon != null) ...[
               const SizedBox(width: 8),
-              Icon(widget.icon, color: widget.textColor, size: 24),
+              Icon(widget.icon, color: effectiveTextColor, size: 24),
             ],
           ],
         ),
