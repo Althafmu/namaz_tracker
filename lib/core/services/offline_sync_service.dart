@@ -35,12 +35,16 @@ class OfflineSyncService {
     required bool completed,
     required bool inJamaat,
     required String location,
+    String? status,
+    String? reason,
   }) async {
     await _queueRepository.enqueueAction(
       prayerName: prayerName,
       completed: completed,
       inJamaat: inJamaat,
       location: location,
+      status: status,
+      reason: reason,
     );
   }
 
@@ -61,6 +65,8 @@ class OfflineSyncService {
             completed: action['completed'] as bool,
             inJamaat: action['inJamaat'] as bool,
             location: action['location'] as String,
+            status: action['status'] as String?,
+            reason: action['reason'] as String?,
           );
           await _queueRepository.dequeueAction(entry.key);
         } catch (e) {

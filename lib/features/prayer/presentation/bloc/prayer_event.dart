@@ -65,3 +65,18 @@ class RefreshPrayersAndAlarms extends PrayerEvent {
   const RefreshPrayersAndAlarms();
 }
 
+/// Load detailed prayer history for a specific month (calendar navigation).
+class LoadMonthHistory extends PrayerEvent {
+  final int year;
+  final int month;
+
+  const LoadMonthHistory({required this.year, required this.month});
+
+  @override
+  List<Object?> get props => [year, month];
+}
+
+/// Load aggregated reason counts from backend (all-time).
+class LoadAllReasons extends PrayerEvent {
+  const LoadAllReasons();
+}

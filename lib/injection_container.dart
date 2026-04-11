@@ -14,6 +14,8 @@ import 'core/services/prayer_scheduler_service.dart';
 import 'features/prayer/domain/usecases/get_daily_status_usecase.dart';
 import 'features/prayer/domain/usecases/get_streak_usecase.dart';
 import 'features/prayer/domain/usecases/get_weekly_history_usecase.dart';
+import 'features/prayer/domain/usecases/get_detailed_month_history_usecase.dart';
+import 'features/prayer/domain/usecases/get_reason_summary_usecase.dart';
 import 'features/prayer/domain/usecases/log_prayer_usecase.dart';
 import 'features/prayer/presentation/bloc/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
@@ -123,6 +125,8 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => GetDailyStatusUseCase(sl()));
   sl.registerLazySingleton(() => GetStreakUseCase(sl()));
   sl.registerLazySingleton(() => GetWeeklyHistoryUseCase(sl()));
+  sl.registerLazySingleton(() => GetDetailedMonthHistoryUseCase(sl()));
+  sl.registerLazySingleton(() => GetReasonSummaryUseCase(sl()));
 
   // ── Domain Services ──
   sl.registerLazySingleton(() => OfflineSyncService(
@@ -143,6 +147,8 @@ Future<void> initDependencies() async {
         getDailyStatusUseCase: sl(),
         getStreakUseCase: sl(),
         getWeeklyHistoryUseCase: sl(),
+        getDetailedMonthHistoryUseCase: sl(),
+        getReasonSummaryUseCase: sl(),
         offlineSyncService: sl(),
         prayerSchedulerService: sl(),
         notificationService: sl(),

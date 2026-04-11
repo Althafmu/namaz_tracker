@@ -12,12 +12,16 @@ class LogPrayerUseCase {
     required bool completed,
     bool inJamaat = false,
     String location = 'home',
+    String? status,
+    String? reason,
   }) {
     return repository.logPrayer(
       prayerName: prayerName,
       completed: completed,
       inJamaat: inJamaat,
       location: location,
+      status: status,
+      reason: reason,
     );
   }
 }

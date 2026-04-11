@@ -18,6 +18,8 @@ class SettingsState extends Equatable {
   // To know if method has been manually overridden
   final bool methodAutoDetected;
 
+  final List<String> missedReasons;
+
   const SettingsState({
     this.calculationMethod = 'MWL',
     this.useHanafi = false,
@@ -39,6 +41,14 @@ class SettingsState extends Equatable {
       'Isha': 0,
     },
     this.methodAutoDetected = false,
+    this.missedReasons = const [
+      'Forgot',
+      'Sleeping',
+      'Busy with work',
+      'Travelling',
+      'Health reasons',
+      'Other',
+    ],
   });
 
   SettingsState copyWith({
@@ -49,6 +59,7 @@ class SettingsState extends Equatable {
     Map<String, PrayerNotificationConfig>? prayerConfigs,
     Map<String, int>? manualOffsets,
     bool? methodAutoDetected,
+    List<String>? missedReasons,
   }) {
     return SettingsState(
       calculationMethod: calculationMethod ?? this.calculationMethod,
@@ -58,6 +69,7 @@ class SettingsState extends Equatable {
       prayerConfigs: prayerConfigs ?? this.prayerConfigs,
       manualOffsets: manualOffsets ?? this.manualOffsets,
       methodAutoDetected: methodAutoDetected ?? this.methodAutoDetected,
+      missedReasons: missedReasons ?? this.missedReasons,
     );
   }
 
@@ -70,6 +82,7 @@ class SettingsState extends Equatable {
       'prayerConfigs': prayerConfigs.map((key, value) => MapEntry(key, value.toJson())),
       'manualOffsets': manualOffsets,
       'methodAutoDetected': methodAutoDetected,
+      'missedReasons': missedReasons,
     };
   }
 
@@ -134,6 +147,14 @@ class SettingsState extends Equatable {
       prayerConfigs: parsedConfigs,
       manualOffsets: parsedOffsets,
       methodAutoDetected: json['methodAutoDetected'] as bool? ?? false,
+      missedReasons: (json['missedReasons'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [
+        'Forgot',
+        'Sleeping',
+        'Busy with work',
+        'Travelling',
+        'Health reasons',
+        'Other',
+      ],
     );
   }
 
@@ -146,5 +167,6 @@ class SettingsState extends Equatable {
         prayerConfigs,
         manualOffsets,
         methodAutoDetected,
+        missedReasons,
       ];
 }

@@ -12,6 +12,8 @@ import '../../domain/usecases/log_prayer_usecase.dart';
 import '../../domain/usecases/get_daily_status_usecase.dart';
 import '../../domain/usecases/get_streak_usecase.dart';
 import '../../domain/usecases/get_weekly_history_usecase.dart';
+import '../../domain/usecases/get_detailed_month_history_usecase.dart';
+import '../../domain/usecases/get_reason_summary_usecase.dart';
 import 'prayer_event.dart';
 import 'prayer_state.dart';
 import 'settings/settings_bloc.dart';
@@ -24,6 +26,8 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
   final GetDailyStatusUseCase getDailyStatusUseCase;
   final GetStreakUseCase getStreakUseCase;
   final GetWeeklyHistoryUseCase getWeeklyHistoryUseCase;
+  final GetDetailedMonthHistoryUseCase getDetailedMonthHistoryUseCase;
+  final GetReasonSummaryUseCase getReasonSummaryUseCase;
   final OfflineSyncService offlineSyncService;
   final PrayerSchedulerService prayerSchedulerService;
   final NotificationService notificationService;
@@ -36,6 +40,8 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     required this.getDailyStatusUseCase,
     required this.getStreakUseCase,
     required this.getWeeklyHistoryUseCase,
+    required this.getDetailedMonthHistoryUseCase,
+    required this.getReasonSummaryUseCase,
     required this.offlineSyncService,
     required this.prayerSchedulerService,
     required this.notificationService,
@@ -47,6 +53,8 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     on<SetPrayerLocation>(_onSetPrayerLocation);
     on<SyncWithServer>(_onSyncWithServer);
     on<RefreshPrayersAndAlarms>(_onRefreshPrayersAndAlarms);
+    on<LoadMonthHistory>(_onLoadMonthHistory);
+    on<LoadAllReasons>(_onLoadAllReasons);
 
     _settingsSubscription = settingsBloc.stream.listen((_) {
       add(const RefreshPrayersAndAlarms());
@@ -120,7 +128,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       emit(state.copyWith(isLoading: false));
     }
 
-    // 2. Try to sync completion status with server
+    // 2. Sync today's status with server — merging full details (status, reason)
     try {
       final serverPrayers = await getDailyStatusUseCase();
       final currentPrayers = state.prayers;
@@ -132,35 +140,19 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
           return local.copyWith(
             isCompleted: server.first.isCompleted,
             inJamaat: server.first.inJamaat,
+            status: server.first.status,
+            reason: server.first.reason,
           );
         }
         return local;
       }).toList();
 
-      // Sync streak and history
+      // Sync streak
       final streak = await getStreakUseCase();
-      final history = await getWeeklyHistoryUseCase(days: 90);
 
-      // Reconstruct missing historicalLog entries from the backend summary.
-      // We do not overwrite existing local records as they possess richer data 
-      // (exact time, inJamaat, location, etc.).
+      // Update today's entry in historicalLog with merged data
       final updatedLog = Map<String, List<Prayer>>.from(state.historicalLog);
-      
-      history.forEach((dateString, completedCount) {
-        if (!updatedLog.containsKey(dateString)) {
-          final names = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-          final List<Prayer> syntheticPrayers = [];
-          for (int i = 0; i < 5; i++) {
-            // Create dummy prayers just so the renderer has completed statuses
-            syntheticPrayers.add(Prayer(
-              name: names[i],
-              timeRange: '', // Ignored by progress renderer
-              isCompleted: i < completedCount,
-            ));
-          }
-          updatedLog[dateString] = syntheticPrayers;
-        }
-      });
+      updatedLog[PrayerState.todayKey] = merged;
 
       emit(state.copyWith(
         prayers: merged,
@@ -170,6 +162,13 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     } catch (e) {
       debugPrint('[PrayerBloc] Server sync failed (likely offline): $e');
     }
+
+    // 3. Fetch detailed history for the current calendar month
+    final now = DateTime.now();
+    add(LoadMonthHistory(year: now.year, month: now.month));
+
+    // 4. Fetch aggregated reason counts
+    add(const LoadAllReasons());
   }
 
   Future<void> _onLogPrayer(
@@ -204,20 +203,29 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     final updatedLog = Map<String, List<Prayer>>.from(state.historicalLog);
     updatedLog[PrayerState.todayKey] = updatedPrayers;
 
+    // 4. Optimistic update of reasonCounts for instant UI feedback
+    var updatedReasonCounts = Map<String, int>.from(state.reasonCounts);
+    if ((event.status == 'late' || event.status == 'missed') && event.reason != null) {
+      updatedReasonCounts[event.reason!] = (updatedReasonCounts[event.reason!] ?? 0) + 1;
+    }
+
     emit(state.copyWith(
       prayers: updatedPrayers,
       streak: updatedStreak,
       historicalLog: updatedLog,
+      reasonCounts: updatedReasonCounts,
       syncStatus: SyncStatus.syncing,
     ));
 
-    // 4. Sync with backend
+    // 5. Sync with backend
     try {
       await logPrayerUseCase(
         prayerName: event.prayerName,
         completed: event.completed,
         inJamaat: event.inJamaat,
         location: event.location,
+        status: event.status,
+        reason: event.reason,
       );
       emit(state.copyWith(syncStatus: SyncStatus.synced));
     } catch (e) {
@@ -226,6 +234,8 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         completed: event.completed,
         inJamaat: event.inJamaat,
         location: event.location,
+        status: event.status,
+        reason: event.reason,
       );
       emit(state.copyWith(syncStatus: SyncStatus.error));
     }
@@ -288,8 +298,67 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     }
   }
 
+  /// Fetch detailed prayer history for a specific month.
+  /// Smart caching: skips fetch if data already loaded (unless it's the current month).
+  Future<void> _onLoadMonthHistory(
+    LoadMonthHistory event,
+    Emitter<PrayerState> emit,
+  ) async {
+    final monthKey = '${event.year}-${event.month.toString().padLeft(2, '0')}';
+    final now = DateTime.now();
+    final isCurrentMonth = event.year == now.year && event.month == now.month;
 
+    // Update calendar navigation immediately
+    emit(state.copyWith(
+      calendarYear: event.year,
+      calendarMonth: event.month,
+    ));
 
+    // Skip if already fetched (and not current month — current month always refreshes)
+    if (state.fetchedMonths.contains(monthKey) && !isCurrentMonth) {
+      return;
+    }
+
+    try {
+      final monthData = await getDetailedMonthHistoryUseCase(
+        year: event.year,
+        month: event.month,
+      );
+
+      // Merge into historicalLog (backend data takes priority for historical months,
+      // but for current month we preserve today's local state)
+      final updatedLog = Map<String, List<Prayer>>.from(state.historicalLog);
+      monthData.forEach((dateStr, prayers) {
+        if (isCurrentMonth && dateStr == PrayerState.todayKey) {
+          // Don't overwrite today's optimistic local state
+          return;
+        }
+        updatedLog[dateStr] = prayers;
+      });
+
+      final updatedFetched = Set<String>.from(state.fetchedMonths)..add(monthKey);
+
+      emit(state.copyWith(
+        historicalLog: updatedLog,
+        fetchedMonths: updatedFetched,
+      ));
+    } catch (e) {
+      debugPrint('[PrayerBloc] Failed to load month history for $monthKey: $e');
+    }
+  }
+
+  /// Fetch aggregated reason counts from backend.
+  Future<void> _onLoadAllReasons(
+    LoadAllReasons event,
+    Emitter<PrayerState> emit,
+  ) async {
+    try {
+      final reasons = await getReasonSummaryUseCase();
+      emit(state.copyWith(reasonCounts: reasons));
+    } catch (e) {
+      debugPrint('[PrayerBloc] Failed to load reason summary: $e');
+    }
+  }
 
   // ── HydratedBloc overrides ──
 

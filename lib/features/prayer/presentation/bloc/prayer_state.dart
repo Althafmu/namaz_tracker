@@ -19,7 +19,17 @@ class PrayerState extends Equatable {
   // Historical log: date string ('2026-03-18') -> list of individual prayers
   final Map<String, List<Prayer>> historicalLog;
 
-  const PrayerState({
+  // Pre-aggregated reason counts from backend (all-time)
+  final Map<String, int> reasonCounts;
+
+  // Calendar navigation state
+  final int calendarYear;
+  final int calendarMonth;
+
+  // Track which months have been fetched from backend (to avoid re-fetching)  
+  final Set<String> fetchedMonths;
+
+  PrayerState({
     this.prayers = const [],
     this.streak = const Streak(),
     this.isLoading = false,
@@ -28,7 +38,12 @@ class PrayerState extends Equatable {
     this.cachedLat,
     this.cachedLng,
     this.historicalLog = const {},
-  });
+    this.reasonCounts = const {},
+    int? calendarYear,
+    int? calendarMonth,
+    this.fetchedMonths = const {},
+  })  : calendarYear = calendarYear ?? DateTime.now().year,
+        calendarMonth = calendarMonth ?? DateTime.now().month;
 
   PrayerState copyWith({
     List<Prayer>? prayers,
@@ -39,6 +54,10 @@ class PrayerState extends Equatable {
     double? cachedLat,
     double? cachedLng,
     Map<String, List<Prayer>>? historicalLog,
+    Map<String, int>? reasonCounts,
+    int? calendarYear,
+    int? calendarMonth,
+    Set<String>? fetchedMonths,
   }) {
     return PrayerState(
       prayers: prayers ?? this.prayers,
@@ -49,6 +68,10 @@ class PrayerState extends Equatable {
       cachedLat: cachedLat ?? this.cachedLat,
       cachedLng: cachedLng ?? this.cachedLng,
       historicalLog: historicalLog ?? this.historicalLog,
+      reasonCounts: reasonCounts ?? this.reasonCounts,
+      calendarYear: calendarYear ?? this.calendarYear,
+      calendarMonth: calendarMonth ?? this.calendarMonth,
+      fetchedMonths: fetchedMonths ?? this.fetchedMonths,
     );
   }
 
@@ -104,6 +127,10 @@ class PrayerState extends Equatable {
       'cachedLat': cachedLat,
       'cachedLng': cachedLng,
       'historicalLog': historicalLog.map((k, v) => MapEntry(k, v.map((p) => p.toJson()).toList())),
+      'reasonCounts': reasonCounts,
+      'calendarYear': calendarYear,
+      'calendarMonth': calendarMonth,
+      'fetchedMonths': fetchedMonths.toList(),
     };
   }
 
@@ -120,6 +147,13 @@ class PrayerState extends Equatable {
       cachedLat: json['cachedLat'] as double?,
       cachedLng: json['cachedLng'] as double?,
       historicalLog: _parseHistoricalLog(json['historicalLog'], json['weeklyHistory']),
+      reasonCounts: _parseReasonCounts(json['reasonCounts']),
+      calendarYear: json['calendarYear'] as int?,
+      calendarMonth: json['calendarMonth'] as int?,
+      fetchedMonths: (json['fetchedMonths'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toSet() ??
+          {},
     );
   }
 
@@ -133,6 +167,10 @@ class PrayerState extends Equatable {
         cachedLat,
         cachedLng,
         historicalLog,
+        reasonCounts,
+        calendarYear,
+        calendarMonth,
+        fetchedMonths,
       ];
 }
 
@@ -164,4 +202,11 @@ Map<String, List<Prayer>> _parseHistoricalLog(dynamic historicalJson, dynamic le
   }
   
   return log;
+}
+
+Map<String, int> _parseReasonCounts(dynamic json) {
+  if (json == null || json is! Map) return {};
+  return Map<String, int>.from(
+    json.map((key, value) => MapEntry(key as String, (value as num).toInt())),
+  );
 }

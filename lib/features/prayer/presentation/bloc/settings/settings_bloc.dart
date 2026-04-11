@@ -16,6 +16,7 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     on<UpdateGlobalNotificationSettings>(_onUpdateGlobalNotificationSettings);
     on<RequestNotificationPermissions>(_onRequestNotificationPermissions);
     on<UpdateManualOffsets>(_onUpdateManualOffsets);
+    on<UpdateMissedReasons>(_onUpdateMissedReasons);
   }
 
   void _onUpdateCalculationSettings(
@@ -73,6 +74,13 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     emit(state.copyWith(manualOffsets: event.manualOffsets));
+  }
+
+  void _onUpdateMissedReasons(
+    UpdateMissedReasons event,
+    Emitter<SettingsState> emit,
+  ) {
+    emit(state.copyWith(missedReasons: event.missedReasons));
   }
 
   @override

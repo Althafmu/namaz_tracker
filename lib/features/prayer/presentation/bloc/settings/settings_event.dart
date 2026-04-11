@@ -61,3 +61,14 @@ class UpdateManualOffsets extends SettingsEvent {
 }
 
 class RequestNotificationPermissions extends SettingsEvent {}
+
+class UpdateMissedReasons extends SettingsEvent {
+  final List<String> missedReasons;
+
+  const UpdateMissedReasons({
+    required this.missedReasons,
+  });
+
+  @override
+  List<Object?> get props => [missedReasons];
+}

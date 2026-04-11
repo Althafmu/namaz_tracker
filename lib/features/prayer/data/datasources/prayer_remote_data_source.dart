@@ -18,12 +18,16 @@ class PrayerRemoteDataSource {
     required bool completed,
     bool inJamaat = false,
     String location = 'home',
+    String? status,
+    String? reason,
   }) async {
     final response = await dio.post('/api/prayers/log/', data: {
       'prayer': prayerName.toLowerCase(),
       'completed': completed,
       'in_jamaat': inJamaat,
       'location': location,
+      if (status != null) 'status': status,
+      if (reason != null) 'reason': reason,
     });
     return response.data as Map<String, dynamic>;
   }
@@ -40,5 +44,25 @@ class PrayerRemoteDataSource {
       'days': days,
     });
     return response.data as List<dynamic>;
+  }
+
+  /// GET /api/prayers/history/detailed/?year=2026&month=4
+  /// Returns full DailyPrayerLog data for every day in the requested month.
+  Future<List<dynamic>> getDetailedMonthHistory({
+    required int year,
+    required int month,
+  }) async {
+    final response = await dio.get('/api/prayers/history/detailed/', queryParameters: {
+      'year': year,
+      'month': month,
+    });
+    return response.data as List<dynamic>;
+  }
+
+  /// GET /api/prayers/reasons/
+  /// Returns pre-aggregated reason counts: { "reasons": { "Work": 5, ... } }
+  Future<Map<String, dynamic>> getReasonSummary() async {
+    final response = await dio.get('/api/prayers/reasons/');
+    return response.data as Map<String, dynamic>;
   }
 }

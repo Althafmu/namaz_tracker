@@ -20,6 +20,7 @@ import '../bloc/prayer_event.dart';
 import '../bloc/prayer_state.dart';
 import 'settings/notifications_settings_page.dart';
 import 'settings/calculation_settings_page.dart';
+import 'settings/reasons_settings_page.dart';
 
 /// Profile Page — matches profile.html Stitch mockup.
 class ProfilePage extends StatelessWidget {
@@ -532,7 +533,14 @@ class ProfilePage extends StatelessWidget {
                         icon: Icons.edit_note,
                         iconColor: AppColors.textDark,
                         iconBg: AppColors.backgroundLight,
-                        onTap: () => _showPlaceholderSheet(context, 'Edit Reasons'),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ReasonsSettingsPage(),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
                       NeoSettingsTile(

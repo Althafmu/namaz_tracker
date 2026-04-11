@@ -8,6 +8,8 @@ import '../../../../core/widgets/neo_card.dart';
 import '../../domain/entities/prayer.dart';
 import '../bloc/prayer_bloc.dart';
 import '../bloc/prayer_event.dart';
+import '../bloc/settings/settings_bloc.dart';
+import '../bloc/settings/settings_state.dart';
 
 /// Prayer Logger Bottom Sheet — matches prayer_logger.html Stitch mockup.
 class PrayerLoggerSheet extends StatefulWidget {
@@ -173,37 +175,39 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                     style: AppTextStyles.sectionHeader,
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      'Work', 'Travel', 'Sleep', 'Family', 'Other'
-                    ].map((reason) {
-                      final isSelected = _selectedReason == reason;
-                      return GestureDetector(
-                        onTap: () => setState(() {
-                          _selectedReason = isSelected ? null : reason;
-                        }),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppColors.textDark : AppColors.surface,
-                            borderRadius: BorderRadius.circular(9999),
-                            border: Border.all(color: AppColors.border, width: 2),
-                            boxShadow: isSelected ? [] : const [
-                              BoxShadow(color: AppColors.border, offset: Offset(2, 2)),
-                            ],
-                          ),
-                          child: Text(
-                            reason,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: isSelected ? Colors.white : AppColors.textDark,
-                              fontWeight: FontWeight.bold,
+                  BlocBuilder<SettingsBloc, SettingsState>(
+                    builder: (context, settingsState) {
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: settingsState.missedReasons.map((reason) {
+                          final isSelected = _selectedReason == reason;
+                          return GestureDetector(
+                            onTap: () => setState(() {
+                              _selectedReason = isSelected ? null : reason;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppColors.textDark : AppColors.surface,
+                                borderRadius: BorderRadius.circular(9999),
+                                border: Border.all(color: AppColors.border, width: 2),
+                                boxShadow: isSelected ? [] : const [
+                                  BoxShadow(color: AppColors.border, offset: Offset(2, 2)),
+                                ],
+                              ),
+                              child: Text(
+                                reason,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: isSelected ? Colors.white : AppColors.textDark,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        }).toList(),
                       );
-                    }).toList(),
+                    },
                   ),
                 ],
               ],

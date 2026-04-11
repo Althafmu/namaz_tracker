@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/neo_card.dart';
 import '../bloc/prayer_bloc.dart';
+import '../bloc/prayer_event.dart';
 import '../bloc/prayer_state.dart';
 
 import '../../domain/entities/prayer.dart';
@@ -129,7 +130,12 @@ class ProgressPage extends StatelessWidget {
                 // ── Monthly Calendar Heatmap ──
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: _MonthlyCalendar(historicalLog: state.historicalLog),
+                  child: _MonthlyCalendar(
+                    historicalLog: state.historicalLog,
+                    year: state.calendarYear,
+                    month: state.calendarMonth,
+                    bloc: context.read<PrayerBloc>(),
+                  ),
                 ),
 
                 const SizedBox(height: 24),
@@ -137,7 +143,7 @@ class ProgressPage extends StatelessWidget {
                 // ── Top Reasons ──
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: _TopReasons(historicalLog: state.historicalLog),
+                  child: _TopReasons(reasonCounts: state.reasonCounts),
                 ),
 
                 const SizedBox(height: 32),
@@ -543,15 +549,50 @@ class _BadgeTile extends StatelessWidget {
 
 class _MonthlyCalendar extends StatelessWidget {
   final Map<String, List<Prayer>> historicalLog;
+  final int year;
+  final int month;
+  final PrayerBloc bloc;
 
-  const _MonthlyCalendar({required this.historicalLog});
+  const _MonthlyCalendar({
+    required this.historicalLog,
+    required this.year,
+    required this.month,
+    required this.bloc,
+  });
+
+  void _goToPreviousMonth() {
+    int newMonth = month - 1;
+    int newYear = year;
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear -= 1;
+    }
+    bloc.add(LoadMonthHistory(year: newYear, month: newMonth));
+  }
+
+  void _goToNextMonth() {
+    final now = DateTime.now();
+    int newMonth = month + 1;
+    int newYear = year;
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear += 1;
+    }
+    // Don't allow navigating past the current month
+    if (newYear > now.year || (newYear == now.year && newMonth > now.month)) {
+      return;
+    }
+    bloc.add(LoadMonthHistory(year: newYear, month: newMonth));
+  }
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final firstDayOfMonth = DateTime(now.year, now.month, 1);
-    final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
+    final firstDayOfMonth = DateTime(year, month, 1);
+    final daysInMonth = DateUtils.getDaysInMonth(year, month);
     final startWeekday = firstDayOfMonth.weekday; // 1=Monday, 7=Sunday
+    final now = DateTime.now();
+    final isCurrentMonth = year == now.year && month == now.month;
+    final isFutureBlocked = isCurrentMonth; // Can't go forward past current month
 
     // Calculate total grid items (padding before 1st day + days in month)
     final totalGridItems = (startWeekday - 1) + daysInMonth;
@@ -566,34 +607,42 @@ class _MonthlyCalendar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${_getMonthName(now.month)} ${now.year}',
+                '${_getMonthName(month)} $year',
                 style: AppTextStyles.headlineMedium,
               ),
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentFocus.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.arrow_back_ios,
-                      size: 16,
-                      color: AppColors.textDark.withOpacity(0.3),
+                  GestureDetector(
+                    onTap: _goToPreviousMonth,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentFocus.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios,
+                        size: 16,
+                        color: AppColors.textDark,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentFocus.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: AppColors.textDark.withValues(alpha: 0.3),
+                  GestureDetector(
+                    onTap: isFutureBlocked ? null : _goToNextMonth,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentFocus.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: isFutureBlocked
+                            ? AppColors.textDark.withValues(alpha: 0.3)
+                            : AppColors.textDark,
+                      ),
                     ),
                   ),
                 ],
@@ -670,7 +719,7 @@ class _MonthlyCalendar extends StatelessWidget {
                 }
 
                 final dayIndex = index - (startWeekday - 1) + 1;
-                final date = DateTime(now.year, now.month, dayIndex);
+                final date = DateTime(year, month, dayIndex);
                 final m = date.month.toString().padLeft(2, '0');
                 final d = date.day.toString().padLeft(2, '0');
                 final dateString = '${date.year}-$m-$d';
@@ -735,24 +784,12 @@ class _MonthlyCalendar extends StatelessWidget {
 }
 
 class _TopReasons extends StatelessWidget {
-  final Map<String, List<Prayer>> historicalLog;
+  final Map<String, int> reasonCounts;
 
-  const _TopReasons({required this.historicalLog});
+  const _TopReasons({required this.reasonCounts});
 
   @override
   Widget build(BuildContext context) {
-    // Determine top reasons
-    final Map<String, int> reasonCounts = {};
-    for (var dateLog in historicalLog.values) {
-      for (var prayer in dateLog) {
-        if (prayer.isCompleted &&
-            (prayer.status == 'late' || prayer.status == 'missed')) {
-          final reason = prayer.reason ?? 'Unknown';
-          reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
-        }
-      }
-    }
-
     final sortedReasons = reasonCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final topReasonsList = sortedReasons.take(3).toList();
