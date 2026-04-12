@@ -65,7 +65,8 @@ class SettingsState extends Equatable {
       calculationMethod: calculationMethod ?? this.calculationMethod,
       useHanafi: useHanafi ?? this.useHanafi,
       alarmSound: alarmSound ?? this.alarmSound,
-      notificationsPermitted: notificationsPermitted ?? this.notificationsPermitted,
+      notificationsPermitted:
+          notificationsPermitted ?? this.notificationsPermitted,
       prayerConfigs: prayerConfigs ?? this.prayerConfigs,
       manualOffsets: manualOffsets ?? this.manualOffsets,
       methodAutoDetected: methodAutoDetected ?? this.methodAutoDetected,
@@ -79,7 +80,9 @@ class SettingsState extends Equatable {
       'useHanafi': useHanafi,
       'alarmSound': alarmSound,
       'notificationsPermitted': notificationsPermitted,
-      'prayerConfigs': prayerConfigs.map((key, value) => MapEntry(key, value.toJson())),
+      'prayerConfigs': prayerConfigs.map(
+        (key, value) => MapEntry(key, value.toJson()),
+      ),
       'manualOffsets': manualOffsets,
       'methodAutoDetected': methodAutoDetected,
       'missedReasons': missedReasons,
@@ -91,7 +94,9 @@ class SettingsState extends Equatable {
     if (json['prayerConfigs'] != null) {
       final configsJson = json['prayerConfigs'] as Map<String, dynamic>;
       configsJson.forEach((key, value) {
-        parsedConfigs[key] = PrayerNotificationConfig.fromJson(value as Map<String, dynamic>);
+        parsedConfigs[key] = PrayerNotificationConfig.fromJson(
+          value as Map<String, dynamic>,
+        );
       });
       for (var p in ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']) {
         if (!parsedConfigs.containsKey(p)) {
@@ -147,26 +152,30 @@ class SettingsState extends Equatable {
       prayerConfigs: parsedConfigs,
       manualOffsets: parsedOffsets,
       methodAutoDetected: json['methodAutoDetected'] as bool? ?? false,
-      missedReasons: (json['missedReasons'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [
-        'Forgot',
-        'Sleeping',
-        'Busy with work',
-        'Travelling',
-        'Health reasons',
-        'Other',
-      ],
+      missedReasons:
+          (json['missedReasons'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [
+            'Forgot',
+            'Sleeping',
+            'Busy with work',
+            'Travelling',
+            'Health reasons',
+            'Other',
+          ],
     );
   }
 
   @override
   List<Object?> get props => [
-        calculationMethod,
-        useHanafi,
-        alarmSound,
-        notificationsPermitted,
-        prayerConfigs,
-        manualOffsets,
-        methodAutoDetected,
-        missedReasons,
-      ];
+    calculationMethod,
+    useHanafi,
+    alarmSound,
+    notificationsPermitted,
+    prayerConfigs,
+    manualOffsets,
+    methodAutoDetected,
+    missedReasons,
+  ];
 }

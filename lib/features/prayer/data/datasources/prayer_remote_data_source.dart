@@ -20,6 +20,7 @@ class PrayerRemoteDataSource {
     String location = 'home',
     String? status,
     String? reason,
+    String? dateKey,
   }) async {
     final response = await dio.post('/api/prayers/log/', data: {
       'prayer': prayerName.toLowerCase(),
@@ -28,9 +29,11 @@ class PrayerRemoteDataSource {
       'location': location,
       if (status != null) 'status': status,
       if (reason != null) 'reason': reason,
+      if (dateKey != null) 'date': dateKey,
     });
     return response.data as Map<String, dynamic>;
   }
+
 
   /// GET /api/streak/
   Future<Map<String, dynamic>> getStreak() async {

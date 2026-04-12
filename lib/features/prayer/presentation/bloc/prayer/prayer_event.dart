@@ -32,7 +32,14 @@ class LogPrayer extends PrayerEvent {
   });
 
   @override
-  List<Object?> get props => [prayerName, completed, inJamaat, location, status, reason];
+  List<Object?> get props => [
+    prayerName,
+    completed,
+    inJamaat,
+    location,
+    status,
+    reason,
+  ];
 }
 
 /// Toggle jama'at for the prayer logger.
@@ -79,4 +86,14 @@ class LoadMonthHistory extends PrayerEvent {
 /// Load aggregated reason counts from backend (all-time).
 class LoadAllReasons extends PrayerEvent {
   const LoadAllReasons();
+}
+
+/// Select a specific date to view/edit.
+class SelectDate extends PrayerEvent {
+  final String date; // format: 'yyyy-MM-dd'
+
+  const SelectDate(this.date);
+
+  @override
+  List<Object?> get props => [date];
 }

@@ -3,22 +3,23 @@ import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 
-import '../../../../core/services/notification_service.dart';
-import '../../../../core/services/offline_sync_service.dart';
-import '../../../../core/services/prayer_scheduler_service.dart';
-import '../../../../core/services/prayer_time_service.dart';
-import '../../domain/entities/prayer.dart';
-import '../../domain/usecases/log_prayer_usecase.dart';
-import '../../domain/usecases/get_daily_status_usecase.dart';
-import '../../domain/usecases/get_streak_usecase.dart';
-import '../../domain/usecases/get_weekly_history_usecase.dart';
-import '../../domain/usecases/get_detailed_month_history_usecase.dart';
-import '../../domain/usecases/get_reason_summary_usecase.dart';
+import '../../../../../core/services/notification_service.dart';
+import '../../../../../core/services/offline_sync_service.dart';
+import '../../../../../core/services/prayer_scheduler_service.dart';
+import '../../../../../core/services/prayer_time_service.dart';
+import '../../../domain/entities/prayer.dart';
+import '../../../domain/usecases/log_prayer_usecase.dart';
+import '../../../domain/usecases/get_daily_status_usecase.dart';
+import '../../../domain/usecases/get_streak_usecase.dart';
+import '../../../domain/usecases/get_weekly_history_usecase.dart';
+import '../../../domain/usecases/get_detailed_month_history_usecase.dart';
+import '../../../domain/usecases/get_reason_summary_usecase.dart';
 import 'prayer_event.dart';
 import 'prayer_state.dart';
-import 'settings/settings_bloc.dart';
-import 'settings/settings_event.dart';
-import 'settings/settings_state.dart';
+import '../settings/settings_bloc.dart';
+import '../settings/settings_event.dart';
+import '../settings/settings_state.dart';
+
 /// PrayerBloc — orchestrates domain use cases and delegates GPS/notification
 /// work to PrayerSchedulerService.
 class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
@@ -55,6 +56,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     on<RefreshPrayersAndAlarms>(_onRefreshPrayersAndAlarms);
     on<LoadMonthHistory>(_onLoadMonthHistory);
     on<LoadAllReasons>(_onLoadAllReasons);
+    on<SelectDate>(_onSelectDate);
 
     _settingsSubscription = settingsBloc.stream.listen((_) {
       add(const RefreshPrayersAndAlarms());
@@ -72,10 +74,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     Emitter<PrayerState> emit,
   ) async {
     if (state.prayers.isEmpty) {
-      emit(state.copyWith(
-        prayers: Prayer.defaultPrayers(),
-        isLoading: true,
-      ));
+      emit(state.copyWith(prayers: Prayer.defaultPrayers(), isLoading: true));
     }
 
     // Seed cached coordinates from persisted state so they're available
@@ -88,7 +87,9 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     // Check current permission status (non-prompting) so SettingsState is correct.
     final hasPerms = await notificationService.checkPermissions();
     if (hasPerms != settingsBloc.state.notificationsPermitted) {
-      settingsBloc.add(UpdateGlobalNotificationSettings(notificationsPermitted: hasPerms));
+      settingsBloc.add(
+        UpdateGlobalNotificationSettings(notificationsPermitted: hasPerms),
+      );
     }
 
     // 1. Single GPS call → calculate times + schedule notifications
@@ -104,26 +105,35 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
 
       // Auto-detect regional calculation method if not detected before
       if (!settingsBloc.state.methodAutoDetected) {
-        final isOldDefault = settingsBloc.state.calculationMethod == 'ISNA' ||
+        final isOldDefault =
+            settingsBloc.state.calculationMethod == 'ISNA' ||
             settingsBloc.state.calculationMethod == 'MWL';
         if (isOldDefault && lat != null && lng != null) {
-          final detectedMethod = PrayerTimeService.methodFromCoordinates(lat, lng);
-          settingsBloc.add(UpdateCalculationSettings(
-            calculationMethod: detectedMethod,
-            methodAutoDetected: true,
-          ));
+          final detectedMethod = PrayerTimeService.methodFromCoordinates(
+            lat,
+            lng,
+          );
+          settingsBloc.add(
+            UpdateCalculationSettings(
+              calculationMethod: detectedMethod,
+              methodAutoDetected: true,
+            ),
+          );
           debugPrint(
-              '[PrayerBloc] Auto-detected method: $detectedMethod '
-              'for ($lat, $lng)');
+            '[PrayerBloc] Auto-detected method: $detectedMethod '
+            'for ($lat, $lng)',
+          );
         }
       }
 
-      emit(state.copyWith(
-        prayers: result.prayers,
-        cachedLat: lat,
-        cachedLng: lng,
-        isLoading: false,
-      ));
+      emit(
+        state.copyWith(
+          prayers: result.prayers,
+          cachedLat: lat,
+          cachedLng: lng,
+          isLoading: false,
+        ),
+      );
     } else {
       emit(state.copyWith(isLoading: false));
     }
@@ -154,29 +164,31 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       final updatedLog = Map<String, List<Prayer>>.from(state.historicalLog);
       updatedLog[PrayerState.todayKey] = merged;
 
-      emit(state.copyWith(
-        prayers: merged,
-        streak: streak,
-        historicalLog: updatedLog,
-      ));
+      emit(
+        state.copyWith(
+          prayers: merged,
+          streak: streak,
+          historicalLog: updatedLog,
+        ),
+      );
     } catch (e) {
       debugPrint('[PrayerBloc] Server sync failed (likely offline): $e');
     }
 
-    // 3. Fetch detailed history for the current calendar month
-    final now = DateTime.now();
-    add(LoadMonthHistory(year: now.year, month: now.month));
+    // 3. Fetch detailed history for the current effective calendar month
+    final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
+    add(LoadMonthHistory(year: effectiveNow.year, month: effectiveNow.month));
 
     // 4. Fetch aggregated reason counts
     add(const LoadAllReasons());
   }
 
-  Future<void> _onLogPrayer(
-    LogPrayer event,
-    Emitter<PrayerState> emit,
-  ) async {
+  Future<void> _onLogPrayer(LogPrayer event, Emitter<PrayerState> emit) async {
+    final effectiveDateKey = state.selectedDateStr ?? PrayerState.todayKey;
+    final isToday = effectiveDateKey == PrayerState.todayKey;
+
     // 1. Optimistic local update
-    final updatedPrayers = state.prayers.map((prayer) {
+    final updatedPrayers = state.displayPrayers.map((prayer) {
       if (prayer.name.toLowerCase() == event.prayerName.toLowerCase()) {
         return prayer.copyWith(
           isCompleted: event.completed,
@@ -189,33 +201,38 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       return prayer;
     }).toList();
 
-    // 2. Optimistic streak update
-    final completedCount =
-        updatedPrayers.where((p) => p.isCompleted).length;
+    // 2. Optimistic streak update (only if modifying today's prayers)
     var updatedStreak = state.streak;
-    if (completedCount == 5) {
-      updatedStreak = state.streak.copyWith(
-        currentStreak: state.streak.currentStreak + 1,
-      );
+    if (isToday) {
+      final completedCount = updatedPrayers.where((p) => p.isCompleted).length;
+      if (completedCount == 5) {
+        updatedStreak = state.streak.copyWith(
+          currentStreak: state.streak.currentStreak + 1,
+        );
+      }
     }
 
     // 3. Update historical log with full details
     final updatedLog = Map<String, List<Prayer>>.from(state.historicalLog);
-    updatedLog[PrayerState.todayKey] = updatedPrayers;
+    updatedLog[effectiveDateKey] = updatedPrayers;
 
     // 4. Optimistic update of reasonCounts for instant UI feedback
     var updatedReasonCounts = Map<String, int>.from(state.reasonCounts);
-    if ((event.status == 'late' || event.status == 'missed') && event.reason != null) {
-      updatedReasonCounts[event.reason!] = (updatedReasonCounts[event.reason!] ?? 0) + 1;
+    if ((event.status == 'late' || event.status == 'missed') &&
+        event.reason != null) {
+      updatedReasonCounts[event.reason!] =
+          (updatedReasonCounts[event.reason!] ?? 0) + 1;
     }
 
-    emit(state.copyWith(
-      prayers: updatedPrayers,
-      streak: updatedStreak,
-      historicalLog: updatedLog,
-      reasonCounts: updatedReasonCounts,
-      syncStatus: SyncStatus.syncing,
-    ));
+    emit(
+      state.copyWith(
+        prayers: isToday ? updatedPrayers : state.prayers,
+        streak: updatedStreak,
+        historicalLog: updatedLog,
+        reasonCounts: updatedReasonCounts,
+        syncStatus: SyncStatus.syncing,
+      ),
+    );
 
     // 5. Sync with backend
     try {
@@ -226,6 +243,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         location: event.location,
         status: event.status,
         reason: event.reason,
+        dateKey: isToday ? null : effectiveDateKey,
       );
       emit(state.copyWith(syncStatus: SyncStatus.synced));
     } catch (e) {
@@ -236,23 +254,34 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         location: event.location,
         status: event.status,
         reason: event.reason,
+        dateKey: isToday ? null : effectiveDateKey,
       );
       emit(state.copyWith(syncStatus: SyncStatus.error));
     }
   }
 
-  void _onToggleJamaat(
-    ToggleJamaat event,
-    Emitter<PrayerState> emit,
-  ) {
-    final updatedPrayers = state.prayers.map((prayer) {
+  void _onSelectDate(SelectDate event, Emitter<PrayerState> emit) {
+    emit(state.copyWith(selectedDateStr: event.date));
+  }
+
+  void _onToggleJamaat(ToggleJamaat event, Emitter<PrayerState> emit) {
+    final effectiveDateKey = state.selectedDateStr ?? PrayerState.todayKey;
+    final isToday = effectiveDateKey == PrayerState.todayKey;
+
+    final updatedPrayers = state.displayPrayers.map((prayer) {
       if (prayer.name.toLowerCase() == event.prayerName.toLowerCase()) {
         return prayer.copyWith(inJamaat: !prayer.inJamaat);
       }
       return prayer;
     }).toList();
 
-    emit(state.copyWith(prayers: updatedPrayers));
+    final updatedLog = Map<String, List<Prayer>>.from(state.historicalLog);
+    updatedLog[effectiveDateKey] = updatedPrayers;
+
+    emit(state.copyWith(
+      prayers: isToday ? updatedPrayers : state.prayers,
+      historicalLog: updatedLog,
+    ));
   }
 
   void _onSetPrayerLocation(
@@ -269,10 +298,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     emit(state.copyWith(syncStatus: SyncStatus.syncing));
     try {
       final prayers = await getDailyStatusUseCase();
-      emit(state.copyWith(
-        prayers: prayers,
-        syncStatus: SyncStatus.synced,
-      ));
+      emit(state.copyWith(prayers: prayers, syncStatus: SyncStatus.synced));
     } catch (e) {
       emit(state.copyWith(syncStatus: SyncStatus.error));
     }
@@ -282,20 +308,57 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     RefreshPrayersAndAlarms event,
     Emitter<PrayerState> emit,
   ) async {
-    final result = await prayerSchedulerService.refreshPrayersAndAlarms(
+    final settings = settingsBloc.state;
+
+    // Always ensure the scheduler has coordinates from persisted state.
+    // This covers hot-restart and edge cases where the service cache is empty.
+    if (prayerSchedulerService.cachedCoordinates == null &&
+        state.cachedLat != null &&
+        state.cachedLng != null) {
+      prayerSchedulerService.seedCachedCoordinates(
+        state.cachedLat,
+        state.cachedLng,
+      );
+    }
+
+    // If still no coordinates, do a full GPS refresh instead
+    if (prayerSchedulerService.cachedCoordinates == null) {
+      debugPrint(
+        '[PrayerBloc] No cached coords — falling back to full GPS refresh',
+      );
+      final result = await prayerSchedulerService.refreshPrayersAndAlarms(
+        currentPrayers: state.prayers,
+        settingsState: settings,
+        cachedLat: state.cachedLat,
+        cachedLng: state.cachedLng,
+      );
+      if (result != null) {
+        emit(
+          state.copyWith(
+            prayers: result.prayers,
+            cachedLat: result.lat,
+            cachedLng: result.lng,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Fast path: use cached coordinates for instant recalculation
+    final updatedPrayers = prayerSchedulerService.recalculateWithCachedCoords(
       currentPrayers: state.prayers,
-      settingsState: settingsBloc.state,
-      cachedLat: state.cachedLat,
-      cachedLng: state.cachedLng,
+      methodName: settings.calculationMethod,
+      useHanafi: settings.useHanafi,
+      manualOffsets: settings.manualOffsets,
     );
 
-    if (result != null) {
-      emit(state.copyWith(
-        prayers: result.prayers,
-        cachedLat: result.lat,
-        cachedLng: result.lng,
-      ));
-    }
+    debugPrint(
+      '[PrayerBloc] Recalculated prayers with offsets: ${settings.manualOffsets}',
+    );
+    emit(state.copyWith(prayers: updatedPrayers));
+
+    // Reschedule notifications in the background
+    await prayerSchedulerService.scheduleNotifications(settings);
   }
 
   /// Fetch detailed prayer history for a specific month.
@@ -309,10 +372,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     final isCurrentMonth = event.year == now.year && event.month == now.month;
 
     // Update calendar navigation immediately
-    emit(state.copyWith(
-      calendarYear: event.year,
-      calendarMonth: event.month,
-    ));
+    emit(state.copyWith(calendarYear: event.year, calendarMonth: event.month));
 
     // Skip if already fetched (and not current month — current month always refreshes)
     if (state.fetchedMonths.contains(monthKey) && !isCurrentMonth) {
@@ -336,12 +396,15 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         updatedLog[dateStr] = prayers;
       });
 
-      final updatedFetched = Set<String>.from(state.fetchedMonths)..add(monthKey);
+      final updatedFetched = Set<String>.from(state.fetchedMonths)
+        ..add(monthKey);
 
-      emit(state.copyWith(
-        historicalLog: updatedLog,
-        fetchedMonths: updatedFetched,
-      ));
+      emit(
+        state.copyWith(
+          historicalLog: updatedLog,
+          fetchedMonths: updatedFetched,
+        ),
+      );
     } catch (e) {
       debugPrint('[PrayerBloc] Failed to load month history for $monthKey: $e');
     }

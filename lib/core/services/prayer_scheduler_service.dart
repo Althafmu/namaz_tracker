@@ -15,7 +15,7 @@ class PrayerSchedulerService {
   Coordinates? _cachedCoordinates;
 
   PrayerSchedulerService({required NotificationService notificationService})
-      : _notificationService = notificationService;
+    : _notificationService = notificationService;
 
   /// Fetch GPS coordinates once and cache them. Returns null if unavailable.
   Future<Coordinates?> fetchAndCacheCoordinates({
@@ -69,7 +69,9 @@ class PrayerSchedulerService {
   }) {
     final coords = coordinatesOverride ?? _cachedCoordinates;
     if (coords == null) {
-      debugPrint('[PrayerScheduler] No coordinates available — keeping existing times');
+      debugPrint(
+        '[PrayerScheduler] No coordinates available — keeping existing times',
+      );
       return currentPrayers;
     }
 
@@ -81,8 +83,15 @@ class PrayerSchedulerService {
     );
 
     return currentPrayers.map((prayer) {
-      final newRange = timeRanges[prayer.name];
-      return newRange != null ? prayer.copyWith(timeRange: newRange) : prayer;
+      final details = timeRanges[prayer.name];
+      if (details != null) {
+        return prayer.copyWith(
+          timeRange: details.range,
+          baseTime: details.baseTime,
+          offset: details.offset,
+        );
+      }
+      return prayer;
     }).toList();
   }
 
@@ -91,12 +100,17 @@ class PrayerSchedulerService {
   Future<int> scheduleNotifications(SettingsState settings) async {
     final coords = _cachedCoordinates;
     if (coords == null) {
-      debugPrint('[PrayerScheduler] No coordinates — skipping notification scheduling');
+      debugPrint(
+        '[PrayerScheduler] No coordinates — skipping notification scheduling',
+      );
       return 0;
     }
 
-    if (!settings.notificationsPermitted && !_notificationService.permissionsGranted) {
-      debugPrint('[PrayerScheduler] Permissions not granted — skipping notification scheduling');
+    if (!settings.notificationsPermitted &&
+        !_notificationService.permissionsGranted) {
+      debugPrint(
+        '[PrayerScheduler] Permissions not granted — skipping notification scheduling',
+      );
       return 0;
     }
 
@@ -117,7 +131,8 @@ class PrayerSchedulerService {
 
   /// Single method for the bloc: fetch coords, calc times, schedule alarms.
   /// Returns (updatedPrayers, lat, lng) or null on total failure.
-  Future<({List<Prayer> prayers, double? lat, double? lng})?> refreshPrayersAndAlarms({
+  Future<({List<Prayer> prayers, double? lat, double? lng})?>
+  refreshPrayersAndAlarms({
     required List<Prayer> currentPrayers,
     required SettingsState settingsState,
     double? cachedLat,

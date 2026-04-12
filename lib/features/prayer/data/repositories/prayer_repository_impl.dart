@@ -32,6 +32,7 @@ class PrayerRepositoryImpl implements PrayerRepository {
     String location = 'home',
     String? status,
     String? reason,
+    String? dateKey,
   }) async {
     try {
       final data = await remoteDataSource.logPrayer(
@@ -41,6 +42,7 @@ class PrayerRepositoryImpl implements PrayerRepository {
         location: location,
         status: status,
         reason: reason,
+        dateKey: dateKey,
       );
       return PrayerModel.fromApiResponse(data);
     } catch (e) {

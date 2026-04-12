@@ -9,6 +9,8 @@ class Prayer extends Equatable {
   final String location;
   final String status;
   final String? reason;
+  final String? baseTime;
+  final int? offset;
 
   const Prayer({
     required this.name,
@@ -18,6 +20,8 @@ class Prayer extends Equatable {
     this.location = 'home',
     this.status = 'on_time',
     this.reason,
+    this.baseTime,
+    this.offset,
   });
 
   Prayer copyWith({
@@ -28,6 +32,8 @@ class Prayer extends Equatable {
     String? location,
     String? status,
     String? reason,
+    String? baseTime,
+    int? offset,
   }) {
     return Prayer(
       name: name ?? this.name,
@@ -37,6 +43,8 @@ class Prayer extends Equatable {
       location: location ?? this.location,
       status: status ?? this.status,
       reason: reason ?? this.reason,
+      baseTime: baseTime ?? this.baseTime,
+      offset: offset ?? this.offset,
     );
   }
 
@@ -60,6 +68,8 @@ class Prayer extends Equatable {
       'location': location,
       'status': status,
       'reason': reason,
+      'baseTime': baseTime,
+      'offset': offset,
     };
   }
 
@@ -72,9 +82,21 @@ class Prayer extends Equatable {
       location: json['location'] as String? ?? 'home',
       status: json['status'] as String? ?? 'on_time',
       reason: json['reason'] as String?,
+      baseTime: json['baseTime'] as String?,
+      offset: json['offset'] as int?,
     );
   }
 
   @override
-  List<Object?> get props => [name, timeRange, isCompleted, inJamaat, location, status, reason];
+  List<Object?> get props => [
+    name,
+    timeRange,
+    isCompleted,
+    inJamaat,
+    location,
+    status,
+    reason,
+    baseTime,
+    offset,
+  ];
 }

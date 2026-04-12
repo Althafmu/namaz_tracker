@@ -37,6 +37,7 @@ class OfflineSyncService {
     required String location,
     String? status,
     String? reason,
+    String? dateKey,
   }) async {
     await _queueRepository.enqueueAction(
       prayerName: prayerName,
@@ -45,6 +46,7 @@ class OfflineSyncService {
       location: location,
       status: status,
       reason: reason,
+      dateKey: dateKey,
     );
   }
 
@@ -67,6 +69,7 @@ class OfflineSyncService {
             location: action['location'] as String,
             status: action['status'] as String?,
             reason: action['reason'] as String?,
+            dateKey: action['dateKey'] as String?,
           );
           await _queueRepository.dequeueAction(entry.key);
         } catch (e) {

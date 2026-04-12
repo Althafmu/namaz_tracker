@@ -1,6 +1,6 @@
 {
-    "name": "namaz_tracker",
-    "short_name": "namaz_tracker",
+    "name": "Falah: Prayer Tracker",
+    "short_name": "Falah",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get_it/get_it.dart';
 
-import '../../features/prayer/presentation/pages/home_page.dart';
-import '../../features/prayer/presentation/pages/progress_page.dart';
-import '../../features/prayer/presentation/pages/profile_page.dart';
+import '../../features/prayer/presentation/pages/home/home_page.dart';
+import '../../features/prayer/presentation/pages/progress/progress_page.dart';
+import '../../features/prayer/presentation/pages/profile/settings_page.dart';
+import '../../features/prayer/presentation/pages/settings/notifications_settings_page.dart';
+import '../../features/prayer/presentation/pages/settings/calculation_settings_page.dart';
+import '../../features/prayer/presentation/pages/settings/reasons_settings_page.dart';
 
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/onboarding1_page.dart';
@@ -109,7 +112,25 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/profile',
           pageBuilder: (context, state) => const NoTransitionPage(
-            child: ProfilePage(),
+            child: SettingsPage(),
+          ),
+        ),
+        GoRoute(
+          path: '/settings/notifications',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: NotificationsSettingsPage(),
+          ),
+        ),
+        GoRoute(
+          path: '/settings/calculation',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: CalculationSettingsPage(),
+          ),
+        ),
+        GoRoute(
+          path: '/settings/reasons',
+          pageBuilder: (context, state) => const NoTransitionPage(
+            child: ReasonsSettingsPage(),
           ),
         ),
       ],
@@ -125,7 +146,7 @@ class _AppShell extends StatelessWidget {
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     if (location.startsWith('/progress')) return 1;
-    if (location.startsWith('/profile')) return 2;
+    if (location.startsWith('/profile') || location.startsWith('/settings')) return 2;
     return 0;
   }
 

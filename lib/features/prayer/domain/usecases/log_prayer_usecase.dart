@@ -14,6 +14,7 @@ class LogPrayerUseCase {
     String location = 'home',
     String? status,
     String? reason,
+    String? dateKey,
   }) {
     return repository.logPrayer(
       prayerName: prayerName,
@@ -22,6 +23,7 @@ class LogPrayerUseCase {
       location: location,
       status: status,
       reason: reason,
+      dateKey: dateKey,
     );
   }
 }

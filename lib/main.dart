@@ -9,8 +9,8 @@ import 'core/services/offline_sync_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/prayer/data/repositories/offline_queue_repository.dart';
-import 'features/prayer/presentation/bloc/prayer_bloc.dart';
-import 'features/prayer/presentation/bloc/prayer_event.dart';
+import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
+import 'features/prayer/presentation/bloc/prayer/prayer_event.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'injection_container.dart';
 
@@ -63,11 +63,11 @@ void main() async {
     debugPrint('NotificationService init failed: $e');
   }
 
-  runApp(const NamazTrackerApp());
+  runApp(const FalahApp());
 }
 
-class NamazTrackerApp extends StatelessWidget {
-  const NamazTrackerApp({super.key});
+class FalahApp extends StatelessWidget {
+  const FalahApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +78,7 @@ class NamazTrackerApp extends StatelessWidget {
         BlocProvider(create: (_) => sl<PrayerBloc>()..add(const LoadDailyStatus())),
       ],
       child: MaterialApp.router(
-        title: 'Namaz Tracker',
+        title: 'Falah: Prayer Tracker',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         routerConfig: appRouter,

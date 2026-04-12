@@ -175,27 +175,57 @@ class PrayerTimeService {
     return DateFormat('h:mm a').format(time.toLocal());
   }
 
-  /// Build prayer time range strings from calculated PrayerTimes.
-  /// Returns a map: { 'Fajr': '5:12 AM - 6:33 AM', ... }
-  static Map<String, String> getPrayerTimeRanges({
+  /// Build detailed prayer time records from calculated PrayerTimes.
+  static Map<String, ({String range, String baseTime, int offset})> getPrayerTimeRanges({
     required Coordinates coordinates,
     String methodName = 'ISNA',
     bool useHanafi = false,
     Map<String, int>? manualOffsets,
   }) {
-    final times = calculateTimes(
+    // 1. Calculate pure times (no offsets)
+    final baseTimes = calculateTimes(
+      coordinates: coordinates,
+      methodName: methodName,
+      useHanafi: useHanafi,
+      manualOffsets: null,
+    );
+
+    // 2. Calculate adjusted times
+    final adjustedTimes = calculateTimes(
       coordinates: coordinates,
       methodName: methodName,
       useHanafi: useHanafi,
       manualOffsets: manualOffsets,
     );
 
+    String range(DateTime start, DateTime end) => '${formatTime(start)} - ${formatTime(end)}';
+
     return {
-      'Fajr': '${formatTime(times.fajr)} - ${formatTime(times.sunrise)}',
-      'Dhuhr': '${formatTime(times.dhuhr)} - ${formatTime(times.asr)}',
-      'Asr': '${formatTime(times.asr)} - ${formatTime(times.maghrib)}',
-      'Maghrib': '${formatTime(times.maghrib)} - ${formatTime(times.isha)}',
-      'Isha': '${formatTime(times.isha)} - Midnight',
+      'Fajr': (
+        range: range(adjustedTimes.fajr, adjustedTimes.sunrise),
+        baseTime: formatTime(baseTimes.fajr),
+        offset: manualOffsets?['Fajr'] ?? 0,
+      ),
+      'Dhuhr': (
+        range: range(adjustedTimes.dhuhr, adjustedTimes.asr),
+        baseTime: formatTime(baseTimes.dhuhr),
+        offset: manualOffsets?['Dhuhr'] ?? 0,
+      ),
+      'Asr': (
+        range: range(adjustedTimes.asr, adjustedTimes.maghrib),
+        baseTime: formatTime(baseTimes.asr),
+        offset: manualOffsets?['Asr'] ?? 0,
+      ),
+      'Maghrib': (
+        range: range(adjustedTimes.maghrib, adjustedTimes.isha),
+        baseTime: formatTime(baseTimes.maghrib),
+        offset: manualOffsets?['Maghrib'] ?? 0,
+      ),
+      'Isha': (
+        range: '${formatTime(adjustedTimes.isha)} - Midnight',
+        baseTime: formatTime(baseTimes.isha),
+        offset: manualOffsets?['Isha'] ?? 0,
+      ),
     };
   }
 }

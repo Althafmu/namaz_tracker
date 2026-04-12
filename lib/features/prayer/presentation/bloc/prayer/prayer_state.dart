@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
-import '../../domain/entities/prayer.dart';
-import '../../domain/entities/streak.dart';
+import '../../../domain/entities/prayer.dart';
+import '../../../domain/entities/streak.dart';
 
 enum SyncStatus { idle, syncing, synced, error }
 
@@ -29,6 +29,9 @@ class PrayerState extends Equatable {
   // Track which months have been fetched from backend (to avoid re-fetching)  
   final Set<String> fetchedMonths;
 
+  // Selected date for viewing/editing past logs (matches DateFormat('yyyy-MM-dd'))
+  final String? selectedDateStr;
+
   PrayerState({
     this.prayers = const [],
     this.streak = const Streak(),
@@ -42,6 +45,7 @@ class PrayerState extends Equatable {
     int? calendarYear,
     int? calendarMonth,
     this.fetchedMonths = const {},
+    this.selectedDateStr,
   })  : calendarYear = calendarYear ?? DateTime.now().year,
         calendarMonth = calendarMonth ?? DateTime.now().month;
 
@@ -58,6 +62,7 @@ class PrayerState extends Equatable {
     int? calendarYear,
     int? calendarMonth,
     Set<String>? fetchedMonths,
+    String? selectedDateStr,
   }) {
     return PrayerState(
       prayers: prayers ?? this.prayers,
@@ -72,23 +77,37 @@ class PrayerState extends Equatable {
       calendarYear: calendarYear ?? this.calendarYear,
       calendarMonth: calendarMonth ?? this.calendarMonth,
       fetchedMonths: fetchedMonths ?? this.fetchedMonths,
+      selectedDateStr: selectedDateStr ?? this.selectedDateStr,
     );
   }
 
+  /// The prayers to display on the UI depending on selectedDateStr
+  List<Prayer> get displayPrayers {
+    final effectiveSelectedDate = selectedDateStr ?? todayKey;
+    if (effectiveSelectedDate == todayKey) {
+      return prayers;
+    }
+    return historicalLog[effectiveSelectedDate] ?? Prayer.defaultPrayers();
+  }
+
   /// Number of completed prayers today.
-  int get completedCount => prayers.where((p) => p.isCompleted).length;
+  int get completedCount => displayPrayers.where((p) => p.isCompleted).length;
 
   /// Whether all 5 prayers are done.
   bool get isAllComplete => completedCount == 5;
 
   /// Today's date key for weeklyHistory.
-  static String get todayKey => DateFormat('yyyy-MM-dd').format(DateTime.now());
+  /// Any time before 4:00 AM is considered part of the previous day.
+  static String get todayKey {
+    final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
+    return DateFormat('yyyy-MM-dd').format(effectiveNow);
+  }
 
   /// Get the last 7 days' completion percentages for the weekly chart.
   List<double> get weeklyPercentages {
-    final now = DateTime.now();
+    final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
     return List.generate(7, (i) {
-      final date = now.subtract(Duration(days: 6 - i));
+      final date = effectiveNow.subtract(Duration(days: 6 - i));
       final key = DateFormat('yyyy-MM-dd').format(date);
       final pastPrayers = historicalLog[key] ?? [];
       final completed = pastPrayers.where((p) => p.isCompleted).length;
@@ -98,10 +117,10 @@ class PrayerState extends Equatable {
 
   /// Total prayers completed in the last 7 days.
   int get weeklyPrayerCount {
-    final now = DateTime.now();
+    final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
     int total = 0;
     for (int i = 0; i < 7; i++) {
-      final date = now.subtract(Duration(days: i));
+      final date = effectiveNow.subtract(Duration(days: i));
       final key = DateFormat('yyyy-MM-dd').format(date);
       final pastPrayers = historicalLog[key] ?? [];
       total += pastPrayers.where((p) => p.isCompleted).length;
@@ -111,9 +130,9 @@ class PrayerState extends Equatable {
 
   /// Day labels for the last 7 days.
   List<String> get weeklyDayLabels {
-    final now = DateTime.now();
+    final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
     return List.generate(7, (i) {
-      final date = now.subtract(Duration(days: 6 - i));
+      final date = effectiveNow.subtract(Duration(days: 6 - i));
       return DateFormat('E').format(date).substring(0, 1);
     });
   }
@@ -131,6 +150,7 @@ class PrayerState extends Equatable {
       'calendarYear': calendarYear,
       'calendarMonth': calendarMonth,
       'fetchedMonths': fetchedMonths.toList(),
+      'selectedDateStr': selectedDateStr,
     };
   }
 
@@ -154,6 +174,7 @@ class PrayerState extends Equatable {
               ?.map((e) => e as String)
               .toSet() ??
           {},
+      selectedDateStr: json['selectedDateStr'] as String?,
     );
   }
 
@@ -171,6 +192,7 @@ class PrayerState extends Equatable {
         calendarYear,
         calendarMonth,
         fetchedMonths,
+        selectedDateStr,
       ];
 }
 

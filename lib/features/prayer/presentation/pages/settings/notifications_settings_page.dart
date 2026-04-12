@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart' as fp;
 
@@ -27,7 +28,7 @@ class NotificationsSettingsPage extends StatelessWidget {
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => context.go('/profile'),
             ),
             title: Text('Notifications', style: AppTextStyles.headlineMedium),
             centerTitle: true,
@@ -346,13 +347,15 @@ class _ReminderSettingsUIState extends State<_ReminderSettingsUI> {
                   if (_minutes < 120) setState(() => _minutes++);
                 },
               ),
-              const Spacer(),
-              NeoButton(
-                text: _isBefore ? 'Before' : 'After',
-                isFullWidth: false,
-                height: 40,
-                color: _isBefore ? AppColors.jamaat : AppColors.primary,
-                onPressed: () => setState(() => _isBefore = !_isBefore),
+              const SizedBox(width: 8),
+              Expanded(
+                child: NeoButton(
+                  text: _isBefore ? 'Before' : 'After',
+                  isFullWidth: true,
+                  height: 40,
+                  color: _isBefore ? AppColors.jamaat : AppColors.primary,
+                  onPressed: () => setState(() => _isBefore = !_isBefore),
+                ),
               ),
             ],
           ),

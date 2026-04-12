@@ -17,7 +17,7 @@ import 'features/prayer/domain/usecases/get_weekly_history_usecase.dart';
 import 'features/prayer/domain/usecases/get_detailed_month_history_usecase.dart';
 import 'features/prayer/domain/usecases/get_reason_summary_usecase.dart';
 import 'features/prayer/domain/usecases/log_prayer_usecase.dart';
-import 'features/prayer/presentation/bloc/prayer_bloc.dart';
+import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 
 import 'core/network/token_provider.dart';

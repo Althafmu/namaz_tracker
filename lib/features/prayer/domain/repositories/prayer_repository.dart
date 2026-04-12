@@ -14,6 +14,7 @@ abstract class PrayerRepository {
     String location = 'home',
     String? status,
     String? reason,
+    String? dateKey,
   });
 
   /// Get the user's current streak info.

@@ -55,6 +55,7 @@ class OfflineQueueRepository {
     required String location,
     String? status,
     String? reason,
+    String? dateKey,
   }) async {
     final box = Hive.box<Map<dynamic, dynamic>>(_boxName);
     await box.add({
@@ -64,6 +65,7 @@ class OfflineQueueRepository {
       'location': location,
       'status': status,
       'reason': reason,
+      'dateKey': dateKey,
       'timestamp': DateTime.now().toIso8601String(),
     });
   }
