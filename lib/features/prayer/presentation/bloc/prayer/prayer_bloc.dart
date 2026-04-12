@@ -245,7 +245,14 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         reason: event.reason,
         dateKey: isToday ? null : effectiveDateKey,
       );
-      emit(state.copyWith(syncStatus: SyncStatus.synced));
+
+      // Re-fetch the authoritative streak from the server after recalculation
+      try {
+        final updatedStreak = await getStreakUseCase();
+        emit(state.copyWith(streak: updatedStreak, syncStatus: SyncStatus.synced));
+      } catch (_) {
+        emit(state.copyWith(syncStatus: SyncStatus.synced));
+      }
     } catch (e) {
       await offlineSyncService.enqueueAction(
         prayerName: event.prayerName,

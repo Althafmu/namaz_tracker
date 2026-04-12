@@ -52,7 +52,9 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
 
         return SizedBox(
           height: 80,
+
           child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             controller: _scrollController,
             scrollDirection: Axis.horizontal,
             itemCount: dates.length,
@@ -68,7 +70,10 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
                   context.read<PrayerBloc>().add(SelectDate(dateKey));
                 },
                 child: NeoCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   color: isSelected ? AppColors.primary : AppColors.surface,
                   borderWidth: isSelected ? 3 : 2,
                   child: Column(
@@ -79,7 +84,9 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: isSelected ? AppColors.textDark : AppColors.muted,
+                          color: isSelected
+                              ? AppColors.textDark
+                              : AppColors.muted,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -88,7 +95,9 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
-                          color: isSelected ? AppColors.textDark : AppColors.textDark,
+                          color: isSelected
+                              ? AppColors.textDark
+                              : AppColors.textDark,
                         ),
                       ),
                       if (isToday) ...[
@@ -97,11 +106,13 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
                           width: 4,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.textDark : AppColors.primary,
+                            color: isSelected
+                                ? AppColors.textDark
+                                : AppColors.primary,
                             shape: BoxShape.circle,
                           ),
                         ),
-                      ]
+                      ],
                     ],
                   ),
                 ),
