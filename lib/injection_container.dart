@@ -31,13 +31,34 @@ final sl = GetIt.instance;
 
 /// API base URL from --dart-define.
 /// Build with: flutter run --dart-define=API_BASE_URL=https://your-server.com
+/// SECURITY: No default URL is provided. The API URL MUST be specified at build time.
 const _baseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'https://web-production-f44da.up.railway.app',
+  defaultValue: '',  // Empty by default — forces explicit configuration
 );
+
+/// Validates that API_BASE_URL is configured.
+void _validateBaseUrl() {
+  if (_baseUrl.isEmpty) {
+    throw AssertionError(
+      'API_BASE_URL must be set at build time.\n'
+      'Example: flutter run --dart-define=API_BASE_URL=https://your-server.com\n'
+      'Or set it in your launch configuration or CI/CD pipeline.'
+    );
+  }
+  if (!_baseUrl.startsWith('https://') && !_baseUrl.startsWith('http://')) {
+    throw AssertionError(
+      'API_BASE_URL must start with https:// or http://\n'
+      'Got: $_baseUrl'
+    );
+  }
+}
 
 /// Initialize all dependencies.
 Future<void> initDependencies() async {
+  // Validate API URL before initializing any network dependencies
+  _validateBaseUrl();
+
   // ── Core Services ──
   final tokenProvider = TokenProvider();
   await tokenProvider.loadTokens();
