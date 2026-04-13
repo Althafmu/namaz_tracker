@@ -13,6 +13,8 @@ class BadgesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     // Dynamic badge conditions
     final fajrDone = state.prayers.any(
       (p) => p.name.toLowerCase() == 'fajr' && p.isCompleted,
@@ -27,36 +29,34 @@ class BadgesGrid extends StatelessWidget {
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
+      childAspectRatio: 1.1,
       children: [
         BadgeTile(
           icon: Icons.wb_sunny,
           title: 'Early Bird',
-          iconColor: AppColors.streak,
-          bgColor: const Color(0xFFFEF9C3),
+          baseColor: c.statusOnTime,
           isUnlocked: fajrDone,
         ),
         BadgeTile(
           icon: Icons.groups,
           title: 'Congregation\nCaptain',
-          iconColor: AppColors.jamaat,
-          bgColor: const Color(0xFFCCFBF1),
+          baseColor: c.jamaat,
           isUnlocked: anyJamaat,
         ),
         BadgeTile(
           icon: Icons.calendar_month,
           title: 'Perfect Month',
+          baseColor: c.primary,
           isUnlocked: perfectMonth,
-          iconColor: AppColors.primary,
-          bgColor: const Color(0xFFFFE4E6),
         ),
         BadgeTile(
           icon: Icons.nightlight,
           title: 'Night Owl',
+          baseColor: c.statusNight,
           isUnlocked: ishaDone,
-          iconColor: const Color(0xFF6366F1),
-          bgColor: const Color(0xFFE0E7FF),
         ),
       ],
     );
@@ -67,82 +67,72 @@ class BadgesGrid extends StatelessWidget {
 class BadgeTile extends StatelessWidget {
   final IconData icon;
   final String title;
-  final Color? iconColor;
-  final Color? bgColor;
+  final Color baseColor;
   final bool isUnlocked;
 
   const BadgeTile({
     super.key,
     required this.icon,
     required this.title,
-    this.iconColor,
-    this.bgColor,
+    required this.baseColor,
     required this.isUnlocked,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (!isUnlocked) {
-      return Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFE5E7EB),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF9CA3AF), width: 2),
-        ),
-        child: Opacity(
-          opacity: 0.6,
-          child: Stack(
-            children: [
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Icon(Icons.lock, color: Colors.grey[500], size: 16),
-              ),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(icon, size: 36, color: Colors.grey[500]),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    final c = AppColors.of(context);
 
     return NeoCard(
-      color: AppColors.surface,
+      color: isUnlocked ? c.surface : c.background,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                color: bgColor ?? Colors.grey[100],
+                color: isUnlocked
+                    ? baseColor.withValues(alpha: 0.15)
+                    : c.textSecondary.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: isUnlocked
+                      ? baseColor.withValues(alpha: 0.3)
+                      : c.borderPrimary.withValues(alpha: 0.1),
+                  width: 2,
+                ),
               ),
-              child: Icon(icon, size: 36, color: iconColor),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 32,
+                    color: isUnlocked
+                        ? baseColor
+                        : c.textSecondary.withValues(alpha: 0.4),
+                  ),
+                  if (!isUnlocked)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: c.surface,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: c.borderPrimary, width: 1),
+                        ),
+                        child: Icon(
+                          Icons.lock,
+                          size: 10,
+                          color: c.textSecondary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             Text(
@@ -150,6 +140,9 @@ class BadgeTile extends StatelessWidget {
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 fontWeight: FontWeight.w700,
+                color: isUnlocked
+                    ? c.textPrimary
+                    : c.textSecondary.withValues(alpha: 0.6),
               ),
             ),
           ],

@@ -72,3 +72,25 @@ class UpdateMissedReasons extends SettingsEvent {
   @override
   List<Object?> get props => [missedReasons];
 }
+
+class CycleThemeMode extends SettingsEvent {
+  const CycleThemeMode();
+}
+
+class UpdateThemeMode extends SettingsEvent {
+  final String themeMode;
+
+  const UpdateThemeMode(this.themeMode);
+
+  @override
+  List<Object?> get props => [themeMode];
+}
+
+class UpdateAlarmDuration extends SettingsEvent {
+  final int duration;
+
+  const UpdateAlarmDuration(this.duration);
+
+  @override
+  List<Object?> get props => [duration];
+}

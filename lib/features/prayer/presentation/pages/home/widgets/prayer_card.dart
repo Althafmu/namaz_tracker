@@ -5,19 +5,35 @@ import '../../../../../../core/theme/app_text_styles.dart';
 import '../../../../../../core/widgets/neo_card.dart';
 import '../../../../domain/entities/prayer.dart';
 
-/// Prayer card — teal when completed, white when pending.
+/// Prayer card — teal when completed, surface when pending.
 class PrayerCard extends StatelessWidget {
   final Prayer prayer;
   final VoidCallback? onTap;
+  final bool showTime;
 
-  const PrayerCard({super.key, required this.prayer, this.onTap});
+  const PrayerCard({
+    super.key,
+    required this.prayer,
+    this.onTap,
+    this.showTime = true,
+  });
+
+  Color _getPrayerColor(Prayer prayer, AppColorPalette c) {
+    if (!prayer.isCompleted) return c.surface;
+    if (prayer.status == 'missed') return c.statusMissed;
+    if (prayer.status == 'late') return c.statusLate;
+    if (prayer.inJamaat) return c.statusGroup;
+    return c.statusAlone;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final isCompleted = prayer.isCompleted;
+    final cardColor = _getPrayerColor(prayer, c);
 
     return NeoCard(
-      color: isCompleted ? AppColors.jamaat : AppColors.surface,
+      color: isCompleted ? cardColor : c.surface,
       onTap: onTap,
       child: SizedBox(
         height: 100,
@@ -35,33 +51,35 @@ class PrayerCard extends StatelessWidget {
                     prayer.name.toUpperCase(),
                     style: AppTextStyles.prayerTitle.copyWith(
                       color: isCompleted
-                          ? AppColors.surface
-                          : AppColors.textDark,
+                          ? c.surface
+                          : c.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    prayer.timeRange,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: isCompleted
-                          ? AppColors.surface.withValues(alpha: 0.9)
-                          : AppColors.muted,
-                    ),
-                  ),
-                  if (prayer.offset != null && prayer.offset != 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Base: ${prayer.baseTime} ${prayer.offset! > 0 ? '+' : ''}${prayer.offset}m',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: isCompleted
-                              ? AppColors.surface.withValues(alpha: 0.7)
-                              : AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
-                        ),
+                  if (showTime) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      prayer.timeRange,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: isCompleted
+                            ? c.surface.withValues(alpha: 0.9)
+                            : c.textSecondary,
                       ),
                     ),
+                    if (prayer.offset != null && prayer.offset != 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Base: ${prayer.baseTime} ${prayer.offset! > 0 ? '+' : ''}${prayer.offset}m',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: isCompleted
+                                ? c.surface.withValues(alpha: 0.7)
+                                : c.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
               ),
               // Check button
@@ -69,13 +87,13 @@ class PrayerCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: c.surface,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.border, width: 2),
-                  boxShadow: const [
+                  border: Border.all(color: c.border, width: 2),
+                  boxShadow: [
                     BoxShadow(
-                      color: AppColors.border,
-                      offset: Offset(2, 2),
+                      color: c.border,
+                      offset: const Offset(2, 2),
                       blurRadius: 0,
                     ),
                   ],
@@ -84,7 +102,7 @@ class PrayerCard extends StatelessWidget {
                   isCompleted
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: isCompleted ? AppColors.jamaat : AppColors.muted,
+                  color: isCompleted ? cardColor : c.textSecondary,
                   size: 30,
                 ),
               ),

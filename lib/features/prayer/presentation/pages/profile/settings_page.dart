@@ -19,13 +19,15 @@ class SettingsPage extends StatelessWidget {
 
   // ─── Placeholder Sheet ───
   void _showPlaceholderSheet(BuildContext context, String title) {
+    final c = AppColors.of(context);
+
     showModalBottomSheet(
       context: context,
       useRootNavigator: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        side: BorderSide(color: AppColors.border, width: 2),
+      backgroundColor: c.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        side: BorderSide(color: c.border, width: 2),
       ),
       builder: (sheetContext) {
         return Padding(
@@ -39,19 +41,22 @@ class SettingsPage extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.muted,
+                    color: c.textSecondary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              Text(title, style: AppTextStyles.headlineMedium),
+              Text(title, style: AppTextStyles.headlineMedium.copyWith(
+                color: c.textPrimary,
+              )),
               const SizedBox(height: 16),
-              Text('This feature is coming soon!', style: AppTextStyles.bodyMedium),
+              Text('This feature is coming soon!', style: AppTextStyles.bodyMedium.copyWith(
+                color: c.textPrimary,
+              )),
               const SizedBox(height: 24),
               NeoButton(
                 text: 'Got it',
-                color: AppColors.primary,
                 onPressed: () => Navigator.of(sheetContext).pop(),
               ),
             ],
@@ -63,6 +68,8 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return BlocBuilder<PrayerBloc, PrayerState>(
       builder: (context, state) {
         return SafeArea(
@@ -73,7 +80,9 @@ class SettingsPage extends StatelessWidget {
                 // ── Header ──
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
-                  child: Text('Profile', style: AppTextStyles.headlineLarge),
+                  child: Text('Profile', style: AppTextStyles.headlineLarge.copyWith(
+                    color: c.textPrimary,
+                  )),
                 ),
 
                 const SizedBox(height: 24),

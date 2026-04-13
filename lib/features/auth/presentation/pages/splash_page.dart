@@ -55,12 +55,12 @@ class _SplashPageState extends State<SplashPage> {
         });
       },
       child: Scaffold(
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: AppColors.of(context).background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.nightlight_round, size: 120, color: AppColors.primary),
+              Icon(Icons.nightlight_round, size: 120, color: AppColors.of(context).primary),
               const SizedBox(height: 24),
               Text('NAMAZ', style: AppTextStyles.headlineLarge),
               Text('TRACKER', style: AppTextStyles.headlineMedium),

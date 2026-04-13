@@ -97,15 +97,14 @@ class PrayerState extends Equatable {
   bool get isAllComplete => completedCount == 5;
 
   /// Today's date key for weeklyHistory.
-  /// Any time before 4:00 AM is considered part of the previous day.
   static String get todayKey {
-    final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
+    final effectiveNow = DateTime.now();
     return DateFormat('yyyy-MM-dd').format(effectiveNow);
   }
 
   /// Get the last 7 days' completion percentages for the weekly chart.
   List<double> get weeklyPercentages {
-    final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
+    final effectiveNow = DateTime.now();
     return List.generate(7, (i) {
       final date = effectiveNow.subtract(Duration(days: 6 - i));
       final key = DateFormat('yyyy-MM-dd').format(date);
@@ -117,7 +116,7 @@ class PrayerState extends Equatable {
 
   /// Total prayers completed in the last 7 days.
   int get weeklyPrayerCount {
-    final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
+    final effectiveNow = DateTime.now();
     int total = 0;
     for (int i = 0; i < 7; i++) {
       final date = effectiveNow.subtract(Duration(days: i));
@@ -130,7 +129,7 @@ class PrayerState extends Equatable {
 
   /// Day labels for the last 7 days.
   List<String> get weeklyDayLabels {
-    final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
+    final effectiveNow = DateTime.now();
     return List.generate(7, (i) {
       final date = effectiveNow.subtract(Duration(days: 6 - i));
       return DateFormat('E').format(date).substring(0, 1);
@@ -175,6 +174,39 @@ class PrayerState extends Equatable {
               .toSet() ??
           {},
       selectedDateStr: json['selectedDateStr'] as String?,
+    );
+  }
+
+  /// Calculates an optimistic streak from local [historicalLog].
+  ///
+  /// Walks backwards from today checking that each day has 5/5 completed
+  /// prayers. Stops at the first gap or missing day.
+  Streak calculateOptimisticStreak() {
+    final fmt = DateFormat('yyyy-MM-dd');
+    final effectiveNow = DateTime.now();
+    int count = 0;
+
+    for (int i = 0; i < 365; i++) {
+      final date = effectiveNow.subtract(Duration(days: i));
+      final key = fmt.format(date);
+
+      final dayPrayers = (i == 0) ? prayers : historicalLog[key];
+
+      // If we have no data for this day and it's beyond today, stop.
+      if (dayPrayers == null || dayPrayers.isEmpty) break;
+
+      final completed = dayPrayers.where((p) => p.isCompleted).length;
+      if (completed >= 5) {
+        count++;
+      } else {
+        break;
+      }
+    }
+
+    final newLongest = count > streak.longestStreak ? count : streak.longestStreak;
+    return streak.copyWith(
+      currentStreak: count,
+      longestStreak: newLongest,
     );
   }
 

@@ -13,10 +13,12 @@ class JamaatToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return GestureDetector(
       onTap: onTap,
       child: NeoCard(
-        color: isActive ? AppColors.jamaat : AppColors.surface,
+        color: isActive ? c.jamaat : c.surface,
         borderRadius: 9999,
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -25,12 +27,18 @@ class JamaatToggle extends StatelessWidget {
             Expanded(
               child: Row(
                 children: [
-                  Icon(Icons.group, color: AppColors.textDark, size: 30),
+                  Icon(
+                    Icons.group,
+                    color: isActive ? const Color(0xFF2B2D42) : c.textPrimary,
+                    size: 30,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       "Prayed in Jama'at",
-                      style: AppTextStyles.bodyLarge,
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: isActive ? const Color(0xFF2B2D42) : c.textPrimary,
+                      ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
@@ -45,14 +53,13 @@ class JamaatToggle extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.streak,
+                      color: c.streak,
                       borderRadius: BorderRadius.circular(9999),
-                      border:
-                          Border.all(color: AppColors.border, width: 2),
-                      boxShadow: const [
+                      border: Border.all(color: c.border, width: 2),
+                      boxShadow: [
                         BoxShadow(
-                          color: AppColors.border,
-                          offset: Offset(2, 2),
+                          color: c.border,
+                          offset: const Offset(2, 2),
                         ),
                       ],
                     ),
@@ -64,7 +71,7 @@ class JamaatToggle extends StatelessWidget {
                   width: 48,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: isActive ? AppColors.textDark : AppColors.muted,
+                    color: isActive ? c.textPrimary : c.textSecondary,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: AnimatedAlign(
@@ -76,8 +83,8 @@ class JamaatToggle extends StatelessWidget {
                       width: 20,
                       height: 20,
                       margin: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: AppColors.surface,
+                      decoration: BoxDecoration(
+                        color: c.surface,
                         shape: BoxShape.circle,
                       ),
                     ),

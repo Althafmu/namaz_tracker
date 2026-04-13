@@ -19,18 +19,21 @@ class NotificationsSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return BlocBuilder<SettingsBloc, SettingsState>(
       builder: (context, state) {
         return Scaffold(
-          backgroundColor: AppColors.backgroundLight,
+          backgroundColor: c.background,
           appBar: AppBar(
-            backgroundColor: AppColors.backgroundLight,
+            backgroundColor: c.background,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+              icon: Icon(Icons.arrow_back, color: c.textPrimary),
               onPressed: () => context.go('/profile'),
             ),
-            title: Text('Notifications', style: AppTextStyles.headlineMedium),
+            title: Text('Notifications', 
+              style: AppTextStyles.headlineMedium.copyWith(color: c.textPrimary)),
             centerTitle: true,
           ),
           body: SafeArea(
@@ -43,13 +46,13 @@ class NotificationsSettingsPage extends StatelessWidget {
                   Text('Global Alarm Sound',
                       style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.muted)),
+                          color: c.textSecondary)),
                   const SizedBox(height: 8),
                   InkWell(
                     onTap: () => _showSoundPicker(context, state.alarmSound),
                     borderRadius: BorderRadius.circular(16),
                     child: NeoCard(
-                      color: AppColors.surface,
+                      color: c.surface,
                       padding: const EdgeInsets.all(16),
                       borderRadius: 16,
                       child: Row(
@@ -57,11 +60,11 @@ class NotificationsSettingsPage extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.2),
+                              color: c.primaryLight,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.music_note,
-                                color: AppColors.primary, size: 20),
+                            child: Icon(Icons.music_note,
+                                color: c.primary, size: 20),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -70,25 +73,103 @@ class NotificationsSettingsPage extends StatelessWidget {
                               children: [
                                 Text('Alarm Sound',
                                     style: AppTextStyles.bodyMedium.copyWith(
-                                        fontWeight: FontWeight.bold)),
+                                        fontWeight: FontWeight.bold,
+                                        color: c.textPrimary)),
                                 Text(_getAlarmSoundDisplayName(state.alarmSound),
-                                    style: AppTextStyles.bodySmall),
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                        color: c.textSecondary)),
                               ],
                             ),
                           ),
-                          const Icon(Icons.chevron_right,
-                              color: AppColors.muted),
+                          Icon(Icons.chevron_right,
+                              color: c.textSecondary),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
 
-                  // Per-Prayer Settings
-                  Text('Per-Prayer Notifications',
+                  // Alarm Timeout Setting
+                  Text('Alarm Stop Timeout',
                       style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.muted)),
+                          color: c.textSecondary)),
+                  const SizedBox(height: 8),
+                  NeoCard(
+                    color: c.surface,
+                    padding: const EdgeInsets.all(16),
+                    borderRadius: 16,
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: c.jamaatLight,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.timer,
+                                  color: c.jamaat, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Auto-Stop Duration',
+                                      style: AppTextStyles.bodyMedium.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: c.textPrimary)),
+                                  Text('Stops ringing after selected time',
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                          color: c.textSecondary)),
+                                ],
+                              ),
+                            ),
+                            Text('${state.alarmDurationMinutes} min',
+                                style: AppTextStyles.headlineMedium.copyWith(
+                                    fontSize: 18, color: c.primary)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: NeoButton(
+                                text: '- 1 Min',
+                                color: c.surface,
+                                height: 44,
+                                onPressed: state.alarmDurationMinutes > 1
+                                    ? () => context.read<SettingsBloc>().add(
+                                        UpdateAlarmDuration(
+                                            state.alarmDurationMinutes - 1))
+                                    : null,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: NeoButton(
+                                text: '+ 1 Min',
+                                color: c.primary,
+                                height: 44,
+                                onPressed: state.alarmDurationMinutes < 10
+                                    ? () => context.read<SettingsBloc>().add(
+                                        UpdateAlarmDuration(
+                                            state.alarmDurationMinutes + 1))
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text('Prayer Notifications',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: c.textSecondary)),
                   const SizedBox(height: 8),
                   ..._buildPrayerCards(context, state),
                 ],
@@ -108,14 +189,15 @@ class NotificationsSettingsPage extends StatelessWidget {
   }
 
   void _showSoundPicker(BuildContext context, String currentSound) {
+    final c = AppColors.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        side: BorderSide(color: AppColors.border, width: 2),
+      backgroundColor: c.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        side: BorderSide(color: c.border, width: 2),
       ),
       builder: (sheetContext) {
         return SoundPickerBottomSheet(
@@ -151,16 +233,25 @@ class _PrayerNotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: NeoCard(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: 24,
         child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          data: Theme.of(context).copyWith(
+              dividerColor: Colors.transparent,
+              iconTheme: IconThemeData(color: c.textPrimary),
+          ),
           child: ExpansionTile(
             title: Text(prayer,
-                style: AppTextStyles.headlineMedium.copyWith(fontSize: 20)),
+                style: AppTextStyles.headlineMedium.copyWith(
+                  fontSize: 20,
+                  color: c.textPrimary,
+                )),
+            iconColor: c.textPrimary,
+            collapsedIconColor: c.textPrimary,
             childrenPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             children: [
@@ -169,8 +260,8 @@ class _PrayerNotificationCard extends StatelessWidget {
                 title: 'Adhan Alerts',
                 subtitle: 'Push notifications at prayer time',
                 icon: Icons.notifications_active,
-                iconColor: AppColors.primary,
-                iconBg: AppColors.primaryLight,
+                iconColor: c.primary,
+                iconBg: c.primaryLight,
                 value: config.adhanAlerts,
                 onChanged: (val) {
                   context.read<SettingsBloc>().add(
@@ -181,14 +272,14 @@ class _PrayerNotificationCard extends StatelessWidget {
                       );
                 },
               ),
-              const Divider(color: AppColors.border, thickness: 2),
+              Divider(color: c.border, thickness: 2),
               _buildToggleRow(
                 context,
                 title: 'Prayer Reminder',
                 subtitle: 'Customizable alert for this prayer',
                 icon: Icons.timer,
-                iconColor: AppColors.jamaat,
-                iconBg: AppColors.jamaatLight,
+                iconColor: c.jamaat,
+                iconBg: c.jamaatLight,
                 value: config.reminderAlerts,
                 onChanged: (val) {
                   context.read<SettingsBloc>().add(
@@ -204,14 +295,14 @@ class _PrayerNotificationCard extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 16, bottom: 8),
                   child: _ReminderSettingsUI(prayer: prayer, config: config),
                 ),
-              const Divider(color: AppColors.border, thickness: 2),
+              Divider(color: c.border, thickness: 2),
               _buildToggleRow(
                 context,
                 title: 'Streak Protection',
                 subtitle: 'Alert if missing last prayer',
                 icon: Icons.shield,
-                iconColor: AppColors.streak,
-                iconBg: AppColors.streakLight,
+                iconColor: c.streak,
+                iconBg: c.streakLight,
                 value: config.streakProtection,
                 onChanged: (val) {
                   context.read<SettingsBloc>().add(
@@ -239,6 +330,7 @@ class _PrayerNotificationCard extends StatelessWidget {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final c = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -258,8 +350,8 @@ class _PrayerNotificationCard extends StatelessWidget {
               children: [
                 Text(title,
                     style: AppTextStyles.bodyMedium
-                        .copyWith(fontWeight: FontWeight.bold)),
-                Text(subtitle, style: AppTextStyles.bodySmall),
+                        .copyWith(fontWeight: FontWeight.bold, color: c.textPrimary)),
+                Text(subtitle, style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary)),
               ],
             ),
           ),
@@ -310,12 +402,13 @@ class _ReminderSettingsUIState extends State<_ReminderSettingsUI> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.backgroundLight,
+        color: c.background,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 2),
+        border: Border.all(color: c.border, width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -323,8 +416,8 @@ class _ReminderSettingsUIState extends State<_ReminderSettingsUI> {
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.remove_circle_outline,
-                    color: AppColors.textDark),
+                icon: Icon(Icons.remove_circle_outline,
+                    color: c.textPrimary),
                 onPressed: () {
                   if (_minutes > 1) setState(() => _minutes--);
                 },
@@ -332,17 +425,17 @@ class _ReminderSettingsUIState extends State<_ReminderSettingsUI> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: c.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border, width: 2),
+                  border: Border.all(color: c.border, width: 2),
                 ),
                 child: Text('$_minutes mins',
                     style: AppTextStyles.bodyMedium
-                        .copyWith(fontWeight: FontWeight.bold)),
+                        .copyWith(fontWeight: FontWeight.bold, color: c.textPrimary)),
               ),
               IconButton(
-                icon: const Icon(Icons.add_circle_outline,
-                    color: AppColors.textDark),
+                icon: Icon(Icons.add_circle_outline,
+                    color: c.textPrimary),
                 onPressed: () {
                   if (_minutes < 120) setState(() => _minutes++);
                 },
@@ -353,7 +446,7 @@ class _ReminderSettingsUIState extends State<_ReminderSettingsUI> {
                   text: _isBefore ? 'Before' : 'After',
                   isFullWidth: true,
                   height: 40,
-                  color: _isBefore ? AppColors.jamaat : AppColors.primary,
+                  color: _isBefore ? c.jamaat : c.primary,
                   onPressed: () => setState(() => _isBefore = !_isBefore),
                 ),
               ),
@@ -362,7 +455,7 @@ class _ReminderSettingsUIState extends State<_ReminderSettingsUI> {
           const SizedBox(height: 16),
           NeoButton(
             text: _hasChanges ? 'Save Reminder' : '✓ Saved',
-            color: _hasChanges ? AppColors.primary : AppColors.success,
+            color: _hasChanges ? c.primary : c.success,
             icon: _hasChanges ? Icons.save : Icons.check_circle,
             onPressed: () {
               context.read<SettingsBloc>().add(
@@ -378,7 +471,7 @@ class _ReminderSettingsUIState extends State<_ReminderSettingsUI> {
                 SnackBar(
                   content: Text(
                       '✅ ${widget.prayer} reminder set: $_minutes mins ${_isBefore ? "before" : "after"}'),
-                  backgroundColor: AppColors.success,
+                  backgroundColor: c.success,
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -479,6 +572,7 @@ class _SoundPickerBottomSheetState extends State<SoundPickerBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
           24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
@@ -491,28 +585,29 @@ class _SoundPickerBottomSheetState extends State<SoundPickerBottomSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                  color: AppColors.muted,
+                  color: c.textSecondary,
                   borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 20),
-          Text('Select Reminder Sound', style: AppTextStyles.headlineMedium),
+          Text('Select Reminder Sound', 
+            style: AppTextStyles.headlineMedium.copyWith(color: c.textPrimary)),
           const SizedBox(height: 16),
           ..._availableSounds.map((s) => _buildSoundRow(s['id']!, s['name']!)),
           const SizedBox(height: 8),
-          const Divider(color: AppColors.border, thickness: 2),
+          Divider(color: c.border, thickness: 2),
           const SizedBox(height: 8),
           if (widget.initialSound.startsWith('/'))
             _buildSoundRow(widget.initialSound, 'Selected Custom Audio File'),
           ListTile(
-            leading: const Icon(Icons.file_upload, color: AppColors.primary),
+            leading: Icon(Icons.file_upload, color: c.primary),
             title: Text('Pick Custom Audio File...',
                 style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.primary, fontWeight: FontWeight.bold)),
+                    color: c.primary, fontWeight: FontWeight.bold)),
             onTap: _pickCustomAudio,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppColors.border, width: 2),
+              side: BorderSide(color: c.border, width: 2),
             ),
           ),
         ],
@@ -521,6 +616,7 @@ class _SoundPickerBottomSheetState extends State<SoundPickerBottomSheet> {
   }
 
   Widget _buildSoundRow(String id, String name) {
+    final c = AppColors.of(context);
     final isSelected = widget.initialSound == id;
     final isPlaying = _currentlyPlaying == id;
     String displayName = id.startsWith('/') ? id.split('/').last : name;
@@ -529,11 +625,11 @@ class _SoundPickerBottomSheetState extends State<SoundPickerBottomSheet> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isSelected
-            ? AppColors.primary.withValues(alpha: 0.1)
-            : AppColors.surface,
+            ? c.primaryLight
+            : c.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSelected ? AppColors.primary : AppColors.border,
+          color: isSelected ? c.primary : c.border,
           width: 2,
         ),
       ),
@@ -545,16 +641,17 @@ class _SoundPickerBottomSheetState extends State<SoundPickerBottomSheet> {
         leading: IconButton(
           icon: Icon(
             isPlaying ? Icons.stop_circle : Icons.play_circle_fill,
-            color: isPlaying ? AppColors.error : AppColors.primary,
+            color: isPlaying ? c.error : c.primary,
             size: 32,
           ),
           onPressed: () => _playSound(id),
         ),
         title: Text(displayName,
             style: AppTextStyles.bodyMedium.copyWith(
+                color: c.textPrimary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
         trailing: isSelected
-            ? const Icon(Icons.check_circle, color: AppColors.primary)
+            ? Icon(Icons.check_circle, color: c.primary)
             : null,
       ),
     );

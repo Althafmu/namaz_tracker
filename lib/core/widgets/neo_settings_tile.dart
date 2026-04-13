@@ -29,16 +29,18 @@ class NeoSettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     Widget content = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 2),
-        boxShadow: const [
+        border: Border.all(color: c.border, width: 2),
+        boxShadow: [
           BoxShadow(
-            color: AppColors.border,
-            offset: Offset(4, 4),
+            color: c.border,
+            offset: const Offset(4, 4),
           ),
         ],
       ),
@@ -49,11 +51,11 @@ class NeoSettingsTile extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: iconBg ?? AppColors.primaryLight,
+                color: iconBg ?? c.primaryLight,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border, width: 2),
+                border: Border.all(color: c.border, width: 2),
               ),
-              child: Icon(icon, color: iconColor ?? AppColors.primary, size: 20),
+              child: Icon(icon, color: iconColor ?? c.primary, size: 20),
             ),
             const SizedBox(width: 16),
           ],
@@ -61,10 +63,21 @@ class NeoSettingsTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: c.textPrimary,
+                  ),
+                ),
                 if (subtitle != null && subtitle!.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(subtitle!, style: AppTextStyles.bodySmall),
+                  Text(
+                    subtitle!,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: c.textSecondary,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -72,7 +85,7 @@ class NeoSettingsTile extends StatelessWidget {
           if (isToggle)
             NeoToggle(value: toggleValue, onChanged: onToggleChanged ?? (_) {})
           else
-            const Icon(Icons.chevron_right, color: AppColors.textDark),
+            Icon(Icons.chevron_right, color: c.textPrimary),
         ],
       ),
     );

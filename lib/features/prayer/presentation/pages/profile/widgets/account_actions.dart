@@ -17,6 +17,8 @@ class AccountActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return Column(
       children: [
         NeoButton(
@@ -34,7 +36,7 @@ class AccountActions extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.muted,
+                color: c.textSecondary,
                 width: 2,
               ),
             ),
@@ -42,7 +44,7 @@ class AccountActions extends StatelessWidget {
               child: Text(
                 'Delete Account',
                 style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.muted,
+                  color: c.textSecondary,
                 ),
               ),
             ),

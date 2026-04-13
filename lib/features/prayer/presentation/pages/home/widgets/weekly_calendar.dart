@@ -39,9 +39,11 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return BlocBuilder<PrayerBloc, PrayerState>(
       builder: (context, state) {
-        final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
+        final effectiveNow = DateTime.now();
         final todayKey = PrayerState.todayKey;
         final selectedKey = state.selectedDateStr ?? todayKey;
 
@@ -52,7 +54,6 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
 
         return SizedBox(
           height: 80,
-
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             controller: _scrollController,
@@ -74,7 +75,7 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  color: isSelected ? AppColors.primary : AppColors.surface,
+                  color: isSelected ? c.primary : c.surface,
                   borderWidth: isSelected ? 3 : 2,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -85,8 +86,8 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: isSelected
-                              ? AppColors.textDark
-                              : AppColors.muted,
+                              ? const Color(0xFF2B2D42) // Fixed dark color for contrast on primary background
+                              : c.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -96,8 +97,8 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           color: isSelected
-                              ? AppColors.textDark
-                              : AppColors.textDark,
+                              ? const Color(0xFF2B2D42) // Fixed dark color for contrast on primary background
+                              : c.textPrimary,
                         ),
                       ),
                       if (isToday) ...[
@@ -107,8 +108,8 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
                           height: 4,
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.textDark
-                                : AppColors.primary,
+                                ? const Color(0xFF2B2D42) // Contrast on primary
+                                : c.primary,
                             shape: BoxShape.circle,
                           ),
                         ),

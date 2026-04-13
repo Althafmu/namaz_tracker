@@ -34,20 +34,22 @@ class CalculationSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return BlocBuilder<SettingsBloc, SettingsState>(
       builder: (context, state) {
         return Scaffold(
-          backgroundColor: AppColors.backgroundLight,
+          backgroundColor: c.background,
           appBar: AppBar(
-            backgroundColor: AppColors.backgroundLight,
+            backgroundColor: c.background,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+              icon: Icon(Icons.arrow_back, color: c.textPrimary),
               onPressed: () => context.go('/profile'),
             ),
             title: Text(
               'Salah Times Settings',
-              style: AppTextStyles.headlineMedium,
+              style: AppTextStyles.headlineMedium.copyWith(color: c.textPrimary),
             ),
             centerTitle: true,
           ),
@@ -62,23 +64,24 @@ class CalculationSettingsPage extends StatelessWidget {
                     'Location',
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.muted,
+                      color: c.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   NeoCard(
-                    color: AppColors.surface,
+                    color: c.surface,
                     padding: const EdgeInsets.all(16),
                     borderRadius: 16,
                     child: Row(
                       children: [
-                        const Icon(Icons.location_on, color: AppColors.primary),
+                        Icon(Icons.location_on, color: c.primary),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Current Location',
                             style: AppTextStyles.bodyLarge.copyWith(
                               fontWeight: FontWeight.bold,
+                              color: c.textPrimary,
                             ),
                           ),
                         ),
@@ -86,12 +89,12 @@ class CalculationSettingsPage extends StatelessWidget {
                           text: 'Update',
                           isFullWidth: false,
                           height: 36,
-                          color: AppColors.backgroundLight,
-                          textColor: AppColors.primary,
+                          color: c.background,
+                          textColor: c.primary,
                           onPressed: () {
                             context.read<PrayerBloc>().add(
-                              const LoadDailyStatus(),
-                            ); // Forces GPS fetch & updates cached coordinates
+                                  const LoadDailyStatus(),
+                                ); // Forces GPS fetch & updates cached coordinates
                           },
                         ),
                       ],
@@ -104,7 +107,7 @@ class CalculationSettingsPage extends StatelessWidget {
                     'Juristic Method',
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.muted,
+                      color: c.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -114,16 +117,17 @@ class CalculationSettingsPage extends StatelessWidget {
                         child: GestureDetector(
                           onTap: () {
                             context.read<SettingsBloc>().add(
-                              const UpdateCalculationSettings(useHanafi: false),
-                            );
+                                  const UpdateCalculationSettings(
+                                      useHanafi: false),
+                                );
                           },
                           child: NeoCard(
                             color: !state.useHanafi
-                                ? AppColors.primaryLight
-                                : AppColors.surface,
+                                ? c.primaryLight
+                                : c.surface,
                             borderColor: !state.useHanafi
-                                ? AppColors.primary
-                                : AppColors.border,
+                                ? c.primary
+                                : c.border,
                             padding: const EdgeInsets.symmetric(
                               vertical: 16,
                               horizontal: 8,
@@ -134,15 +138,15 @@ class CalculationSettingsPage extends StatelessWidget {
                                   'Standard',
                                   style: AppTextStyles.bodyLarge.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: !state.useHanafi
-                                        ? AppColors.border
-                                        : AppColors.textDark,
+                                    color: c.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   'Shafi, Maliki, Hanbali',
-                                  style: AppTextStyles.bodySmall,
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: c.textSecondary,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -155,16 +159,17 @@ class CalculationSettingsPage extends StatelessWidget {
                         child: GestureDetector(
                           onTap: () {
                             context.read<SettingsBloc>().add(
-                              const UpdateCalculationSettings(useHanafi: true),
-                            );
+                                  const UpdateCalculationSettings(
+                                      useHanafi: true),
+                                );
                           },
                           child: NeoCard(
                             color: state.useHanafi
-                                ? AppColors.primaryLight
-                                : AppColors.surface,
+                                ? c.primaryLight
+                                : c.surface,
                             borderColor: state.useHanafi
-                                ? AppColors.primary
-                                : AppColors.border,
+                                ? c.primary
+                                : c.border,
                             padding: const EdgeInsets.symmetric(
                               vertical: 16,
                               horizontal: 8,
@@ -175,15 +180,15 @@ class CalculationSettingsPage extends StatelessWidget {
                                   'Hanafi',
                                   style: AppTextStyles.bodyLarge.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: state.useHanafi
-                                        ? AppColors.border
-                                        : AppColors.textDark,
+                                    color: c.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   'Later Asr time',
-                                  style: AppTextStyles.bodySmall,
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: c.textSecondary,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -200,28 +205,28 @@ class CalculationSettingsPage extends StatelessWidget {
                     'Calculation Method',
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.muted,
+                      color: c.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   NeoCard(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    color: AppColors.surface,
+                    color: c.surface,
                     borderRadius: 16,
-                    borderColor: AppColors.border,
+                    borderColor: c.border,
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: state.calculationMethod,
                         isExpanded: true,
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.expand_more,
-                          color: AppColors.textDark,
+                          color: c.textPrimary,
                         ),
                         style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
+                          color: c.textPrimary,
                         ),
-                        dropdownColor: AppColors.surface,
+                        dropdownColor: c.surface,
                         items: PrayerTimeService.calculationMethods.keys
                             .map(
                               (key) => DropdownMenuItem(
@@ -230,6 +235,7 @@ class CalculationSettingsPage extends StatelessWidget {
                                   _methodLabels[key] ?? key,
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     fontWeight: FontWeight.bold,
+                                    color: c.textPrimary,
                                   ),
                                 ),
                               ),
@@ -238,10 +244,10 @@ class CalculationSettingsPage extends StatelessWidget {
                         onChanged: (value) {
                           if (value != null) {
                             context.read<SettingsBloc>().add(
-                              UpdateCalculationSettings(
-                                calculationMethod: value,
-                              ),
-                            );
+                                  UpdateCalculationSettings(
+                                    calculationMethod: value,
+                                  ),
+                                );
                           }
                         },
                       ),
@@ -257,13 +263,13 @@ class CalculationSettingsPage extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border, width: 2),
-                        boxShadow: const [
+                        border: Border.all(color: c.border, width: 2),
+                        boxShadow: [
                           BoxShadow(
-                            color: AppColors.border,
-                            offset: Offset(4, 4),
+                            color: c.border,
+                            offset: const Offset(4, 4),
                           ),
                         ],
                       ),
@@ -277,6 +283,7 @@ class CalculationSettingsPage extends StatelessWidget {
                                 'Prayer time adjustment',
                                 style: AppTextStyles.bodyLarge.copyWith(
                                   fontWeight: FontWeight.bold,
+                                  color: c.textPrimary,
                                 ),
                               ),
                               if (_hasAnyOffset(state.manualOffsets)) ...[
@@ -284,15 +291,15 @@ class CalculationSettingsPage extends StatelessWidget {
                                 Text(
                                   _offsetSummary(state.manualOffsets),
                                   style: AppTextStyles.bodySmall.copyWith(
-                                    color: AppColors.primary,
+                                    color: c.primary,
                                   ),
                                 ),
                               ],
                             ],
                           ),
-                          const Icon(
+                          Icon(
                             Icons.chevron_right,
-                            color: AppColors.textDark,
+                            color: c.textPrimary,
                           ),
                         ],
                       ),
@@ -303,12 +310,10 @@ class CalculationSettingsPage extends StatelessWidget {
                   // ── Save & Apply Button ──
                   NeoButton(
                     text: 'Save & Apply Changes',
-                    color: AppColors.primary,
-                    textColor: Colors.white,
                     onPressed: () {
                       context.read<PrayerBloc>().add(
-                        const RefreshPrayersAndAlarms(),
-                      );
+                            const RefreshPrayersAndAlarms(),
+                          );
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
@@ -347,6 +352,7 @@ class CalculationSettingsPage extends StatelessWidget {
     // Capture blocs BEFORE opening the bottom sheet
     final settingsBloc = context.read<SettingsBloc>();
     final prayerBloc = context.read<PrayerBloc>();
+    final c = AppColors.of(context);
 
     showModalBottomSheet(
       context: context,
@@ -364,11 +370,9 @@ class CalculationSettingsPage extends StatelessWidget {
           child: BlocBuilder<SettingsBloc, SettingsState>(
             builder: (ctx, state) {
               // Use bloc state coords, fallback to scheduler service cache
-              final lat =
-                  prayerBloc.state.cachedLat ??
+              final lat = prayerBloc.state.cachedLat ??
                   prayerBloc.prayerSchedulerService.cachedCoordinates?.latitude;
-              final lng =
-                  prayerBloc.state.cachedLng ??
+              final lng = prayerBloc.state.cachedLng ??
                   prayerBloc
                       .prayerSchedulerService
                       .cachedCoordinates
@@ -510,15 +514,17 @@ class _PrayerTimeAdjustmentSheetContentState
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(
-          top: BorderSide(color: AppColors.border, width: 2),
-          left: BorderSide(color: AppColors.border, width: 2),
-          right: BorderSide(color: AppColors.border, width: 2),
+          top: BorderSide(color: c.border, width: 2),
+          left: BorderSide(color: c.border, width: 2),
+          right: BorderSide(color: c.border, width: 2),
         ),
       ),
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
@@ -530,7 +536,7 @@ class _PrayerTimeAdjustmentSheetContentState
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.muted,
+                color: c.textSecondary,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -539,13 +545,15 @@ class _PrayerTimeAdjustmentSheetContentState
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back, color: c.textPrimary),
                 onPressed: () => Navigator.pop(context),
               ),
               Expanded(
                 child: Text(
                   'Prayer time adjustment',
-                  style: AppTextStyles.headlineMedium,
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    color: c.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -562,7 +570,7 @@ class _PrayerTimeAdjustmentSheetContentState
                 final adjustedTime = _adjustedTime(prayerName, currentOffset);
 
                 return NeoCard(
-                  color: AppColors.surface,
+                  color: c.surface,
                   borderRadius: 16,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -581,6 +589,7 @@ class _PrayerTimeAdjustmentSheetContentState
                                   prayerName,
                                   style: AppTextStyles.bodyLarge.copyWith(
                                     fontWeight: FontWeight.bold,
+                                    color: c.textPrimary,
                                   ),
                                 ),
                                 if (baseTime != null) ...[
@@ -588,7 +597,7 @@ class _PrayerTimeAdjustmentSheetContentState
                                   Text(
                                     baseTime,
                                     style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.muted,
+                                      color: c.textSecondary,
                                     ),
                                   ),
                                 ],
@@ -599,15 +608,15 @@ class _PrayerTimeAdjustmentSheetContentState
                           Row(
                             children: [
                               IconButton(
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.remove_circle_outline,
-                                  color: AppColors.textDark,
+                                  color: c.textPrimary,
                                 ),
                                 onPressed: currentOffset > -120
                                     ? () => _updateOffset(
-                                        prayerName,
-                                        currentOffset - 1,
-                                      )
+                                          prayerName,
+                                          currentOffset - 1,
+                                        )
                                     : null,
                               ),
                               Container(
@@ -618,13 +627,13 @@ class _PrayerTimeAdjustmentSheetContentState
                                 ),
                                 decoration: BoxDecoration(
                                   color: currentOffset != 0
-                                      ? AppColors.primaryLight
-                                      : AppColors.backgroundLight,
+                                      ? c.primaryLight
+                                      : c.background,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: currentOffset != 0
-                                        ? AppColors.primary
-                                        : AppColors.border,
+                                        ? c.primary
+                                        : c.border,
                                     width: 1.5,
                                   ),
                                 ),
@@ -633,21 +642,21 @@ class _PrayerTimeAdjustmentSheetContentState
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: currentOffset != 0
-                                        ? AppColors.primary
-                                        : AppColors.textDark,
+                                        ? c.primary
+                                        : c.textPrimary,
                                   ),
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.add_circle_outline,
-                                  color: AppColors.textDark,
+                                  color: c.textPrimary,
                                 ),
                                 onPressed: currentOffset < 120
                                     ? () => _updateOffset(
-                                        prayerName,
-                                        currentOffset + 1,
-                                      )
+                                          prayerName,
+                                          currentOffset + 1,
+                                        )
                                     : null,
                               ),
                             ],
@@ -661,7 +670,7 @@ class _PrayerTimeAdjustmentSheetContentState
                           child: Text(
                             '→ $adjustedTime',
                             style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.primary,
+                              color: c.primary,
                               fontWeight: FontWeight.w600,
                               fontSize: 12,
                             ),
@@ -676,7 +685,7 @@ class _PrayerTimeAdjustmentSheetContentState
           const SizedBox(height: 16),
           Text(
             'Positive values delay the prayer time, negative values advance it.',
-            style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
+            style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -688,12 +697,12 @@ class _PrayerTimeAdjustmentSheetContentState
                     final messenger = ScaffoldMessenger.of(context);
                     // Save the offsets to settings
                     context.read<SettingsBloc>().add(
-                      UpdateManualOffsets(manualOffsets: _localOffsets),
-                    );
+                          UpdateManualOffsets(manualOffsets: _localOffsets),
+                        );
                     // Explicitly trigger prayer time refresh
                     context.read<PrayerBloc>().add(
-                      const RefreshPrayersAndAlarms(),
-                    );
+                          const RefreshPrayersAndAlarms(),
+                        );
                     Navigator.pop(context);
                     messenger.showSnackBar(
                       const SnackBar(

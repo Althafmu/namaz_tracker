@@ -50,15 +50,16 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
   @override
   Widget build(BuildContext context) {
     final canEdit = _canEdit(context);
+    final c = AppColors.of(context);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.backgroundLight,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: c.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border(
-          top: BorderSide(color: AppColors.border, width: 2),
-          left: BorderSide(color: AppColors.border, width: 2),
-          right: BorderSide(color: AppColors.border, width: 2),
+          top: BorderSide(color: c.border, width: 2),
+          left: BorderSide(color: c.border, width: 2),
+          right: BorderSide(color: c.border, width: 2),
         ),
       ),
       child: Column(
@@ -71,7 +72,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
               height: 6,
               width: 48,
               decoration: BoxDecoration(
-                color: AppColors.textDark.withValues(alpha: 0.2),
+                color: c.textPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -85,18 +86,20 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
               children: [
                 Text(
                   'Log ${widget.prayer.name}',
-                  style: AppTextStyles.headlineLarge,
+                  style: AppTextStyles.headlineLarge.copyWith(
+                    color: c.textPrimary,
+                  ),
                 ),
                 if (!canEdit)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.textDark,
+                      color: c.textPrimary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'View Only',
-                      style: AppTextStyles.bodyMedium.copyWith(color: Colors.white),
+                      style: AppTextStyles.bodyMedium.copyWith(color: c.background),
                     ),
                   ),
               ],
@@ -124,7 +127,9 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                     // Location Selector
                     Text(
                       'LOCATION',
-                      style: AppTextStyles.sectionHeader,
+                      style: AppTextStyles.sectionHeader.copyWith(
+                        color: c.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -160,7 +165,9 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                     // Prayer Status
                     Text(
                       'STATUS',
-                      style: AppTextStyles.sectionHeader,
+                      style: AppTextStyles.sectionHeader.copyWith(
+                        color: c.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -168,7 +175,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                         StatusButton(
                           icon: Icons.schedule,
                           label: 'On Time',
-                          color: AppColors.streak,
+                          color: c.streak,
                           isSelected: _status == 'on_time',
                           onTap: () => setState(() {
                             _status = 'on_time';
@@ -178,7 +185,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                         StatusButton(
                           icon: Icons.history,
                           label: 'Late',
-                          color: AppColors.statusLate,
+                          color: c.statusLate,
                           isSelected: _status == 'late',
                           onTap: () => setState(() {
                             _status = 'late';
@@ -188,7 +195,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                         StatusButton(
                           icon: Icons.cancel,
                           label: 'Missed',
-                          color: AppColors.statusMissed,
+                          color: c.statusMissed,
                           isSelected: _status == 'missed',
                           onTap: () => setState(() {
                             _status = 'missed';
@@ -203,7 +210,9 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                       const SizedBox(height: 24),
                       Text(
                         'REASON (OPTIONAL)',
-                        style: AppTextStyles.sectionHeader,
+                        style: AppTextStyles.sectionHeader.copyWith(
+                          color: c.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       BlocBuilder<SettingsBloc, SettingsState>(
@@ -220,17 +229,17 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? AppColors.textDark : AppColors.surface,
+                                    color: isSelected ? c.textPrimary : c.surface,
                                     borderRadius: BorderRadius.circular(9999),
-                                    border: Border.all(color: AppColors.border, width: 2),
-                                    boxShadow: isSelected ? [] : const [
-                                      BoxShadow(color: AppColors.border, offset: Offset(2, 2)),
+                                    border: Border.all(color: c.border, width: 2),
+                                    boxShadow: isSelected ? [] : [
+                                      BoxShadow(color: c.border, offset: const Offset(2, 2)),
                                     ],
                                   ),
                                   child: Text(
                                     reason,
                                     style: AppTextStyles.bodyMedium.copyWith(
-                                      color: isSelected ? Colors.white : AppColors.textDark,
+                                      color: isSelected ? c.background : c.textPrimary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -258,7 +267,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                           child: NeoButton(
                             text: 'Delete',
                             icon: Icons.delete_outline,
-                            color: AppColors.error,
+                            color: c.error,
                             onPressed: () {
                               final nav = Navigator.of(context);
                               context.read<PrayerBloc>().add(LogPrayer(

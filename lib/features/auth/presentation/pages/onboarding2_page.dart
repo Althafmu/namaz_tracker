@@ -10,7 +10,7 @@ class Onboarding2Page extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.of(context).background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -23,18 +23,18 @@ class Onboarding2Page extends StatelessWidget {
                 width: double.infinity,
                 height: 250,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border.all(color: AppColors.border, width: 3),
+                  color: AppColors.of(context).surface,
+                  border: Border.all(color: AppColors.of(context).border, width: 3),
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                      color: AppColors.border,
-                      offset: Offset(4, 4),
+                      color: AppColors.of(context).border,
+                      offset: const Offset(4, 4),
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Icon(Icons.local_fire_department, size: 80, color: AppColors.streak),
+                child: Center(
+                  child: Icon(Icons.local_fire_department, size: 80, color: AppColors.of(context).streak),
                 ),
               ),
               const SizedBox(height: 40),
@@ -46,7 +46,7 @@ class Onboarding2Page extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 'Stay consistent. Log all 5 prayers daily to keep your flame alive.',
-                style: AppTextStyles.bodyLarge.copyWith(color: AppColors.muted),
+                style: AppTextStyles.bodyLarge.copyWith(color: AppColors.of(context).textSecondary),
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
@@ -55,7 +55,7 @@ class Onboarding2Page extends StatelessWidget {
                 height: 56,
                 child: NeoButton(
                   text: 'Let\'s Go',
-                  color: AppColors.primary,
+                  color: AppColors.of(context).primary,
                   onPressed: () => context.go('/signup'),
                 ),
               ),

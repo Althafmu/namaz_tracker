@@ -27,9 +27,9 @@ class PrayerRemoteDataSource {
       'completed': completed,
       'in_jamaat': inJamaat,
       'location': location,
-      if (status != null) 'status': status,
-      if (reason != null) 'reason': reason,
-      if (dateKey != null) 'date': dateKey,
+      'status': ?status,
+      'reason': ?reason,
+      'date': ?dateKey,
     });
     return response.data as Map<String, dynamic>;
   }

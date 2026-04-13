@@ -122,6 +122,7 @@ class PrayerSchedulerService {
         prayerConfigs: settings.prayerConfigs,
         alarmSound: settings.alarmSound,
         manualOffsets: settings.manualOffsets,
+        alarmDurationMinutes: settings.alarmDurationMinutes,
       );
     } catch (e) {
       debugPrint('[PrayerScheduler] Failed to schedule notifications: $e');

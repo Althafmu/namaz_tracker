@@ -5,15 +5,15 @@ import 'package:flutter/material.dart';
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../domain/entities/prayer.dart';
 
-/// Segmented ring painter that shows prayer completion status.
-/// Used in both the hero streak ring and calendar cell rings.
 class StreakRingPainter extends CustomPainter {
   final List<Prayer> prayers;
   final double strokeWidth;
   final double gapAngle;
+  final AppColorPalette colors;
 
   StreakRingPainter({
     required this.prayers,
+    required this.colors,
     this.strokeWidth = 8.0,
     this.gapAngle = 0.08,
   });
@@ -30,17 +30,17 @@ class StreakRingPainter extends CustomPainter {
     // If only one prayer, draw a full circle without gaps
     if (totalSegments == 1) {
       final prayer = prayers.first;
-      Color segmentColor = AppColors.statusNotLogged;
+      Color segmentColor = colors.statusNotLogged;
 
       if (prayer.isCompleted) {
         if (prayer.status == 'late') {
-          segmentColor = AppColors.statusLate;
+          segmentColor = colors.statusLate;
         } else if (prayer.status == 'missed') {
-          segmentColor = AppColors.statusMissed;
+          segmentColor = colors.statusMissed;
         } else {
           segmentColor = prayer.inJamaat
-              ? AppColors.statusGroup
-              : AppColors.statusAlone;
+              ? colors.statusGroup
+              : colors.statusAlone;
         }
       }
 
@@ -73,17 +73,17 @@ class StreakRingPainter extends CustomPainter {
 
     for (int i = 0; i < totalSegments; i++) {
       final prayer = prayers[i];
-      Color segmentColor = AppColors.statusNotLogged;
+      Color segmentColor = colors.statusNotLogged;
 
       if (prayer.isCompleted) {
         if (prayer.status == 'late') {
-          segmentColor = AppColors.statusLate;
+          segmentColor = colors.statusLate;
         } else if (prayer.status == 'missed') {
-          segmentColor = AppColors.statusMissed;
+          segmentColor = colors.statusMissed;
         } else {
           segmentColor = prayer.inJamaat
-              ? AppColors.statusGroup
-              : AppColors.statusAlone;
+              ? colors.statusGroup
+              : colors.statusAlone;
         }
       }
 

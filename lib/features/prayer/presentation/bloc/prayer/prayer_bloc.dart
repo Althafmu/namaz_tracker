@@ -73,9 +73,18 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     LoadDailyStatus event,
     Emitter<PrayerState> emit,
   ) async {
-    if (state.prayers.isEmpty) {
-      emit(state.copyWith(prayers: Prayer.defaultPrayers(), isLoading: true));
+    // 0. Ensure 'prayers' list in state matches today's entry in historical log.
+    // This handles the case where midnight has passed and we need to reset the 
+    // "active" prayers list to uncompleted status for the new day.
+    final todayLog = state.historicalLog[PrayerState.todayKey];
+    if (todayLog != null) {
+      emit(state.copyWith(prayers: todayLog));
+    } else {
+      // Clear today's active list for the brand new day
+      emit(state.copyWith(prayers: Prayer.defaultPrayers()));
     }
+
+    emit(state.copyWith(isLoading: true));
 
     // Seed cached coordinates from persisted state so they're available
     // before GPS resolves (allows instant recalc on method change).
@@ -176,7 +185,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     }
 
     // 3. Fetch detailed history for the current effective calendar month
-    final effectiveNow = DateTime.now().subtract(const Duration(hours: 4));
+    final effectiveNow = DateTime.now();
     add(LoadMonthHistory(year: effectiveNow.year, month: effectiveNow.month));
 
     // 4. Fetch aggregated reason counts
@@ -201,20 +210,18 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       return prayer;
     }).toList();
 
-    // 2. Optimistic streak update (only if modifying today's prayers)
-    var updatedStreak = state.streak;
-    if (isToday) {
-      final completedCount = updatedPrayers.where((p) => p.isCompleted).length;
-      if (completedCount == 5) {
-        updatedStreak = state.streak.copyWith(
-          currentStreak: state.streak.currentStreak + 1,
-        );
-      }
-    }
-
-    // 3. Update historical log with full details
+    // 2. Update historical log with full details
     final updatedLog = Map<String, List<Prayer>>.from(state.historicalLog);
     updatedLog[effectiveDateKey] = updatedPrayers;
+
+    // 3. Optimistic streak recalculation from local data
+    //    Build a temporary state with the updated prayers + log so the
+    //    streak helper sees the freshest data.
+    final tempState = state.copyWith(
+      prayers: isToday ? updatedPrayers : state.prayers,
+      historicalLog: updatedLog,
+    );
+    final updatedStreak = tempState.calculateOptimisticStreak();
 
     // 4. Optimistic update of reasonCounts for instant UI feedback
     var updatedReasonCounts = Map<String, int>.from(state.reasonCounts);
@@ -412,6 +419,12 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
           fetchedMonths: updatedFetched,
         ),
       );
+
+      // Recalculate streak — new month data may connect streak segments
+      final recalcStreak = state.copyWith(
+        historicalLog: updatedLog,
+      ).calculateOptimisticStreak();
+      emit(state.copyWith(streak: recalcStreak));
     } catch (e) {
       debugPrint('[PrayerBloc] Failed to load month history for $monthKey: $e');
     }

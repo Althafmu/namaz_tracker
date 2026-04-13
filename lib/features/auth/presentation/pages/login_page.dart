@@ -63,14 +63,14 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.of(context).background,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state.status == AuthStatus.authenticated) {
             context.go('/');
           } else if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage ?? 'Login Failed'), backgroundColor: AppColors.primary),
+              SnackBar(content: Text(state.errorMessage ?? 'Login Failed'), backgroundColor: AppColors.of(context).primary),
             );
           }
         },
@@ -83,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 48),
                 Text('Welcome Back!', style: AppTextStyles.headlineLarge),
                 const SizedBox(height: 8),
-                Text('Log in to continue your prayer streak.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted)),
+                Text('Log in to continue your prayer streak.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.of(context).textSecondary)),
                 const SizedBox(height: 48),
                 NeoTextField(
                   label: 'Email',
@@ -101,13 +101,13 @@ class _LoginPageState extends State<LoginPage> {
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
                     if (state.status == AuthStatus.loading) {
-                      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                      return Center(child: CircularProgressIndicator(color: AppColors.of(context).primary));
                     }
                     return SizedBox(
                       height: 56,
                       child: NeoButton(
                         text: 'Login',
-                        color: AppColors.primary,
+                        color: AppColors.of(context).primary,
                         onPressed: _onLogin,
                       ),
                     );
@@ -120,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: Text(
                       'Don\'t have an account? Sign Up',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textDark,
+                        color: AppColors.of(context).textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

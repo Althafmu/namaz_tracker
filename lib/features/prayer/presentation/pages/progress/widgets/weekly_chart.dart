@@ -20,19 +20,24 @@ class WeeklyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    
     return NeoCard(
-      color: AppColors.surface,
+      color: c.surface,
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('This Week', style: AppTextStyles.bodyLarge),
+              Text(
+                'This Week', 
+                style: AppTextStyles.bodyLarge.copyWith(color: c.textPrimary),
+              ),
               Text(
                 '$totalPrayers/35 Prayers',
                 style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.primary,
+                  color: c.primary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -57,10 +62,10 @@ class WeeklyChart extends StatelessWidget {
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF0F0F0),
+                              color: c.background,
                               borderRadius: BorderRadius.circular(9999),
                               border: Border.all(
-                                color: const Color(0xFFE0E0E0),
+                                color: c.borderPrimary.withValues(alpha: 0.1),
                                 width: 2,
                               ),
                             ),
@@ -71,8 +76,8 @@ class WeeklyChart extends StatelessWidget {
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: isToday
-                                        ? AppColors.streak
-                                        : AppColors.primary,
+                                        ? c.streak
+                                        : c.primary,
                                     borderRadius: BorderRadius.circular(9999),
                                   ),
                                 ),
@@ -85,8 +90,9 @@ class WeeklyChart extends StatelessWidget {
                           dayLabels.length > index ? dayLabels[index] : '',
                           style: AppTextStyles.badge.copyWith(
                             color: isToday
-                                ? AppColors.textDark
-                                : AppColors.muted,
+                                ? c.textPrimary
+                                : c.textSecondary,
+                            fontWeight: isToday ? FontWeight.w900 : FontWeight.w500,
                           ),
                         ),
                       ],

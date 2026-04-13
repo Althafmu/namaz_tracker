@@ -17,6 +17,8 @@ class ProgressPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return BlocBuilder<PrayerBloc, PrayerState>(
       builder: (context, state) {
         return SafeArea(
@@ -32,7 +34,9 @@ class ProgressPage extends StatelessWidget {
                     children: [
                       Text(
                         'Progress Room',
-                        style: AppTextStyles.headlineMedium,
+                        style: AppTextStyles.headlineMedium.copyWith(
+                          color: c.textPrimary,
+                        ),
                       ),
                       GestureDetector(
                         onTap: () => _shareProgress(context, state),
@@ -40,22 +44,22 @@ class ProgressPage extends StatelessWidget {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: c.surface,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: AppColors.border,
+                              color: c.border,
                               width: 2,
                             ),
-                            boxShadow: const [
+                            boxShadow: [
                               BoxShadow(
-                                color: AppColors.border,
-                                offset: Offset(2, 2),
+                                color: c.border,
+                                offset: const Offset(2, 2),
                               ),
                             ],
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.share,
-                            color: AppColors.textDark,
+                            color: c.textPrimary,
                             size: 20,
                           ),
                         ),
@@ -76,23 +80,30 @@ class ProgressPage extends StatelessWidget {
                       children: [
                         CustomPaint(
                           size: const Size(200, 200),
-                          painter: StreakRingPainter(prayers: state.prayers),
+                          painter: StreakRingPainter(
+                            prayers: state.prayers,
+                            colors: c,
+                          ),
                         ),
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.local_fire_department,
-                              color: AppColors.streak,
+                              color: c.streak,
                               size: 36,
                             ),
                             Text(
                               '${state.streak.currentStreak}',
-                              style: AppTextStyles.streakNumber,
+                              style: AppTextStyles.streakNumber.copyWith(
+                                color: c.textPrimary,
+                              ),
                             ),
                             Text(
                               'DAY STREAK',
-                              style: AppTextStyles.sectionHeader,
+                              style: AppTextStyles.sectionHeader.copyWith(
+                                color: c.textSecondary,
+                              ),
                             ),
                           ],
                         ),
@@ -134,6 +145,7 @@ class ProgressPage extends StatelessWidget {
                         'Badges',
                         style: AppTextStyles.headlineMedium.copyWith(
                           fontSize: 20,
+                          color: c.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 16),

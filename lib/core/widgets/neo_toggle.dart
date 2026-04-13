@@ -6,23 +6,28 @@ import '../theme/app_colors.dart';
 ///
 /// Replicates the custom toggle from profile.html:
 /// - Width: 64px, Height: 36px
-/// - Border: 2px solid #2B2D42
+/// - Border: 2px solid border
 /// - Knob: 28px circle with border
 /// - Active: background-color changes to jamaat (#4ECDC4)
+/// - Inactive: background-color changes to error (red)
 class NeoToggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
-  final Color activeColor;
+  final Color? activeColor;
 
   const NeoToggle({
     super.key,
     required this.value,
     this.onChanged,
-    this.activeColor = AppColors.jamaat,
+    this.activeColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final effectiveActiveColor = activeColor ?? c.jamaat;
+    final inactiveColor = c.error;
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -33,16 +38,16 @@ class NeoToggle extends StatelessWidget {
         width: 64,
         height: 36,
         decoration: BoxDecoration(
-          color: value ? activeColor : AppColors.surface,
+          color: value ? effectiveActiveColor : inactiveColor,
           borderRadius: BorderRadius.circular(9999),
           border: Border.all(
-            color: AppColors.border,
+            color: c.border,
             width: 2.0,
           ),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: AppColors.border,
-              offset: Offset(2, 2),
+              color: c.border,
+              offset: const Offset(2, 2),
               blurRadius: 0,
               spreadRadius: 0,
             ),
@@ -56,10 +61,10 @@ class NeoToggle extends StatelessWidget {
             height: 28,
             margin: const EdgeInsets.all(2),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: c.surface,
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.border,
+                color: c.border,
                 width: 2.0,
               ),
             ),

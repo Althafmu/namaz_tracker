@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'app_colors.dart';
 
 /// Text styles using Space Grotesk from the Stitch mockups.
 class AppTextStyles {
   AppTextStyles._();
 
-  static TextStyle get _base => GoogleFonts.spaceGrotesk(
-        color: AppColors.textDark,
-      );
+  static TextStyle get _base => GoogleFonts.spaceGrotesk();
 
   // Headlines
   static TextStyle get headlineLarge => _base.copyWith(
@@ -21,6 +18,12 @@ class AppTextStyles {
         fontSize: 24,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.5,
+      );
+
+  static TextStyle get headlineSmall => _base.copyWith(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.25,
       );
 
   // Prayer card title (uppercase, tracked)
@@ -44,7 +47,7 @@ class AppTextStyles {
   static TextStyle get bodySmall => _base.copyWith(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        color: AppColors.muted,
+        // Note: Caller should specify color via copyWith with theme-aware color
       );
 
   // Section headers (uppercase, tracked)
@@ -52,7 +55,7 @@ class AppTextStyles {
         fontSize: 12,
         fontWeight: FontWeight.w700,
         letterSpacing: 2.0,
-        color: AppColors.muted,
+        // Note: Caller should specify color via copyWith with theme-aware color
       );
 
   // Bottom nav label

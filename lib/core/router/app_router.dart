@@ -20,6 +20,9 @@ import '../../features/auth/presentation/bloc/auth_state.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../../features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
+import '../../features/prayer/presentation/bloc/prayer/prayer_event.dart';
+import '../../features/prayer/presentation/bloc/prayer/prayer_state.dart';
 
 /// A [Listenable] that notifies when the [AuthBloc] state changes.
 class AuthRefreshListenable extends ChangeNotifier {
@@ -152,21 +155,22 @@ class _AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final index = _currentIndex(context);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: c.background,
       body: child,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
+        decoration: BoxDecoration(
+          color: c.surface,
           border: Border(
-            top: BorderSide(color: AppColors.border, width: 2),
+            top: BorderSide(color: c.border, width: 2),
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.border,
-              offset: Offset(0, -4),
+              color: c.border,
+              offset: const Offset(0, -4),
               blurRadius: 0,
             ),
           ],
@@ -181,7 +185,10 @@ class _AppShell extends StatelessWidget {
                   icon: Icons.home,
                   label: 'HOME',
                   isActive: index == 0,
-                  onTap: () => context.go('/'),
+                  onTap: () {
+                    GetIt.I<PrayerBloc>().add(SelectDate(PrayerState.todayKey));
+                    context.go('/');
+                  },
                 ),
                 _NavItem(
                   icon: Icons.trending_up,
@@ -220,6 +227,8 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -231,13 +240,13 @@ class _NavItem extends StatelessWidget {
             Icon(
               icon,
               size: 28,
-              color: isActive ? AppColors.primary : AppColors.muted,
+              color: isActive ? c.primary : c.textSecondary,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: AppTextStyles.navLabel.copyWith(
-                color: isActive ? AppColors.primary : AppColors.muted,
+                color: isActive ? c.primary : c.textSecondary,
               ),
             ),
           ],

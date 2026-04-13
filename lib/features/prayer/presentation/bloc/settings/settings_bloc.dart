@@ -17,6 +17,9 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     on<RequestNotificationPermissions>(_onRequestNotificationPermissions);
     on<UpdateManualOffsets>(_onUpdateManualOffsets);
     on<UpdateMissedReasons>(_onUpdateMissedReasons);
+    on<CycleThemeMode>(_onCycleThemeMode);
+    on<UpdateThemeMode>(_onUpdateThemeMode);
+    on<UpdateAlarmDuration>(_onUpdateAlarmDuration);
   }
 
   void _onUpdateCalculationSettings(
@@ -81,6 +84,36 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     emit(state.copyWith(missedReasons: event.missedReasons));
+  }
+
+  void _onCycleThemeMode(
+    CycleThemeMode event,
+    Emitter<SettingsState> emit,
+  ) {
+    String nextMode;
+    if (state.themeMode == 'system') {
+      nextMode = 'light';
+    } else if (state.themeMode == 'light') {
+      nextMode = 'dark';
+    } else {
+      nextMode = 'system';
+    }
+    
+    emit(state.copyWith(themeMode: nextMode));
+  }
+
+  void _onUpdateThemeMode(
+    UpdateThemeMode event,
+    Emitter<SettingsState> emit,
+  ) {
+    emit(state.copyWith(themeMode: event.themeMode));
+  }
+
+  void _onUpdateAlarmDuration(
+    UpdateAlarmDuration event,
+    Emitter<SettingsState> emit,
+  ) {
+    emit(state.copyWith(alarmDurationMinutes: event.duration));
   }
 
   @override

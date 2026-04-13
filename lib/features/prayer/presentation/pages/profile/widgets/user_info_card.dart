@@ -20,6 +20,10 @@ class UserInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    // Dark border color works well on gold/amber streak background in both themes
+    final onGoldText = c.border;
+
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
         final user = authState.user;
@@ -36,7 +40,8 @@ class UserInfoCard extends StatelessWidget {
                 : 'U');
 
         return NeoCard(
-          color: AppColors.streak,
+          color: c.streak,
+          borderColor: c.border,
           padding: const EdgeInsets.all(24),
           borderRadius: 24,
           child: Stack(
@@ -49,17 +54,23 @@ class UserInfoCard extends StatelessWidget {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: c.surface,
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: AppColors.border, width: 2),
+                          color: c.border, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: c.border,
+                          offset: const Offset(3, 3),
+                        ),
+                      ],
                     ),
                     child: Center(
                       child: Text(
                         initials,
                         style:
                             AppTextStyles.headlineMedium.copyWith(
-                          color: AppColors.primary,
+                          color: c.textPrimary,
                         ),
                       ),
                     ),
@@ -70,12 +81,13 @@ class UserInfoCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(name,
-                            style: AppTextStyles.headlineMedium),
+                            style: AppTextStyles.headlineMedium.copyWith(
+                              color: onGoldText,
+                            )),
                         Text(
                           email,
                           style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textDark
-                                .withValues(alpha: 0.8),
+                            color: onGoldText.withValues(alpha: 0.7),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -84,29 +96,31 @@ class UserInfoCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: c.surface,
                             borderRadius:
                                 BorderRadius.circular(9999),
                             border: Border.all(
-                                color: AppColors.border, width: 2),
-                            boxShadow: const [
+                                color: c.border, width: 2),
+                            boxShadow: [
                               BoxShadow(
-                                color: AppColors.border,
-                                offset: Offset(2, 2),
+                                color: c.border,
+                                offset: const Offset(2, 2),
                               ),
                             ],
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                   Icons.local_fire_department,
-                                  color: AppColors.primary,
+                                  color: c.primary,
                                   size: 16),
                               const SizedBox(width: 4),
                               Text(
                                   '$currentStreak Day Streak!',
-                                  style: AppTextStyles.badge),
+                                  style: AppTextStyles.badge.copyWith(
+                                    color: c.textPrimary,
+                                  )),
                             ],
                           ),
                         ),
@@ -124,19 +138,19 @@ class UserInfoCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: c.surface,
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: AppColors.border, width: 2),
-                      boxShadow: const [
+                          color: c.border, width: 2),
+                      boxShadow: [
                         BoxShadow(
-                          color: AppColors.border,
-                          offset: Offset(2, 2),
+                          color: c.border,
+                          offset: const Offset(2, 2),
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.edit,
-                        size: 18, color: AppColors.textDark),
+                    child: Icon(Icons.edit,
+                        size: 18, color: c.textPrimary),
                   ),
                 ),
               ),

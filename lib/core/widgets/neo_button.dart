@@ -6,13 +6,13 @@ import '../theme/app_text_styles.dart';
 /// A Neo-brutalist button with press animation.
 ///
 /// Replicates the CSS:
-/// - Normal: box-shadow: 4px 4px 0px 0px #2B2D42
+/// - Normal: box-shadow: 4px 4px 0px 0px border
 /// - Active: box-shadow: 0px; transform: translate(4px, 4px)
 class NeoButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
-  final Color color;
-  final Color textColor;
+  final Color? color;
+  final Color? textColor;
   final IconData? icon;
   final double borderRadius;
   final double height;
@@ -23,8 +23,8 @@ class NeoButton extends StatefulWidget {
     super.key,
     required this.text,
     this.onPressed,
-    this.color = AppColors.primary,
-    this.textColor = AppColors.surface,
+    this.color,
+    this.textColor,
     this.icon,
     this.borderRadius = 16.0,
     this.height = 56.0,
@@ -41,9 +41,14 @@ class _NeoButtonState extends State<NeoButton> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = widget.disabled ? AppColors.muted : widget.color;
-    final effectiveTextColor = widget.disabled ? AppColors.textDark.withValues(alpha: 0.5) : widget.textColor;
-    final effectiveBorderColor = widget.disabled ? AppColors.muted : AppColors.border;
+    final c = AppColors.of(context);
+    final effectiveColor = widget.disabled
+        ? c.textSecondary
+        : (widget.color ?? c.primary);
+    final effectiveTextColor = widget.disabled
+        ? c.textPrimary.withValues(alpha: 0.5)
+        : (widget.textColor ?? c.surface);
+    final effectiveBorderColor = widget.disabled ? c.textSecondary : c.border;
 
     return GestureDetector(
       onTapDown: widget.disabled ? null : (_) {
@@ -76,7 +81,7 @@ class _NeoButtonState extends State<NeoButton> {
           boxShadow: [
             if (!widget.disabled)
               BoxShadow(
-                color: AppColors.border,
+                color: c.border,
                 offset: Offset(
                   _isPressed ? 0.0 : 4.0,
                   _isPressed ? 0.0 : 4.0,

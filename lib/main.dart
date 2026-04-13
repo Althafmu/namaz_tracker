@@ -12,6 +12,7 @@ import 'features/prayer/data/repositories/offline_queue_repository.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_event.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
+import 'features/prayer/presentation/bloc/settings/settings_state.dart';
 import 'injection_container.dart';
 
 void main() async {
@@ -77,11 +78,28 @@ class FalahApp extends StatelessWidget {
         BlocProvider.value(value: sl<SettingsBloc>()),
         BlocProvider(create: (_) => sl<PrayerBloc>()..add(const LoadDailyStatus())),
       ],
-      child: MaterialApp.router(
-        title: 'Falah: Prayer Tracker',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        routerConfig: appRouter,
+      child: BlocBuilder<SettingsBloc, SettingsState>(
+        buildWhen: (prev, curr) => prev.themeMode != curr.themeMode,
+        builder: (context, settingsState) {
+          
+          ThemeMode currentThemeMode;
+          if (settingsState.themeMode == 'dark') {
+            currentThemeMode = ThemeMode.dark;
+          } else if (settingsState.themeMode == 'light') {
+            currentThemeMode = ThemeMode.light;
+          } else {
+            currentThemeMode = ThemeMode.system;
+          }
+
+          return MaterialApp.router(
+            title: 'Falah: Prayer Tracker',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: currentThemeMode,
+            routerConfig: appRouter,
+          );
+        },
       ),
     );
   }

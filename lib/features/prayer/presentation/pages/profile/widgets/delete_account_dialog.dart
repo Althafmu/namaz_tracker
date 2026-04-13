@@ -9,16 +9,17 @@ import '../../../../../auth/presentation/bloc/auth_event.dart';
 
 /// Shows the delete account confirmation dialog.
 void showDeleteAccountDialog(BuildContext context) {
+  final c = AppColors.of(context);
   final confirmController = TextEditingController();
 
   showDialog(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
       builder: (ctx, setDialogState) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: c.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.border, width: 2),
+          side: BorderSide(color: c.border, width: 2),
         ),
         title: Row(
           children: [
@@ -36,32 +37,32 @@ void showDeleteAccountDialog(BuildContext context) {
           children: [
             Text(
               'This will log you out locally. Your account and prayer data will remain on our server until server-side deletion is available. To fully delete your data, please contact support.',
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.copyWith(color: c.textPrimary),
             ),
             const SizedBox(height: 16),
             Text(
               'Type DELETE to confirm:',
               style: AppTextStyles.bodySmall
-                  .copyWith(fontWeight: FontWeight.bold),
+                  .copyWith(fontWeight: FontWeight.bold, color: c.textPrimary),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: confirmController,
               onChanged: (_) => setDialogState(() {}),
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.copyWith(color: c.textPrimary),
               decoration: InputDecoration(
                 hintText: 'DELETE',
                 hintStyle:
-                    AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
+                    AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
-                      const BorderSide(color: AppColors.border, width: 2),
+                      BorderSide(color: c.border, width: 2),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
-                      const BorderSide(color: AppColors.border, width: 2),
+                      BorderSide(color: c.border, width: 2),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -79,20 +80,19 @@ void showDeleteAccountDialog(BuildContext context) {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(
               'Cancel',
-              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.muted),
+              style: AppTextStyles.bodyLarge.copyWith(color: c.textSecondary),
             ),
           ),
           NeoButton(
             text: 'Delete',
             color: confirmController.text == 'DELETE'
                 ? Colors.redAccent
-                : AppColors.muted,
+                : c.textSecondary,
             isFullWidth: false,
             height: 44,
             onPressed: confirmController.text == 'DELETE'
                 ? () {
                     Navigator.of(dialogContext).pop();
-                    // Server-side deletion API not yet available — local logout only
                     context.read<AuthBloc>().add(LogoutRequested());
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(

@@ -1,6 +1,6 @@
+import 'dart:typed_data';
 import 'package:adhan/adhan.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:typed_data';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -324,6 +324,7 @@ class NotificationService {
     required Map<String, PrayerNotificationConfig> prayerConfigs,
     String alarmSound = 'system',
     Map<String, int>? manualOffsets,
+    int alarmDurationMinutes = 1,
   }) async {
     await cancelAllNotifications();
 
@@ -356,14 +357,14 @@ class NotificationService {
       //   Dhuhr  → Asr start
       //   Asr    → Maghrib start
       //   Maghrib→ Isha - 30 mins (earliest prayer preferred)
-      //   Isha   → midnight same day
-      final midnight = DateTime(date.year, date.month, date.day, 23, 59);
+      //   Isha   → 10:00 PM (end of active day for streak protection)
+      final ishaEnd = DateTime(date.year, date.month, date.day, 22, 00);
       final prayerEndTimes = {
         'Fajr': times.sunrise,
         'Dhuhr': times.asr,
         'Asr': times.maghrib,
         'Maghrib': times.isha.subtract(const Duration(minutes: 30)),
-        'Isha': midnight,
+        'Isha': ishaEnd,
       };
 
       int prayerIndex = 1;
@@ -405,6 +406,7 @@ class NotificationService {
                 scheduledTime: reminderTime,
                 isAlarmStyle: true,
                 alarmSound: alarmSound,
+                alarmDurationMinutes: alarmDurationMinutes,
               );
               if (result == null) scheduledCount++;
             }
@@ -428,6 +430,7 @@ class NotificationService {
                 scheduledTime: streakAlertTime,
                 isAlarmStyle: true,
                 alarmSound: alarmSound,
+                alarmDurationMinutes: alarmDurationMinutes,
               );
               if (result == null) scheduledCount++;
             }
@@ -452,6 +455,7 @@ class NotificationService {
     required DateTime scheduledTime,
     bool isAlarmStyle = false,
     String alarmSound = 'system',
+    int alarmDurationMinutes = 1,
   }) async {
     try {
       final tz.TZDateTime tzScheduledTime =
@@ -496,6 +500,7 @@ class NotificationService {
         category: AndroidNotificationCategory.alarm,
         visibility: NotificationVisibility.public,
         audioAttributesUsage: AudioAttributesUsage.alarm,
+        timeoutAfter: alarmDurationMinutes * 60000, // Stop ringing after dynamic duration
         additionalFlags: Int32List.fromList(<int>[4]), // FLAG_INSISTENT (loops sound until dismissed)
         actions: <AndroidNotificationAction>[
           const AndroidNotificationAction(

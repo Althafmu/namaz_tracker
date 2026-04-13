@@ -18,6 +18,7 @@ class ContributionMap extends StatelessWidget {
   static const int _weeksToShow = 13;
 
   // Color scale: index = completed prayers (0-5).
+  // Semantic colors that work well in both themes.
   static const List<Color> _colorScale = [
     Color(0xFFEBEDF0), // 0 prayers — grey
     Color(0xFFFFE0B2), // 1 prayer  — light amber
@@ -29,6 +30,7 @@ class ContributionMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final now = DateTime.now();
     // We start from the beginning of the week containing (_weeksToShow - 1)
     // weeks ago, so the grid is a neat rectangle.
@@ -46,7 +48,7 @@ class ContributionMap extends StatelessWidget {
     const dayLabels = ['M', '', 'W', '', 'F', '', 'S'];
 
     return NeoCard(
-      color: AppColors.surface,
+      color: c.surface,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,8 +59,8 @@ class ContributionMap extends StatelessWidget {
             children: [
               Text('Prayer Heatmap',
                   style: AppTextStyles.bodyLarge
-                      .copyWith(fontWeight: FontWeight.w700)),
-              _buildLegend(),
+                      .copyWith(fontWeight: FontWeight.w700, color: c.textPrimary)),
+              _buildLegend(c),
             ],
           ),
           const SizedBox(height: 12),
@@ -72,7 +74,7 @@ class ContributionMap extends StatelessWidget {
               final clampedCell = cellSize.clamp(8.0, 14.0);
               final cellTotalSize = clampedCell + 2;
               final columnWidth = cellTotalSize;
-              
+
               final monthLabels = _buildMonthLabels(gridStart, totalDays, columnWidth);
 
               return Row(
@@ -92,7 +94,7 @@ class ContributionMap extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.muted,
+                                    color: c.textSecondary,
                                     height: 1.0,
                                   ),
                                 ),
@@ -119,7 +121,7 @@ class ContributionMap extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.muted,
+                                    color: c.textSecondary,
                                   ),
                                 ),
                               );
@@ -188,18 +190,18 @@ class ContributionMap extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Summary stats row
-          _buildSummaryRow(),
+          _buildSummaryRow(c),
         ],
       ),
     );
   }
 
-  Widget _buildLegend() {
+  Widget _buildLegend(AppColorPalette c) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text('Less ',
-            style: TextStyle(fontSize: 9, color: AppColors.muted)),
+            style: TextStyle(fontSize: 9, color: c.textSecondary)),
         ...List.generate(6, (i) {
           return Container(
             width: 10,
@@ -212,12 +214,12 @@ class ContributionMap extends StatelessWidget {
           );
         }),
         Text(' More',
-            style: TextStyle(fontSize: 9, color: AppColors.muted)),
+            style: TextStyle(fontSize: 9, color: c.textSecondary)),
       ],
     );
   }
 
-  Widget _buildSummaryRow() {
+  Widget _buildSummaryRow(AppColorPalette c) {
     final now = DateTime.now();
     final thirtyDaysAgo = now.subtract(const Duration(days: 30));
     int totalPrayers = 0;
@@ -241,17 +243,20 @@ class ContributionMap extends StatelessWidget {
         _StatChip(
           label: 'Active Days',
           value: '$activeDays',
-          color: AppColors.streak,
+          color: c.streak,
+          labelColor: c.textSecondary,
         ),
         _StatChip(
           label: 'Perfect Days',
           value: '$perfectDays',
-          color: AppColors.jamaat,
+          color: c.jamaat,
+          labelColor: c.textSecondary,
         ),
         _StatChip(
           label: 'Total Prayers',
           value: '$totalPrayers',
-          color: AppColors.primary,
+          color: c.primary,
+          labelColor: c.textSecondary,
         ),
       ],
     );
@@ -262,11 +267,13 @@ class _StatChip extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final Color labelColor;
 
   const _StatChip({
     required this.label,
     required this.value,
     required this.color,
+    required this.labelColor,
   });
 
   @override
@@ -287,7 +294,7 @@ class _StatChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: AppColors.muted,
+            color: labelColor,
           ),
         ),
       ],

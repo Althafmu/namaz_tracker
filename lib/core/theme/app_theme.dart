@@ -8,26 +8,62 @@ class AppTheme {
 
   static ThemeData get lightTheme => ThemeData(
         useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.backgroundLight,
-        colorScheme: const ColorScheme.light(
-          primary: AppColors.primary,
-          secondary: AppColors.jamaat,
-          tertiary: AppColors.streak,
-          surface: AppColors.surface,
-          onSurface: AppColors.textDark,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: AppColors.light.background,
+        colorScheme: ColorScheme.light(
+          primary: AppColors.light.primary,
+          secondary: AppColors.light.jamaat,
+          tertiary: AppColors.light.streak,
+          surface: AppColors.light.surface,
+          onSurface: AppColors.light.textPrimary,
         ),
-        textTheme: GoogleFonts.spaceGroteskTextTheme(),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.backgroundLight,
+        textTheme: GoogleFonts.spaceGroteskTextTheme().apply(
+          bodyColor: AppColors.light.textPrimary,
+          displayColor: AppColors.light.textPrimary,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppColors.light.background,
           elevation: 0,
           centerTitle: false,
-          foregroundColor: AppColors.textDark,
+          foregroundColor: AppColors.light.textPrimary,
         ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: AppColors.surface,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.muted,
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: AppColors.light.surface,
+          selectedItemColor: AppColors.light.primary,
+          unselectedItemColor: AppColors.light.textSecondary,
           type: BottomNavigationBarType.fixed,
         ),
+      );
+
+  static ThemeData get darkTheme => ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: AppColors.dark.background,
+        colorScheme: ColorScheme.dark(
+          primary: AppColors.dark.primary,
+          secondary: AppColors.dark.jamaat,
+          tertiary: AppColors.dark.streak,
+          surface: AppColors.dark.surface,
+          onSurface: AppColors.dark.textPrimary,
+        ),
+        textTheme: GoogleFonts.spaceGroteskTextTheme(
+          ThemeData.dark().textTheme,
+        ).apply(
+          bodyColor: AppColors.dark.textPrimary,
+          displayColor: AppColors.dark.textPrimary,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: AppColors.dark.background,
+          elevation: 0,
+          centerTitle: false,
+          foregroundColor: AppColors.dark.textPrimary,
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: AppColors.dark.surface,
+          selectedItemColor: AppColors.dark.primary,
+          unselectedItemColor: AppColors.dark.textSecondary,
+          type: BottomNavigationBarType.fixed,
+        ),
+        dividerColor: AppColors.dark.border.withValues(alpha: 0.2),
       );
 }

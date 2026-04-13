@@ -9,30 +9,33 @@ import '../../../../../auth/presentation/bloc/auth_event.dart';
 
 /// Shows the logout confirmation dialog.
 void showLogoutDialog(BuildContext context) {
+  final c = AppColors.of(context);
+
   showDialog(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: c.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.border, width: 2),
+        side: BorderSide(color: c.border, width: 2),
       ),
-      title: Text('Log Out', style: AppTextStyles.headlineMedium),
+      title: Text('Log Out', style: AppTextStyles.headlineMedium.copyWith(
+        color: c.textPrimary,
+      )),
       content: Text(
         'Are you sure you want to log out? Your locally-saved data will be preserved.',
-        style: AppTextStyles.bodyMedium,
+        style: AppTextStyles.bodyMedium.copyWith(color: c.textPrimary),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(),
           child: Text(
             'Cancel',
-            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.muted),
+            style: AppTextStyles.bodyLarge.copyWith(color: c.textSecondary),
           ),
         ),
         NeoButton(
           text: 'Log Out',
-          color: AppColors.primary,
           isFullWidth: false,
           height: 44,
           onPressed: () {

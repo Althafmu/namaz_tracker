@@ -50,6 +50,7 @@ class MonthlyCalendar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final firstDayOfMonth = DateTime(year, month, 1);
     final daysInMonth = DateUtils.getDaysInMonth(year, month);
     final startWeekday = firstDayOfMonth.weekday; // 1=Monday, 7=Sunday
@@ -61,7 +62,7 @@ class MonthlyCalendar extends StatelessWidget {
     final totalGridItems = (startWeekday - 1) + daysInMonth;
 
     return NeoCard(
-      color: AppColors.primary,
+      color: c.primary,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,7 +72,7 @@ class MonthlyCalendar extends StatelessWidget {
             children: [
               Text(
                 '${_getMonthName(month)} $year',
-                style: AppTextStyles.headlineMedium,
+                style: AppTextStyles.headlineMedium.copyWith(color: c.textPrimary),
               ),
               Row(
                 children: [
@@ -80,13 +81,13 @@ class MonthlyCalendar extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.accentFocus.withOpacity(0.2),
+                        color: c.accentFocus.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios,
                         size: 16,
-                        color: AppColors.textDark,
+                        color: c.textPrimary,
                       ),
                     ),
                   ),
@@ -96,15 +97,15 @@ class MonthlyCalendar extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.accentFocus.withValues(alpha: 0.2),
+                        color: c.accentFocus.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
                         Icons.arrow_forward_ios,
                         size: 16,
                         color: isFutureBlocked
-                            ? AppColors.textDark.withValues(alpha: 0.3)
-                            : AppColors.textDark,
+                            ? c.textPrimary.withValues(alpha: 0.3)
+                            : c.textPrimary,
                       ),
                     ),
                   ),
@@ -117,8 +118,8 @@ class MonthlyCalendar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.accentFocus,
-              border: Border.all(color: AppColors.textDark, width: 2),
+              color: c.accentFocus,
+              border: Border.all(color: c.borderPrimary, width: 2),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),
@@ -133,7 +134,7 @@ class MonthlyCalendar extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
+                          color: c.textPrimary,
                         ),
                       ),
                     ),
@@ -144,18 +145,18 @@ class MonthlyCalendar extends StatelessWidget {
           // Tabular Date Grid
           Container(
             decoration: BoxDecoration(
-              color: AppColors.backgroundLight,
-              border: const Border(
-                left: BorderSide(color: AppColors.textDark, width: 2),
-                right: BorderSide(color: AppColors.textDark, width: 2),
-                bottom: BorderSide(color: AppColors.textDark, width: 2),
+              color: c.background,
+              border: Border(
+                left: BorderSide(color: c.border, width: 2),
+                right: BorderSide(color: c.border, width: 2),
+                bottom: BorderSide(color: c.border, width: 2),
               ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(8),
                 bottomRight: Radius.circular(8),
               ),
-              boxShadow: const [
-                BoxShadow(color: AppColors.textDark, offset: Offset(4, 4)),
+              boxShadow: [
+                BoxShadow(color: c.border, offset: const Offset(4, 4)),
               ],
             ),
             child: GridView.builder(
@@ -175,8 +176,8 @@ class MonthlyCalendar extends StatelessWidget {
                 if (index < startWeekday - 1 || index >= totalGridItems) {
                   return Container(
                     decoration: BoxDecoration(
-                      color: AppColors.backgroundLight,
-                      border: Border.all(color: AppColors.textDark, width: 0.5),
+                      color: c.background,
+                      border: Border.all(color: c.border.withValues(alpha: 0.3), width: 0.5),
                     ),
                   );
                 }
@@ -191,9 +192,9 @@ class MonthlyCalendar extends StatelessWidget {
                 return Container(
                   decoration: BoxDecoration(
                     color: prayers.isNotEmpty
-                        ? AppColors.surface
-                        : AppColors.backgroundLight,
-                    border: Border.all(color: AppColors.textDark, width: 0.5),
+                        ? c.surface
+                        : c.background,
+                    border: Border.all(color: c.border.withValues(alpha: 0.3), width: 0.5),
                   ),
                   child: Stack(
                     alignment: Alignment.center,
@@ -203,6 +204,7 @@ class MonthlyCalendar extends StatelessWidget {
                           size: const Size.square(42),
                           painter: StreakRingPainter(
                             prayers: prayers,
+                            colors: c,
                             strokeWidth: 3.0,
                             gapAngle: 0.1,
                           ),
@@ -212,8 +214,8 @@ class MonthlyCalendar extends StatelessWidget {
                         style: AppTextStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
                           color: prayers.isNotEmpty
-                              ? AppColors.textDark
-                              : AppColors.muted,
+                              ? c.textPrimary
+                              : c.textSecondary,
                         ),
                       ),
                     ],

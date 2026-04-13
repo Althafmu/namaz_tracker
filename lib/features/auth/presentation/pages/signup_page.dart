@@ -73,11 +73,11 @@ class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.of(context).background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textDark),
+        iconTheme: IconThemeData(color: AppColors.of(context).textPrimary),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/onboarding2'),
@@ -89,7 +89,7 @@ class _SignupPageState extends State<SignupPage> {
             context.go('/');
           } else if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage ?? 'Signup Failed'), backgroundColor: AppColors.primary),
+              SnackBar(content: Text(state.errorMessage ?? 'Signup Failed'), backgroundColor: AppColors.of(context).primary),
             );
           }
         },
@@ -102,7 +102,7 @@ class _SignupPageState extends State<SignupPage> {
                 const SizedBox(height: 16),
                 Text('Join Namaz Tracker', style: AppTextStyles.headlineLarge),
                 const SizedBox(height: 8),
-                Text('Create an account to track your prayers across devices.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted)),
+                 Text('Create an account to track your prayers across devices.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.of(context).textSecondary)),
                 const SizedBox(height: 48),
                 NeoTextField(
                   label: 'Full Name',
@@ -126,13 +126,13 @@ class _SignupPageState extends State<SignupPage> {
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
                     if (state.status == AuthStatus.loading) {
-                      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                       return Center(child: CircularProgressIndicator(color: AppColors.of(context).primary));
                     }
                     return SizedBox(
                       height: 56,
                       child: NeoButton(
                         text: 'Sign Up',
-                        color: AppColors.primary,
+                        color: AppColors.of(context).primary,
                         onPressed: _onSignup,
                       ),
                     );
@@ -145,7 +145,7 @@ class _SignupPageState extends State<SignupPage> {
                     child: Text(
                       'Already have an account? Login',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textDark,
+                        color: AppColors.of(context).textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

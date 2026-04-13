@@ -10,10 +10,12 @@ class MotivationalBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16, right: 6),
       child: NeoCard(
-        color: AppColors.backgroundLight,
+        color: c.background,
         padding: const EdgeInsets.all(20),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,7 +25,7 @@ class MotivationalBanner extends StatelessWidget {
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
-                color: AppColors.primary,
+                color: c.primary,
                 height: 1,
               ),
             ),
@@ -34,7 +36,7 @@ class MotivationalBanner extends StatelessWidget {
                 style: AppTextStyles.bodyMedium.copyWith(
                   fontStyle: FontStyle.italic,
                   height: 1.6,
-                  color: AppColors.textDark,
+                  color: c.textPrimary,
                 ),
               ),
             ),

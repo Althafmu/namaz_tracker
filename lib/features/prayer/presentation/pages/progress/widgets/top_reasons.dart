@@ -12,12 +12,13 @@ class TopReasons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final sortedReasons = reasonCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final topReasonsList = sortedReasons.take(3).toList();
 
     return NeoCard(
-      color: AppColors.surface,
+      color: c.surface,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,21 +26,24 @@ class TopReasons extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Top Reasons', style: AppTextStyles.headlineMedium),
+              Text(
+                'Top Reasons',
+                style: AppTextStyles.headlineMedium.copyWith(color: c.textPrimary),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.accentFocus.withOpacity(0.2),
+                  color: c.accentFocus.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   'Missed/Late',
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textDark,
+                    color: c.textPrimary,
                   ),
                 ),
               ),
@@ -54,41 +58,63 @@ class TopReasons extends StatelessWidget {
                   'No missed or late prayers logged yet. Great job!',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.muted,
+                    color: c.textSecondary,
                   ),
                 ),
               ),
             )
           else
             ...topReasonsList.map((entry) {
+              final reason = entry.key;
+              final count = entry.value;
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.statusMissed,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        entry.key,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w600,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: c.background,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: c.borderPrimary, width: 2),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: c.statusMissed.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.error_outline,
+                          color: c.statusMissed,
+                          size: 20,
                         ),
                       ),
-                    ),
-                    Text(
-                      '${entry.value}',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w800,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              reason,
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: c.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        '$count',
+                        style: AppTextStyles.headlineSmall.copyWith(
+                          color: c.statusMissed,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }),

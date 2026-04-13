@@ -9,6 +9,9 @@ class SettingsState extends Equatable {
   final String alarmSound;
   final bool notificationsPermitted;
 
+  // Theme
+  final String themeMode;
+
   // Per-prayer configs
   final Map<String, PrayerNotificationConfig> prayerConfigs;
 
@@ -19,12 +22,14 @@ class SettingsState extends Equatable {
   final bool methodAutoDetected;
 
   final List<String> missedReasons;
+  final int alarmDurationMinutes;
 
   const SettingsState({
     this.calculationMethod = 'MWL',
     this.useHanafi = false,
     this.alarmSound = 'system',
     this.notificationsPermitted = false,
+    this.themeMode = 'system',
     this.prayerConfigs = const {
       'Fajr': PrayerNotificationConfig(),
       'Dhuhr': PrayerNotificationConfig(),
@@ -49,6 +54,7 @@ class SettingsState extends Equatable {
       'Health reasons',
       'Other',
     ],
+    this.alarmDurationMinutes = 1,
   });
 
   SettingsState copyWith({
@@ -56,10 +62,12 @@ class SettingsState extends Equatable {
     bool? useHanafi,
     String? alarmSound,
     bool? notificationsPermitted,
+    String? themeMode,
     Map<String, PrayerNotificationConfig>? prayerConfigs,
     Map<String, int>? manualOffsets,
     bool? methodAutoDetected,
     List<String>? missedReasons,
+    int? alarmDurationMinutes,
   }) {
     return SettingsState(
       calculationMethod: calculationMethod ?? this.calculationMethod,
@@ -67,10 +75,12 @@ class SettingsState extends Equatable {
       alarmSound: alarmSound ?? this.alarmSound,
       notificationsPermitted:
           notificationsPermitted ?? this.notificationsPermitted,
+      themeMode: themeMode ?? this.themeMode,
       prayerConfigs: prayerConfigs ?? this.prayerConfigs,
       manualOffsets: manualOffsets ?? this.manualOffsets,
       methodAutoDetected: methodAutoDetected ?? this.methodAutoDetected,
       missedReasons: missedReasons ?? this.missedReasons,
+      alarmDurationMinutes: alarmDurationMinutes ?? this.alarmDurationMinutes,
     );
   }
 
@@ -80,12 +90,14 @@ class SettingsState extends Equatable {
       'useHanafi': useHanafi,
       'alarmSound': alarmSound,
       'notificationsPermitted': notificationsPermitted,
+      'themeMode': themeMode,
       'prayerConfigs': prayerConfigs.map(
         (key, value) => MapEntry(key, value.toJson()),
       ),
       'manualOffsets': manualOffsets,
       'methodAutoDetected': methodAutoDetected,
       'missedReasons': missedReasons,
+      'alarmDurationMinutes': alarmDurationMinutes,
     };
   }
 
@@ -149,6 +161,8 @@ class SettingsState extends Equatable {
       useHanafi: json['useHanafi'] as bool? ?? false,
       alarmSound: json['alarmSound'] as String? ?? 'system',
       notificationsPermitted: json['notificationsPermitted'] as bool? ?? false,
+      themeMode: json['themeMode'] as String? ??
+          (json['isDarkMode'] == true ? 'dark' : 'system'),
       prayerConfigs: parsedConfigs,
       manualOffsets: parsedOffsets,
       methodAutoDetected: json['methodAutoDetected'] as bool? ?? false,
@@ -164,6 +178,7 @@ class SettingsState extends Equatable {
             'Health reasons',
             'Other',
           ],
+      alarmDurationMinutes: json['alarmDurationMinutes'] as int? ?? 1,
     );
   }
 
@@ -173,9 +188,11 @@ class SettingsState extends Equatable {
     useHanafi,
     alarmSound,
     notificationsPermitted,
+    themeMode,
     prayerConfigs,
     manualOffsets,
     methodAutoDetected,
     missedReasons,
+    alarmDurationMinutes,
   ];
 }

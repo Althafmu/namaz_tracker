@@ -37,16 +37,18 @@ class _ReasonsSettingsPageState extends State<ReasonsSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: c.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
+          icon: Icon(Icons.arrow_back, color: c.textPrimary),
           onPressed: () => context.go('/profile'),
         ),
-        title: Text('Edit Reasons', style: AppTextStyles.headlineMedium),
+        title: Text('Edit Reasons', style: AppTextStyles.headlineMedium.copyWith(color: c.textPrimary)),
       ),
       body: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, state) {
@@ -58,12 +60,12 @@ class _ReasonsSettingsPageState extends State<ReasonsSettingsPage> {
               children: [
                 Text(
                   'Manage Reasons',
-                  style: AppTextStyles.headlineLarge,
+                  style: AppTextStyles.headlineLarge.copyWith(color: c.textPrimary),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Add or remove reasons for why you missed a prayer or prayed late.',
-                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
+                  style: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -97,12 +99,13 @@ class _ReasonsSettingsPageState extends State<ReasonsSettingsPage> {
                       final reason = reasons[index];
                       return NeoCard(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        color: c.surface,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(reason, style: AppTextStyles.bodyLarge),
+                            Text(reason, style: AppTextStyles.bodyLarge.copyWith(color: c.textPrimary)),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                              icon: Icon(Icons.delete_outline, color: c.error),
                               onPressed: () => _removeReason(context, reasons, reason),
                             ),
                           ],
