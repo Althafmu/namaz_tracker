@@ -8,18 +8,17 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'prayer_time_service.dart';
 import '../../features/prayer/domain/entities/prayer_notification_config.dart';
+import 'notification_service_interface.dart';
 
 /// Handles scheduling and cancelling local OS notifications for Adhan and reminders.
 ///
-/// Schedules 7 days ahead so alarms survive overnight and device restarts
+/// Schedules 3 days ahead so alarms survive overnight and device restarts
 /// (when paired with the BOOT_COMPLETED receiver in AndroidManifest.xml).
-class NotificationService {
-  static final NotificationService _instance = NotificationService._internal();
-  factory NotificationService() => _instance;
-  NotificationService._internal();
-
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+///
+/// This class is NOT a singleton - it should be injected via DI (GetIt)
+/// and can be mocked for testing by implementing [NotificationServiceInterface].
+class NotificationService implements NotificationServiceInterface {
+  final FlutterLocalNotificationsPlugin _plugin;
 
   bool _isInitialized = false;
   bool _permissionsGranted = false;
@@ -28,6 +27,20 @@ class NotificationService {
   bool get isInitialized => _isInitialized;
   bool get permissionsGranted => _permissionsGranted;
   bool get exactAlarmGranted => _exactAlarmGranted;
+
+  /// Creates a NotificationService instance.
+  /// For production use, inject via GetIt in injection_container.dart.
+  /// For testing, inject a mock implementing [NotificationServiceInterface].
+  NotificationService({FlutterLocalNotificationsPlugin? plugin})
+      : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+
+  /// Resets internal state. Call this in tests to ensure clean state.
+  @visibleForTesting
+  void resetState() {
+    _isInitialized = false;
+    _permissionsGranted = false;
+    _exactAlarmGranted = false;
+  }
 
   /// Initialize the notification plugin and timezones.
   /// Safe to call at startup — does NOT request permissions.
@@ -81,7 +94,7 @@ class NotificationService {
         iOS: initializationSettingsDarwin,
       );
 
-      await _flutterLocalNotificationsPlugin.initialize(
+      await _plugin.initialize(
         settings: initializationSettings,
       );
     } catch (e) {
@@ -99,7 +112,7 @@ class NotificationService {
     if (!_isInitialized) await initialize();
 
     try {
-      final androidImpl = _flutterLocalNotificationsPlugin
+      final androidImpl = _plugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
 
@@ -134,7 +147,7 @@ class NotificationService {
     bool exactAlarmGranted = false;
 
     try {
-      final androidImpl = _flutterLocalNotificationsPlugin
+      final androidImpl = _plugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
 
@@ -161,7 +174,7 @@ class NotificationService {
     if (!_isInitialized) await initialize();
 
     try {
-      final androidImpl = _flutterLocalNotificationsPlugin
+      final androidImpl = _plugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
 
@@ -184,7 +197,7 @@ class NotificationService {
         _permissionsGranted =
             (notifGranted ?? false) && exactGranted;
       } else {
-        final iosImpl = _flutterLocalNotificationsPlugin
+        final iosImpl = _plugin
             .resolvePlatformSpecificImplementation<
                 IOSFlutterLocalNotificationsPlugin>();
         if (iosImpl != null) {
@@ -242,7 +255,7 @@ class NotificationService {
         iOS: darwinDetails,
       );
 
-      await _flutterLocalNotificationsPlugin.show(
+      await _plugin.show(
         id: 99999,
         title: '✅ Notifications Working!',
         body: 'If you see this, prayer alerts will work correctly.',
@@ -293,7 +306,7 @@ class NotificationService {
   Future<int> getPendingNotificationCount() async {
     try {
       final pending =
-          await _flutterLocalNotificationsPlugin.pendingNotificationRequests();
+          await _plugin.pendingNotificationRequests();
       debugPrint('[Notification] Pending notifications: ${pending.length}');
       for (final n in pending) {
         debugPrint('  → id=${n.id} title="${n.title}"');
@@ -308,7 +321,7 @@ class NotificationService {
   /// Cancels all previously scheduled prayer notifications.
   Future<void> cancelAllNotifications() async {
     try {
-      await _flutterLocalNotificationsPlugin.cancelAll();
+      await _plugin.cancelAll();
     } catch (e) {
       debugPrint('[Notification] Cancel all failed: $e');
     }
@@ -441,7 +454,39 @@ class NotificationService {
     }
 
     debugPrint('[Notification] Scheduled $scheduledCount notifications for 3 days');
+
+    // Schedule daily 10 PM reminder
+    final reminderCount = await _scheduleDailyReminders(now: now);
+    scheduledCount += reminderCount;
+
     return scheduledCount;
+  }
+
+  /// Schedule daily reminder notifications at 10 PM for the next 3 days.
+  /// ID scheme: 9000 + dayOffset
+  Future<int> _scheduleDailyReminders({required DateTime now}) async {
+    int count = 0;
+
+    for (int dayOffset = 0; dayOffset < 3; dayOffset++) {
+      final date = now.add(Duration(days: dayOffset));
+      final reminderTime = DateTime(date.year, date.month, date.day, 22, 0); // 10 PM
+
+      if (reminderTime.isAfter(now)) {
+        final reminderId = 9000 + dayOffset;
+        final result = await _scheduleAlarm(
+          id: reminderId,
+          title: "🌙 Daily Prayer Reminder",
+          body: "Have you completed all your prayers today? Don't break your streak!",
+          scheduledTime: reminderTime,
+          isAlarmStyle: true,
+          alarmDurationMinutes: 1,
+        );
+        if (result == null) count++;
+      }
+    }
+
+    debugPrint('[Notification] Scheduled $count daily reminders at 10 PM');
+    return count;
   }
 
   /// Schedule a single alarm. Returns null on success, or error string on failure.
@@ -524,7 +569,7 @@ class NotificationService {
       );
 
       try {
-        await _flutterLocalNotificationsPlugin.zonedSchedule(
+        await _plugin.zonedSchedule(
           id: id,
           title: title,
           body: body,
@@ -535,7 +580,7 @@ class NotificationService {
       } catch (e) {
         if (e.toString().contains('exact_alarms_not_permitted')) {
           debugPrint('[Notification] Exact alarms not permitted, falling back to inexact for $id');
-          await _flutterLocalNotificationsPlugin.zonedSchedule(
+          await _plugin.zonedSchedule(
             id: id,
             title: title,
             body: body,

@@ -7,7 +7,8 @@ import '../../../../../core/widgets/neo_button.dart';
 import '../../../domain/entities/prayer.dart';
 import '../../bloc/prayer/prayer_bloc.dart';
 import '../../bloc/prayer/prayer_event.dart';
-import '../../bloc/prayer/prayer_state.dart';
+import '../../bloc/history/history_bloc.dart';
+import '../../bloc/history/history_state.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../../bloc/settings/settings_state.dart';
 import 'widgets/jamaat_toggle.dart';
@@ -40,10 +41,10 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
   }
 
   bool _canEdit(BuildContext context) {
-    final state = context.read<PrayerBloc>().state;
-    final selectedKey = state.selectedDateStr ?? PrayerState.todayKey;
+    final historyState = context.read<HistoryBloc>().state;
+    final selectedKey = historyState.selectedDateStr ?? HistoryState.todayKey;
     final selectedDate = DateTime.parse(selectedKey);
-    final today = DateTime.parse(PrayerState.todayKey);
+    final today = DateTime.parse(HistoryState.todayKey);
     return today.difference(selectedDate).inDays <= 2;
   }
 

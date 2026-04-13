@@ -1,38 +1,33 @@
 import 'package:equatable/equatable.dart';
-import 'package:intl/intl.dart';
 import '../../../domain/entities/prayer.dart';
 import '../../../domain/entities/streak.dart';
 
 enum SyncStatus { idle, syncing, synced, error }
 
-/// State for the PrayerBloc — fully serializable for HydratedBloc.
+/// State for the PrayerBloc — focused on today's prayers and streak.
+/// Historical data is now managed by HistoryBloc.
+/// Statistics are managed by StatsBloc.
 class PrayerState extends Equatable {
+  /// Today's prayers
   final List<Prayer> prayers;
+
+  /// Current streak data
   final Streak streak;
+
+  /// Loading state for initial data fetch
   final bool isLoading;
+
+  /// Sync status for offline/online state
   final SyncStatus syncStatus;
+
+  /// User's selected location for prayer logging
   final String selectedLocation;
-  // Cached GPS coordinates to avoid double-fetching
+
+  /// Cached GPS coordinates to avoid double-fetching
   final double? cachedLat;
   final double? cachedLng;
 
-  // Historical log: date string ('2026-03-18') -> list of individual prayers
-  final Map<String, List<Prayer>> historicalLog;
-
-  // Pre-aggregated reason counts from backend (all-time)
-  final Map<String, int> reasonCounts;
-
-  // Calendar navigation state
-  final int calendarYear;
-  final int calendarMonth;
-
-  // Track which months have been fetched from backend (to avoid re-fetching)  
-  final Set<String> fetchedMonths;
-
-  // Selected date for viewing/editing past logs (matches DateFormat('yyyy-MM-dd'))
-  final String? selectedDateStr;
-
-  PrayerState({
+  const PrayerState({
     this.prayers = const [],
     this.streak = const Streak(),
     this.isLoading = false,
@@ -40,14 +35,7 @@ class PrayerState extends Equatable {
     this.selectedLocation = 'home',
     this.cachedLat,
     this.cachedLng,
-    this.historicalLog = const {},
-    this.reasonCounts = const {},
-    int? calendarYear,
-    int? calendarMonth,
-    this.fetchedMonths = const {},
-    this.selectedDateStr,
-  })  : calendarYear = calendarYear ?? DateTime.now().year,
-        calendarMonth = calendarMonth ?? DateTime.now().month;
+  });
 
   PrayerState copyWith({
     List<Prayer>? prayers,
@@ -57,12 +45,6 @@ class PrayerState extends Equatable {
     String? selectedLocation,
     double? cachedLat,
     double? cachedLng,
-    Map<String, List<Prayer>>? historicalLog,
-    Map<String, int>? reasonCounts,
-    int? calendarYear,
-    int? calendarMonth,
-    Set<String>? fetchedMonths,
-    String? selectedDateStr,
   }) {
     return PrayerState(
       prayers: prayers ?? this.prayers,
@@ -72,69 +54,14 @@ class PrayerState extends Equatable {
       selectedLocation: selectedLocation ?? this.selectedLocation,
       cachedLat: cachedLat ?? this.cachedLat,
       cachedLng: cachedLng ?? this.cachedLng,
-      historicalLog: historicalLog ?? this.historicalLog,
-      reasonCounts: reasonCounts ?? this.reasonCounts,
-      calendarYear: calendarYear ?? this.calendarYear,
-      calendarMonth: calendarMonth ?? this.calendarMonth,
-      fetchedMonths: fetchedMonths ?? this.fetchedMonths,
-      selectedDateStr: selectedDateStr ?? this.selectedDateStr,
     );
   }
 
-  /// The prayers to display on the UI depending on selectedDateStr
-  List<Prayer> get displayPrayers {
-    final effectiveSelectedDate = selectedDateStr ?? todayKey;
-    if (effectiveSelectedDate == todayKey) {
-      return prayers;
-    }
-    return historicalLog[effectiveSelectedDate] ?? Prayer.defaultPrayers();
-  }
-
   /// Number of completed prayers today.
-  int get completedCount => displayPrayers.where((p) => p.isCompleted).length;
+  int get completedCount => prayers.where((p) => p.isCompleted).length;
 
   /// Whether all 5 prayers are done.
   bool get isAllComplete => completedCount == 5;
-
-  /// Today's date key for weeklyHistory.
-  static String get todayKey {
-    final effectiveNow = DateTime.now();
-    return DateFormat('yyyy-MM-dd').format(effectiveNow);
-  }
-
-  /// Get the last 7 days' completion percentages for the weekly chart.
-  List<double> get weeklyPercentages {
-    final effectiveNow = DateTime.now();
-    return List.generate(7, (i) {
-      final date = effectiveNow.subtract(Duration(days: 6 - i));
-      final key = DateFormat('yyyy-MM-dd').format(date);
-      final pastPrayers = historicalLog[key] ?? [];
-      final completed = pastPrayers.where((p) => p.isCompleted).length;
-      return completed / 5.0;
-    });
-  }
-
-  /// Total prayers completed in the last 7 days.
-  int get weeklyPrayerCount {
-    final effectiveNow = DateTime.now();
-    int total = 0;
-    for (int i = 0; i < 7; i++) {
-      final date = effectiveNow.subtract(Duration(days: i));
-      final key = DateFormat('yyyy-MM-dd').format(date);
-      final pastPrayers = historicalLog[key] ?? [];
-      total += pastPrayers.where((p) => p.isCompleted).length;
-    }
-    return total;
-  }
-
-  /// Day labels for the last 7 days.
-  List<String> get weeklyDayLabels {
-    final effectiveNow = DateTime.now();
-    return List.generate(7, (i) {
-      final date = effectiveNow.subtract(Duration(days: 6 - i));
-      return DateFormat('E').format(date).substring(0, 1);
-    });
-  }
 
   /// JSON serialization for HydratedBloc.
   Map<String, dynamic> toJson() {
@@ -144,12 +71,6 @@ class PrayerState extends Equatable {
       'selectedLocation': selectedLocation,
       'cachedLat': cachedLat,
       'cachedLng': cachedLng,
-      'historicalLog': historicalLog.map((k, v) => MapEntry(k, v.map((p) => p.toJson()).toList())),
-      'reasonCounts': reasonCounts,
-      'calendarYear': calendarYear,
-      'calendarMonth': calendarMonth,
-      'fetchedMonths': fetchedMonths.toList(),
-      'selectedDateStr': selectedDateStr,
     };
   }
 
@@ -165,48 +86,6 @@ class PrayerState extends Equatable {
       selectedLocation: json['selectedLocation'] as String? ?? 'home',
       cachedLat: json['cachedLat'] as double?,
       cachedLng: json['cachedLng'] as double?,
-      historicalLog: _parseHistoricalLog(json['historicalLog'], json['weeklyHistory']),
-      reasonCounts: _parseReasonCounts(json['reasonCounts']),
-      calendarYear: json['calendarYear'] as int?,
-      calendarMonth: json['calendarMonth'] as int?,
-      fetchedMonths: (json['fetchedMonths'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toSet() ??
-          {},
-      selectedDateStr: json['selectedDateStr'] as String?,
-    );
-  }
-
-  /// Calculates an optimistic streak from local [historicalLog].
-  ///
-  /// Walks backwards from today checking that each day has 5/5 completed
-  /// prayers. Stops at the first gap or missing day.
-  Streak calculateOptimisticStreak() {
-    final fmt = DateFormat('yyyy-MM-dd');
-    final effectiveNow = DateTime.now();
-    int count = 0;
-
-    for (int i = 0; i < 365; i++) {
-      final date = effectiveNow.subtract(Duration(days: i));
-      final key = fmt.format(date);
-
-      final dayPrayers = (i == 0) ? prayers : historicalLog[key];
-
-      // If we have no data for this day and it's beyond today, stop.
-      if (dayPrayers == null || dayPrayers.isEmpty) break;
-
-      final completed = dayPrayers.where((p) => p.isCompleted).length;
-      if (completed >= 5) {
-        count++;
-      } else {
-        break;
-      }
-    }
-
-    final newLongest = count > streak.longestStreak ? count : streak.longestStreak;
-    return streak.copyWith(
-      currentStreak: count,
-      longestStreak: newLongest,
     );
   }
 
@@ -219,48 +98,5 @@ class PrayerState extends Equatable {
         selectedLocation,
         cachedLat,
         cachedLng,
-        historicalLog,
-        reasonCounts,
-        calendarYear,
-        calendarMonth,
-        fetchedMonths,
-        selectedDateStr,
       ];
-}
-
-Map<String, List<Prayer>> _parseHistoricalLog(dynamic historicalJson, dynamic legacyWeeklyJson) {
-  final Map<String, List<Prayer>> log = {};
-  
-  if (historicalJson != null && historicalJson is Map) {
-    historicalJson.forEach((key, value) {
-      if (value is List) {
-        log[key as String] = value.map((p) => Prayer.fromJson(p as Map<String, dynamic>)).toList();
-      }
-    });
-  } else if (legacyWeeklyJson != null && legacyWeeklyJson is Map) {
-    // Migration: generate dummy completed prayers based on the integer count
-    legacyWeeklyJson.forEach((key, value) {
-      if (value is int) {
-        final List<Prayer> base = Prayer.defaultPrayers();
-        final List<Prayer> migrated = [];
-        for (int i = 0; i < 5; i++) {
-          if (i < value) {
-            migrated.add(base[i].copyWith(isCompleted: true, status: 'on_time'));
-          } else {
-            migrated.add(base[i].copyWith(isCompleted: false, status: 'not_logged'));
-          }
-        }
-        log[key as String] = migrated;
-      }
-    });
-  }
-  
-  return log;
-}
-
-Map<String, int> _parseReasonCounts(dynamic json) {
-  if (json == null || json is! Map) return {};
-  return Map<String, int>.from(
-    json.map((key, value) => MapEntry(key as String, (value as num).toInt())),
-  );
 }

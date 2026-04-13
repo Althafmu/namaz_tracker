@@ -9,12 +9,12 @@ import '../../../../../auth/presentation/bloc/auth_state.dart';
 
 /// User info card — avatar, name, email, streak badge, and edit icon.
 class UserInfoCard extends StatelessWidget {
-  final int currentStreak;
+  final int displayStreak;
   final VoidCallback onEditTap;
 
   const UserInfoCard({
     super.key,
-    required this.currentStreak,
+    required this.displayStreak,
     required this.onEditTap,
   });
 
@@ -117,7 +117,7 @@ class UserInfoCard extends StatelessWidget {
                                   size: 16),
                               const SizedBox(width: 4),
                               Text(
-                                  '$currentStreak Day Streak!',
+                                  '$displayStreak Day Streak!',
                                   style: AppTextStyles.badge.copyWith(
                                     color: c.textPrimary,
                                   )),

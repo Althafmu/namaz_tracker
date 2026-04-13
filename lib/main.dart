@@ -11,6 +11,8 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/prayer/data/repositories/offline_queue_repository.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_event.dart';
+import 'features/prayer/presentation/bloc/history/history_bloc.dart';
+import 'features/prayer/presentation/bloc/stats/stats_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_state.dart';
 import 'injection_container.dart';
@@ -76,12 +78,14 @@ class FalahApp extends StatelessWidget {
       providers: [
         BlocProvider.value(value: sl<AuthBloc>()),
         BlocProvider.value(value: sl<SettingsBloc>()),
+        BlocProvider.value(value: sl<HistoryBloc>()),
+        BlocProvider.value(value: sl<StatsBloc>()),
         BlocProvider(create: (_) => sl<PrayerBloc>()..add(const LoadDailyStatus())),
       ],
       child: BlocBuilder<SettingsBloc, SettingsState>(
         buildWhen: (prev, curr) => prev.themeMode != curr.themeMode,
         builder: (context, settingsState) {
-          
+
           ThemeMode currentThemeMode;
           if (settingsState.themeMode == 'dark') {
             currentThemeMode = ThemeMode.dark;

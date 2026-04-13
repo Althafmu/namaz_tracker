@@ -19,6 +19,8 @@ import 'features/prayer/domain/usecases/get_reason_summary_usecase.dart';
 import 'features/prayer/domain/usecases/log_prayer_usecase.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
+import 'features/prayer/presentation/bloc/history/history_bloc.dart';
+import 'features/prayer/presentation/bloc/stats/stats_bloc.dart';
 
 import 'core/network/token_provider.dart';
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
@@ -162,19 +164,28 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => SettingsBloc(
         notificationService: sl(),
       ));
-      
+
+  // HistoryBloc and StatsBloc must be registered before PrayerBloc
+  sl.registerLazySingleton(() => HistoryBloc(
+        getDetailedMonthHistoryUseCase: sl(),
+      ));
+
+  sl.registerLazySingleton(() => StatsBloc(
+        getReasonSummaryUseCase: sl(),
+      ));
+
   sl.registerFactory(() => PrayerBloc(
         logPrayerUseCase: sl(),
         getDailyStatusUseCase: sl(),
         getStreakUseCase: sl(),
-        getWeeklyHistoryUseCase: sl(),
-        getDetailedMonthHistoryUseCase: sl(),
-        getReasonSummaryUseCase: sl(),
         offlineSyncService: sl(),
         prayerSchedulerService: sl(),
         notificationService: sl(),
         settingsBloc: sl(),
+        historyBloc: sl(),
+        statsBloc: sl(),
       ));
+
   sl.registerLazySingleton(() => AuthBloc(
         authRepository: sl(),
         tokenProvider: sl(),

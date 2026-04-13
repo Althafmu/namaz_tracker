@@ -6,6 +6,7 @@ class StreakModel extends Streak {
     super.currentStreak,
     super.longestStreak,
     super.lastCompletedDate,
+    super.displayStreak,
   });
 
   factory StreakModel.fromApiResponse(Map<String, dynamic> json) {
@@ -13,6 +14,7 @@ class StreakModel extends Streak {
       currentStreak: json['current_streak'] as int? ?? 0,
       longestStreak: json['longest_streak'] as int? ?? 0,
       lastCompletedDate: json['last_completed_date'] as String?,
+      displayStreak: json['display_streak'] as int? ?? 0,
     );
   }
 }

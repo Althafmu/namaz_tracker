@@ -91,7 +91,7 @@ class SettingsPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: UserInfoCard(
-                    currentStreak: state.streak.currentStreak,
+                    displayStreak: state.streak.displayStreak,
                     onEditTap: () => showEditProfileSheet(context),
                   ),
                 ),

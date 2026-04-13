@@ -4,9 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/widgets/neo_card.dart';
-import '../../../bloc/prayer/prayer_bloc.dart';
-import '../../../bloc/prayer/prayer_event.dart';
-import '../../../bloc/prayer/prayer_state.dart';
+import '../../../bloc/history/history_bloc.dart';
+import '../../../bloc/history/history_event.dart';
+import '../../../bloc/history/history_state.dart';
 
 class WeeklyCalendar extends StatefulWidget {
   const WeeklyCalendar({super.key});
@@ -41,10 +41,10 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
 
-    return BlocBuilder<PrayerBloc, PrayerState>(
+    return BlocBuilder<HistoryBloc, HistoryState>(
       builder: (context, state) {
         final effectiveNow = DateTime.now();
-        final todayKey = PrayerState.todayKey;
+        final todayKey = HistoryState.todayKey;
         final selectedKey = state.selectedDateStr ?? todayKey;
 
         // Generate the last 14 days
@@ -68,7 +68,7 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
 
               return GestureDetector(
                 onTap: () {
-                  context.read<PrayerBloc>().add(SelectDate(dateKey));
+                  context.read<HistoryBloc>().add(SelectDate(dateKey));
                 },
                 child: NeoCard(
                   padding: const EdgeInsets.symmetric(

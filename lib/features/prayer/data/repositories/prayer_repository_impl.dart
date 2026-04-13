@@ -1,3 +1,6 @@
+import 'package:dio/dio.dart';
+
+import '../../../../core/errors/exceptions.dart';
 import '../../domain/entities/prayer.dart';
 import '../../domain/entities/streak.dart';
 import '../../domain/repositories/prayer_repository.dart';
@@ -8,19 +11,66 @@ import '../models/streak_model.dart';
 /// Concrete implementation of [PrayerRepository].
 /// Calls the remote data source and maps the results to domain entities.
 /// In offline mode, the BLoC's HydratedBloc handles local persistence.
+///
+/// Error Handling Strategy:
+/// - Network failures (connection refused, timeout) → NetworkException
+/// - Server errors (4xx, 5xx) → ServerException
+/// - BLoCs decide how to handle: use cached data, show error, or retry
 class PrayerRepositoryImpl implements PrayerRepository {
   final PrayerRemoteDataSource remoteDataSource;
 
   PrayerRepositoryImpl({required this.remoteDataSource});
+
+  /// Converts Dio errors to appropriate AppException types.
+  Never _handleDioError(DioException e, String operation) {
+    switch (e.type) {
+      case DioExceptionType.connectionError:
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.unknown:
+        throw NetworkException(
+          'Network error during $operation: ${e.message}',
+          originalError: e,
+        );
+      case DioExceptionType.badResponse:
+        final statusCode = e.response?.statusCode;
+        if (statusCode != null && statusCode >= 500) {
+          throw ServerException(
+            'Server error during $operation ($statusCode)',
+            statusCode: statusCode,
+            originalError: e,
+          );
+        } else if (statusCode == 404) {
+          throw NoDataException(
+            'No data found for $operation',
+            originalError: e,
+          );
+        } else {
+          throw ServerException(
+            'Request failed during $operation ($statusCode)',
+            statusCode: statusCode,
+            originalError: e,
+          );
+        }
+      case DioExceptionType.cancel:
+      case DioExceptionType.badCertificate:
+        throw NetworkException(
+          'Request failed during $operation: ${e.message}',
+          originalError: e,
+        );
+    }
+  }
 
   @override
   Future<List<Prayer>> getDailyStatus() async {
     try {
       final data = await remoteDataSource.getTodayLog();
       return PrayerModel.fromApiResponse(data);
+    } on DioException catch (e) {
+      _handleDioError(e, 'getDailyStatus');
     } catch (e) {
-      // Offline fallback — return defaults, BLoC state has the real data
-      return Prayer.defaultPrayers();
+      throw NetworkException('Unexpected error during getDailyStatus', originalError: e);
     }
   }
 
@@ -45,9 +95,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
         dateKey: dateKey,
       );
       return PrayerModel.fromApiResponse(data);
+    } on DioException catch (e) {
+      _handleDioError(e, 'logPrayer');
     } catch (e) {
-      // Offline — return empty, BLoC handles optimistic update
-      rethrow;
+      throw NetworkException('Unexpected error during logPrayer', originalError: e);
     }
   }
 
@@ -56,25 +107,30 @@ class PrayerRepositoryImpl implements PrayerRepository {
     try {
       final data = await remoteDataSource.getStreak();
       return StreakModel.fromApiResponse(data);
+    } on DioException catch (e) {
+      _handleDioError(e, 'getStreak');
     } catch (e) {
-      return const Streak();
+      throw NetworkException('Unexpected error during getStreak', originalError: e);
     }
   }
 
   @override
   Future<Map<String, int>> getWeeklyHistory({int days = 90}) async {
     try {
-      final data = await remoteDataSource.getWeeklyHistory(days: days);
+      final response = await remoteDataSource.getWeeklyHistory(days: days);
+      final results = response['results'] as List<dynamic>? ?? [];
       final Map<String, int> history = {};
-      for (final dayData in data) {
+      for (final dayData in results) {
         final json = dayData as Map<String, dynamic>;
         if (json['date'] != null && json['completed_count'] != null) {
           history[json['date'] as String] = json['completed_count'] as int;
         }
       }
       return history;
+    } on DioException catch (e) {
+      _handleDioError(e, 'getWeeklyHistory');
     } catch (e) {
-      return {};
+      throw NetworkException('Unexpected error during getWeeklyHistory', originalError: e);
     }
   }
 
@@ -84,21 +140,43 @@ class PrayerRepositoryImpl implements PrayerRepository {
     required int month,
   }) async {
     try {
-      final data = await remoteDataSource.getDetailedMonthHistory(
+      final response = await remoteDataSource.getDetailedMonthHistory(
         year: year,
         month: month,
       );
+      final results = response['results'] as List<dynamic>? ?? [];
       final Map<String, List<Prayer>> result = {};
-      for (final dayData in data) {
+      for (final dayData in results) {
         final json = dayData as Map<String, dynamic>;
         final dateStr = json['date'] as String?;
         if (dateStr != null) {
           result[dateStr] = PrayerModel.fromApiResponse(json);
         }
       }
+      // If there are more pages, fetch them and merge
+      final totalPages = response['total_pages'] as int? ?? 1;
+      if (totalPages > 1) {
+        for (var p = 2; p <= totalPages; p++) {
+          final pageResponse = await remoteDataSource.getDetailedMonthHistory(
+            year: year,
+            month: month,
+            page: p,
+          );
+          final pageResults = pageResponse['results'] as List<dynamic>? ?? [];
+          for (final dayData in pageResults) {
+            final json = dayData as Map<String, dynamic>;
+            final dateStr = json['date'] as String?;
+            if (dateStr != null) {
+              result[dateStr] = PrayerModel.fromApiResponse(json);
+            }
+          }
+        }
+      }
       return result;
+    } on DioException catch (e) {
+      _handleDioError(e, 'getDetailedMonthHistory');
     } catch (e) {
-      return {};
+      throw NetworkException('Unexpected error during getDetailedMonthHistory', originalError: e);
     }
   }
 
@@ -108,8 +186,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
       final data = await remoteDataSource.getReasonSummary();
       final reasons = data['reasons'] as Map<String, dynamic>? ?? {};
       return reasons.map((key, value) => MapEntry(key, value as int));
+    } on DioException catch (e) {
+      _handleDioError(e, 'getReasonSummary');
     } catch (e) {
-      return {};
+      throw NetworkException('Unexpected error during getReasonSummary', originalError: e);
     }
   }
 }

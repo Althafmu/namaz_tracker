@@ -4,8 +4,8 @@ import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/theme/app_text_styles.dart';
 import '../../../../../../core/widgets/neo_card.dart';
 import '../../../../domain/entities/prayer.dart';
-import '../../../bloc/prayer/prayer_bloc.dart';
-import '../../../bloc/prayer/prayer_event.dart';
+import '../../../bloc/history/history_bloc.dart';
+import '../../../bloc/history/history_event.dart';
 import 'streak_ring_painter.dart';
 
 /// Monthly calendar heatmap with prayer status rings per day.
@@ -13,7 +13,7 @@ class MonthlyCalendar extends StatelessWidget {
   final Map<String, List<Prayer>> historicalLog;
   final int year;
   final int month;
-  final PrayerBloc bloc;
+  final HistoryBloc bloc;
 
   const MonthlyCalendar({
     super.key,

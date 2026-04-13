@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 
 /// Events for the PrayerBloc.
+/// History-related events moved to HistoryBloc.
+/// Stats-related events moved to StatsBloc.
 abstract class PrayerEvent extends Equatable {
   const PrayerEvent();
 
@@ -33,13 +35,13 @@ class LogPrayer extends PrayerEvent {
 
   @override
   List<Object?> get props => [
-    prayerName,
-    completed,
-    inJamaat,
-    location,
-    status,
-    reason,
-  ];
+        prayerName,
+        completed,
+        inJamaat,
+        location,
+        status,
+        reason,
+      ];
 }
 
 /// Toggle jama'at for the prayer logger.
@@ -70,30 +72,4 @@ class SyncWithServer extends PrayerEvent {
 /// Refresh prayers and alarms when settings change.
 class RefreshPrayersAndAlarms extends PrayerEvent {
   const RefreshPrayersAndAlarms();
-}
-
-/// Load detailed prayer history for a specific month (calendar navigation).
-class LoadMonthHistory extends PrayerEvent {
-  final int year;
-  final int month;
-
-  const LoadMonthHistory({required this.year, required this.month});
-
-  @override
-  List<Object?> get props => [year, month];
-}
-
-/// Load aggregated reason counts from backend (all-time).
-class LoadAllReasons extends PrayerEvent {
-  const LoadAllReasons();
-}
-
-/// Select a specific date to view/edit.
-class SelectDate extends PrayerEvent {
-  final String date; // format: 'yyyy-MM-dd'
-
-  const SelectDate(this.date);
-
-  @override
-  List<Object?> get props => [date];
 }

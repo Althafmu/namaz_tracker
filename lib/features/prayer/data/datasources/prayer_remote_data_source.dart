@@ -41,25 +41,29 @@ class PrayerRemoteDataSource {
     return response.data as Map<String, dynamic>;
   }
 
-  /// GET /api/prayers/history/?days=90
-  Future<List<dynamic>> getWeeklyHistory({int days = 90}) async {
+  /// GET /api/prayers/history/?days=90&page=1
+  /// Returns paginated response: {results: [...], count, page, total_pages, page_size}
+  Future<Map<String, dynamic>> getWeeklyHistory({int days = 90, int page = 1}) async {
     final response = await dio.get('/api/prayers/history/', queryParameters: {
       'days': days,
+      'page': page,
     });
-    return response.data as List<dynamic>;
+    return response.data as Map<String, dynamic>;
   }
 
-  /// GET /api/prayers/history/detailed/?year=2026&month=4
-  /// Returns full DailyPrayerLog data for every day in the requested month.
-  Future<List<dynamic>> getDetailedMonthHistory({
+  /// GET /api/prayers/history/detailed/?year=2026&month=4&page=1
+  /// Returns paginated response with full DailyPrayerLog data.
+  Future<Map<String, dynamic>> getDetailedMonthHistory({
     required int year,
     required int month,
+    int page = 1,
   }) async {
     final response = await dio.get('/api/prayers/history/detailed/', queryParameters: {
       'year': year,
       'month': month,
+      'page': page,
     });
-    return response.data as List<dynamic>;
+    return response.data as Map<String, dynamic>;
   }
 
   /// GET /api/prayers/reasons/

@@ -23,6 +23,9 @@ import '../theme/app_text_styles.dart';
 import '../../features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import '../../features/prayer/presentation/bloc/prayer/prayer_event.dart';
 import '../../features/prayer/presentation/bloc/prayer/prayer_state.dart';
+import '../../features/prayer/presentation/bloc/history/history_bloc.dart';
+import '../../features/prayer/presentation/bloc/history/history_event.dart';
+import '../../features/prayer/presentation/bloc/history/history_state.dart';
 
 /// A [Listenable] that notifies when the [AuthBloc] state changes.
 class AuthRefreshListenable extends ChangeNotifier {
@@ -186,7 +189,7 @@ class _AppShell extends StatelessWidget {
                   label: 'HOME',
                   isActive: index == 0,
                   onTap: () {
-                    GetIt.I<PrayerBloc>().add(SelectDate(PrayerState.todayKey));
+                    GetIt.I<HistoryBloc>().add(SelectDate(HistoryState.todayKey));
                     context.go('/');
                   },
                 ),
