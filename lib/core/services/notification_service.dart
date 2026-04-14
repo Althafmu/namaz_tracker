@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:adhan/adhan.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -24,8 +23,11 @@ class NotificationService implements NotificationServiceInterface {
   bool _permissionsGranted = false;
   bool _exactAlarmGranted = false;
 
+  @override
   bool get isInitialized => _isInitialized;
+  @override
   bool get permissionsGranted => _permissionsGranted;
+  @override
   bool get exactAlarmGranted => _exactAlarmGranted;
 
   /// Creates a NotificationService instance.
@@ -44,6 +46,7 @@ class NotificationService implements NotificationServiceInterface {
 
   /// Initialize the notification plugin and timezones.
   /// Safe to call at startup — does NOT request permissions.
+  @override
   Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -108,6 +111,7 @@ class NotificationService implements NotificationServiceInterface {
 
   /// Check current permission status without prompting the user.
   /// Checks both notification permission AND exact alarm permission.
+  @override
   Future<bool> checkPermissions() async {
     if (!_isInitialized) await initialize();
 
@@ -140,6 +144,7 @@ class NotificationService implements NotificationServiceInterface {
   }
 
   /// Returns a human-readable diagnostic of all permission states.
+  @override
   Future<Map<String, bool>> getPermissionDiagnostics() async {
     if (!_isInitialized) await initialize();
 
@@ -170,6 +175,7 @@ class NotificationService implements NotificationServiceInterface {
 
   /// Request notification and exact alarm permissions.
   /// Call from the UI layer when the user explicitly enables alerts.
+  @override
   Future<bool> requestPermissions() async {
     if (!_isInitialized) await initialize();
 
@@ -221,6 +227,7 @@ class NotificationService implements NotificationServiceInterface {
 
   /// ─── DIAGNOSTIC: Fire a notification right now to verify the pipeline ───
   /// Returns 'OK' on success or 'ERR: ...' with actual error on failure.
+  @override
   Future<String> showTestNotification() async {
     if (!_isInitialized) {
       try {
@@ -270,6 +277,7 @@ class NotificationService implements NotificationServiceInterface {
   }
 
   /// ─── DIAGNOSTIC: Fire a FULL ALARM in 5 seconds to verify exact alarms ───
+  @override
   Future<String> showTestAlarm({String alarmSound = 'system'}) async {
     if (!_isInitialized) {
       try {
@@ -303,6 +311,7 @@ class NotificationService implements NotificationServiceInterface {
   }
 
   /// Returns the count of currently pending (scheduled) notifications.
+  @override
   Future<int> getPendingNotificationCount() async {
     try {
       final pending =
@@ -319,6 +328,7 @@ class NotificationService implements NotificationServiceInterface {
   }
 
   /// Cancels all previously scheduled prayer notifications.
+  @override
   Future<void> cancelAllNotifications() async {
     try {
       await _plugin.cancelAll();
@@ -330,6 +340,7 @@ class NotificationService implements NotificationServiceInterface {
   /// Schedule prayer notifications for the next 7 days.
   ///
   /// ID scheme: (dayOffset * 100) + (prayerIndex * 10) + alertType
+  @override
   Future<int> schedulePrayerNotifications({
     required Coordinates coordinates,
     required String methodName,

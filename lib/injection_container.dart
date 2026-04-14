@@ -9,6 +9,7 @@ import 'features/prayer/data/repositories/prayer_repository_impl.dart';
 import 'features/prayer/data/repositories/offline_queue_repository.dart';
 import 'features/prayer/domain/repositories/prayer_repository.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/notification_service_interface.dart';
 import 'core/services/offline_sync_service.dart';
 import 'core/services/prayer_scheduler_service.dart';
 import 'features/prayer/domain/usecases/get_daily_status_usecase.dart';
@@ -67,7 +68,10 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => tokenProvider);
 
   sl.registerLazySingleton(() => OfflineQueueRepository());
-  sl.registerLazySingleton(() => NotificationService());
+  // Register interface and implementation for NotificationService
+  final notificationService = NotificationService();
+  sl.registerLazySingleton<NotificationServiceInterface>(() => notificationService);
+  sl.registerLazySingleton(() => notificationService);
 
   // ── External (Dio) ──
   final dio = Dio(BaseOptions(
