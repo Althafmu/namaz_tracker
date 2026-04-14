@@ -1,18 +1,15 @@
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/prayer.dart';
-import '../../../domain/entities/streak.dart';
 
 enum SyncStatus { idle, syncing, synced, error }
 
-/// State for the PrayerBloc — focused on today's prayers and streak.
-/// Historical data is now managed by HistoryBloc.
+/// State for the PrayerBloc — focused on today's prayers.
+/// Historical data is managed by HistoryBloc.
 /// Statistics are managed by StatsBloc.
+/// Streak is managed by StreakBloc.
 class PrayerState extends Equatable {
   /// Today's prayers
   final List<Prayer> prayers;
-
-  /// Current streak data
-  final Streak streak;
 
   /// Loading state for initial data fetch
   final bool isLoading;
@@ -29,7 +26,6 @@ class PrayerState extends Equatable {
 
   const PrayerState({
     this.prayers = const [],
-    this.streak = const Streak(),
     this.isLoading = false,
     this.syncStatus = SyncStatus.idle,
     this.selectedLocation = 'home',
@@ -39,7 +35,6 @@ class PrayerState extends Equatable {
 
   PrayerState copyWith({
     List<Prayer>? prayers,
-    Streak? streak,
     bool? isLoading,
     SyncStatus? syncStatus,
     String? selectedLocation,
@@ -48,7 +43,6 @@ class PrayerState extends Equatable {
   }) {
     return PrayerState(
       prayers: prayers ?? this.prayers,
-      streak: streak ?? this.streak,
       isLoading: isLoading ?? this.isLoading,
       syncStatus: syncStatus ?? this.syncStatus,
       selectedLocation: selectedLocation ?? this.selectedLocation,
@@ -67,7 +61,6 @@ class PrayerState extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'prayers': prayers.map((p) => p.toJson()).toList(),
-      'streak': streak.toJson(),
       'selectedLocation': selectedLocation,
       'cachedLat': cachedLat,
       'cachedLng': cachedLng,
@@ -80,9 +73,6 @@ class PrayerState extends Equatable {
               ?.map((p) => Prayer.fromJson(p as Map<String, dynamic>))
               .toList() ??
           Prayer.defaultPrayers(),
-      streak: json['streak'] != null
-          ? Streak.fromJson(json['streak'] as Map<String, dynamic>)
-          : const Streak(),
       selectedLocation: json['selectedLocation'] as String? ?? 'home',
       cachedLat: json['cachedLat'] as double?,
       cachedLng: json['cachedLng'] as double?,
@@ -92,7 +82,6 @@ class PrayerState extends Equatable {
   @override
   List<Object?> get props => [
         prayers,
-        streak,
         isLoading,
         syncStatus,
         selectedLocation,

@@ -22,6 +22,7 @@ import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'features/prayer/presentation/bloc/history/history_bloc.dart';
 import 'features/prayer/presentation/bloc/stats/stats_bloc.dart';
+import 'features/prayer/presentation/bloc/streak/streak_bloc.dart';
 
 import 'core/network/token_provider.dart';
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
@@ -169,7 +170,7 @@ Future<void> initDependencies() async {
         notificationService: sl(),
       ));
 
-  // HistoryBloc and StatsBloc must be registered before PrayerBloc
+  // HistoryBloc and StatsBloc must be registered before PrayerBloc and StreakBloc
   sl.registerLazySingleton(() => HistoryBloc(
         getDetailedMonthHistoryUseCase: sl(),
       ));
@@ -178,10 +179,15 @@ Future<void> initDependencies() async {
         getReasonSummaryUseCase: sl(),
       ));
 
+  // StreakBloc listens to HistoryBloc, so must be registered after HistoryBloc
+  sl.registerLazySingleton(() => StreakBloc(
+        getStreakUseCase: sl(),
+        historyBloc: sl(),
+      ));
+
   sl.registerFactory(() => PrayerBloc(
         logPrayerUseCase: sl(),
         getDailyStatusUseCase: sl(),
-        getStreakUseCase: sl(),
         offlineSyncService: sl(),
         prayerSchedulerService: sl(),
         notificationService: sl(),

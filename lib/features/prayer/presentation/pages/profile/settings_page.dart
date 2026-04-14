@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_text_styles.dart';
 import '../../../../../core/widgets/neo_button.dart';
-import '../../bloc/prayer/prayer_bloc.dart';
-import '../../bloc/prayer/prayer_state.dart';
+import '../../bloc/streak/streak_bloc.dart';
+import '../../bloc/streak/streak_state.dart';
 import 'widgets/user_info_card.dart';
 import 'widgets/settings_list.dart';
 import 'widgets/account_actions.dart';
@@ -70,8 +70,8 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
 
-    return BlocBuilder<PrayerBloc, PrayerState>(
-      builder: (context, state) {
+    return BlocBuilder<StreakBloc, StreakState>(
+      builder: (context, streakState) {
         return SafeArea(
           child: SingleChildScrollView(
             child: Column(
@@ -91,7 +91,7 @@ class SettingsPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: UserInfoCard(
-                    displayStreak: state.streak.displayStreak,
+                    displayStreak: streakState.streak.displayStreak,
                     onEditTap: () => showEditProfileSheet(context),
                   ),
                 ),

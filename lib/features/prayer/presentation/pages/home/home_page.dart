@@ -5,7 +5,6 @@ import '../../bloc/prayer/prayer_bloc.dart';
 import '../../bloc/prayer/prayer_event.dart';
 import '../../bloc/prayer/prayer_state.dart';
 import '../../bloc/history/history_bloc.dart';
-import '../../bloc/history/history_event.dart';
 import '../../bloc/history/history_state.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../prayer_logger/prayer_logger_sheet.dart';
@@ -84,7 +83,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 child: Column(
                   children: [
                     // ── Streak Header ──
-                    StreakHeader(streak: prayerState.streak.displayStreak),
+                    const StreakHeader(),
 
                     const SizedBox(height: 16),
 

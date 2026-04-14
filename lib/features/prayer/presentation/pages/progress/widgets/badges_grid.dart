@@ -3,27 +3,33 @@ import 'package:flutter/material.dart';
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/theme/app_text_styles.dart';
 import '../../../../../../core/widgets/neo_card.dart';
-import '../../../bloc/prayer/prayer_state.dart';
+import '../../../../domain/entities/prayer.dart';
+import '../../../bloc/streak/streak_state.dart';
 
 /// Badges grid — dynamic based on user's real prayer data.
 class BadgesGrid extends StatelessWidget {
-  final PrayerState state;
+  final List<Prayer> prayers;
+  final StreakState streakState;
 
-  const BadgesGrid({super.key, required this.state});
+  const BadgesGrid({
+    super.key,
+    required this.prayers,
+    required this.streakState,
+  });
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
 
     // Dynamic badge conditions
-    final fajrDone = state.prayers.any(
+    final fajrDone = prayers.any(
       (p) => p.name.toLowerCase() == 'fajr' && p.isCompleted,
     );
-    final anyJamaat = state.prayers.any((p) => p.inJamaat);
-    final ishaDone = state.prayers.any(
+    final anyJamaat = prayers.any((p) => p.inJamaat);
+    final ishaDone = prayers.any(
       (p) => p.name.toLowerCase() == 'isha' && p.isCompleted,
     );
-    final perfectMonth = state.streak.currentStreak >= 30;
+    final perfectMonth = streakState.streak.currentStreak >= 30;
 
     return GridView.count(
       crossAxisCount: 2,

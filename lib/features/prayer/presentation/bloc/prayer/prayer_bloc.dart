@@ -12,10 +12,8 @@ import '../../../../../core/services/prayer_time_service.dart';
 import '../../../domain/entities/prayer.dart';
 import '../../../domain/usecases/log_prayer_usecase.dart';
 import '../../../domain/usecases/get_daily_status_usecase.dart';
-import '../../../domain/usecases/get_streak_usecase.dart';
 import '../history/history_bloc.dart';
 import '../history/history_event.dart';
-import '../history/history_state.dart';
 import '../stats/stats_bloc.dart';
 import '../stats/stats_event.dart';
 import '../settings/settings_bloc.dart';
@@ -24,28 +22,13 @@ import '../settings/settings_state.dart';
 import 'prayer_event.dart';
 import 'prayer_state.dart';
 
-/// Internal event to update streak when history changes.
-/// Dispatched from HistoryBloc stream subscription.
-class _UpdateStreakFromHistory extends PrayerEvent {
-  final int currentStreak;
-  final int longestStreak;
-
-  const _UpdateStreakFromHistory({
-    required this.currentStreak,
-    required this.longestStreak,
-  });
-
-  @override
-  List<Object?> get props => [currentStreak, longestStreak];
-}
-
-/// PrayerBloc — orchestrates domain use cases for today's prayers and streak.
+/// PrayerBloc — manages today's prayers and coordinates other BLoCs.
 /// Historical data is delegated to HistoryBloc.
 /// Statistics are delegated to StatsBloc.
+/// Streak is managed by StreakBloc.
 class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
   final LogPrayerUseCase logPrayerUseCase;
   final GetDailyStatusUseCase getDailyStatusUseCase;
-  final GetStreakUseCase getStreakUseCase;
   final OfflineSyncService offlineSyncService;
   final PrayerSchedulerService prayerSchedulerService;
   final NotificationService notificationService;
@@ -54,12 +37,10 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
   final StatsBloc statsBloc;
 
   late final StreamSubscription<SettingsState> _settingsSubscription;
-  late final StreamSubscription<HistoryState> _historySubscription;
 
   PrayerBloc({
     required this.logPrayerUseCase,
     required this.getDailyStatusUseCase,
-    required this.getStreakUseCase,
     required this.offlineSyncService,
     required this.prayerSchedulerService,
     required this.notificationService,
@@ -73,66 +54,16 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     on<SetPrayerLocation>(_onSetPrayerLocation);
     on<SyncWithServer>(_onSyncWithServer);
     on<RefreshPrayersAndAlarms>(_onRefreshPrayersAndAlarms);
-    on<_UpdateStreakFromHistory>(_onUpdateStreakFromHistory);
 
     _settingsSubscription = settingsBloc.stream.listen((_) {
       add(const RefreshPrayersAndAlarms());
-    });
-
-    // Recalculate streak when history changes - dispatch event instead of calling emit
-    _historySubscription = historyBloc.stream.listen((historyState) {
-      _dispatchStreakUpdate(historyState);
     });
   }
 
   @override
   Future<void> close() {
     _settingsSubscription.cancel();
-    _historySubscription.cancel();
     return super.close();
-  }
-
-  /// Calculate streak from historical log data and dispatch update event.
-  void _dispatchStreakUpdate(HistoryState historyState) {
-    final fmt = DateFormat('yyyy-MM-dd');
-    final effectiveNow = DateTime.now();
-    int count = 0;
-
-    for (int i = 0; i < 365; i++) {
-      final date = effectiveNow.subtract(Duration(days: i));
-      final key = fmt.format(date);
-
-      final dayPrayers = (i == 0) ? state.prayers : historyState.historicalLog[key];
-
-      if (dayPrayers == null || dayPrayers.isEmpty) break;
-
-      final completed = dayPrayers.where((p) => p.isCompleted).length;
-      if (completed >= 5) {
-        count++;
-      } else {
-        break;
-      }
-    }
-
-    final newLongest = count > state.streak.longestStreak ? count : state.streak.longestStreak;
-
-    // Dispatch event instead of calling emit directly
-    add(_UpdateStreakFromHistory(currentStreak: count, longestStreak: newLongest));
-  }
-
-  /// Handle streak update from history changes.
-  void _onUpdateStreakFromHistory(
-    _UpdateStreakFromHistory event,
-    Emitter<PrayerState> emit,
-  ) {
-    final newStreak = state.streak.copyWith(
-      currentStreak: event.currentStreak,
-      longestStreak: event.longestStreak,
-    );
-
-    if (newStreak != state.streak) {
-      emit(state.copyWith(streak: newStreak));
-    }
   }
 
   Future<void> _onLoadDailyStatus(
@@ -220,14 +151,11 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         return local;
       }).toList();
 
-      // Sync streak
-      final streak = await getStreakUseCase();
-
       // Update today in HistoryBloc
       final todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
       historyBloc.add(UpdateDayLog(dateStr: todayKey, prayers: merged));
 
-      emit(state.copyWith(prayers: merged, streak: streak));
+      emit(state.copyWith(prayers: merged));
     } on NetworkException catch (e) {
       // Offline - use cached state, mark as sync error
       debugPrint('[PrayerBloc] Network error during sync: ${e.message}');
@@ -294,7 +222,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       historyBloc.add(UpdateDayLog(dateStr: effectiveDateKey, prayers: updatedPrayers));
     }
 
-    // 3. Optimistic streak calculation
+    // 3. Optimistic update
     final tempPrayers = isToday ? updatedPrayers : state.prayers;
     emit(state.copyWith(prayers: tempPrayers, syncStatus: SyncStatus.syncing));
 
@@ -315,17 +243,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         reason: event.reason,
         dateKey: isToday ? null : effectiveDateKey,
       );
-
-      // Re-fetch the authoritative streak from the server
-      try {
-        final updatedStreak = await getStreakUseCase();
-        emit(state.copyWith(streak: updatedStreak, syncStatus: SyncStatus.synced));
-      } on NetworkException {
-        // Offline - keep optimistic streak, mark synced since prayer was logged
-        emit(state.copyWith(syncStatus: SyncStatus.synced));
-      } catch (_) {
-        emit(state.copyWith(syncStatus: SyncStatus.synced));
-      }
+      emit(state.copyWith(syncStatus: SyncStatus.synced));
     } on NetworkException catch (e) {
       // Offline - enqueue for later sync
       debugPrint('[PrayerBloc] Network error during log: ${e.message}');
