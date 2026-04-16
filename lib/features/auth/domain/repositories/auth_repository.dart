@@ -23,4 +23,10 @@ abstract class AuthRepository {
     required String firstName,
     required String lastName,
   });
+
+  Future<void> updateSettings({
+    required Map<String, int> manualOffsets,
+    String? calculationMethod,
+    bool? useHanafi,
+  });
 }

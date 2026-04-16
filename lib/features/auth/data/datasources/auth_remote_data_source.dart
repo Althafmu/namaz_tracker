@@ -100,4 +100,21 @@ class AuthRemoteDataSource {
       throw Exception(message);
     }
   }
+
+  /// PATCH /api/profile/offsets/ — sync manual offsets and calculation settings to cloud.
+  Future<void> patchProfileOffsets(Map<String, dynamic> data) async {
+    try {
+      await dio.patch(
+        '/api/profile/offsets/',
+        data: data,
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      String message = 'Settings sync failed';
+      if (data is Map<String, dynamic>) {
+        message = data['detail']?.toString() ?? data.values.first.toString();
+      }
+      throw Exception(message);
+    }
+  }
 }

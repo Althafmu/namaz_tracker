@@ -87,4 +87,20 @@ class AuthRepositoryImpl implements AuthRepository {
       lastName: lastName,
     );
   }
+
+  @override
+  Future<void> updateSettings({
+    required Map<String, int> manualOffsets,
+    String? calculationMethod,
+    bool? useHanafi,
+  }) async {
+    final data = <String, dynamic>{'manual_offsets': manualOffsets};
+    if (calculationMethod != null) {
+      data['calculation_method'] = calculationMethod;
+    }
+    if (useHanafi != null) {
+      data['use_hanafi'] = useHanafi;
+    }
+    await remoteDataSource.patchProfileOffsets(data);
+  }
 }

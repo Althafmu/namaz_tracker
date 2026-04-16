@@ -41,3 +41,32 @@ class RecalculateStreakFromHistory extends StreakEvent {
   @override
   List<Object?> get props => [historicalLog];
 }
+
+// ── Phase 2: Streak Freeze System ──
+
+/// Consume a protector token to save streak after Qada prayer.
+class ConsumeProtectorToken extends StreakEvent {
+  /// Optional date for the token consumption (defaults to yesterday).
+  final String? date;
+
+  const ConsumeProtectorToken({this.date});
+
+  @override
+  List<Object?> get props => [date];
+}
+
+/// Mark a day as excused (travel, sickness, women's period).
+class SetExcusedDay extends StreakEvent {
+  /// The date to mark as excused (required).
+  final String date;
+  /// Optional reason (travel, sickness, period, etc.).
+  final String? reason;
+
+  const SetExcusedDay({
+    required this.date,
+    this.reason,
+  });
+
+  @override
+  List<Object?> get props => [date, reason];
+}

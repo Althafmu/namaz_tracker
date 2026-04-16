@@ -33,6 +33,8 @@ class AppColors {
     statusAlone: Color(0xFFF9C74F),
     statusLate: Color(0xFFF4845F),
     statusMissed: Color(0xFFFF6B6B),
+    statusQada: Color(0xFF6366F1), // Phase 2: Qada (makeup prayer) - Indigo
+    statusExcused: Color(0xFF9CA3AF), // Phase 2: Excused - Muted gray
     statusNotLogged: Color(0xFFE2DADA),
   );
 
@@ -65,6 +67,8 @@ class AppColors {
     statusAlone: Color(0xFFFACC4D), // Alone
     statusLate: Color(0xFFF0825A), // Orange-red
     statusMissed: Color(0xFFFF8585), // Softer red
+    statusQada: Color(0xFF818CF8), // Phase 2: Qada - Lighter indigo for dark theme
+    statusExcused: Color(0xFF9CA3AF), // Phase 2: Excused - Muted gray for dark theme
     statusNotLogged: Color(0xFF2A2A3A), // Subtle ring – blends into surface
   );
 
@@ -96,6 +100,8 @@ class AppColors {
   ); // Alone (Male) / Excused (Female)
   static const Color statusLate = Color(0xFFF4845F); // Late
   static const Color statusMissed = Color(0xFFFF6B6B); // Missed
+  static const Color statusQada = Color(0xFF6366F1); // Phase 2: Qada
+  static const Color statusExcused = Color(0xFF9CA3AF); // Phase 2: Excused
   static const Color statusNotLogged = Color(
     0xFFE2DADA,
   ); // Base gray ring or unlogged dots
@@ -123,6 +129,8 @@ class AppColorPalette {
   final Color statusAlone;
   final Color statusLate;
   final Color statusMissed;
+  final Color statusQada; // Phase 2: Qada (makeup prayer)
+  final Color statusExcused; // Phase 2: Excused (travel/sickness/women's period)
   final Color statusNotLogged;
 
   const AppColorPalette({
@@ -141,6 +149,8 @@ class AppColorPalette {
     required this.statusAlone,
     required this.statusLate,
     required this.statusMissed,
+    required this.statusQada,
+    required this.statusExcused,
     required this.statusNotLogged,
   });
 

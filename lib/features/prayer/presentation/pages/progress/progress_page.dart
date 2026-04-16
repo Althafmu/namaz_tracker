@@ -16,6 +16,7 @@ import 'widgets/streak_ring_painter.dart';
 import 'widgets/monthly_calendar.dart';
 import 'widgets/top_reasons.dart';
 import 'widgets/badges_grid.dart';
+import 'widgets/radar_chart.dart';
 
 /// Progress Room — functional version with live data and share.
 class ProgressPage extends StatelessWidget {
@@ -139,6 +140,17 @@ class ProgressPage extends StatelessWidget {
 
                             const SizedBox(height: 24),
 
+                            // ── Radar Chart ──
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: PrayerRadarChart(
+                                historicalLog: historyState.historicalLog,
+                                colors: c,
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
                             // ── Top Reasons ──
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -184,7 +196,7 @@ class ProgressPage extends StatelessWidget {
   void _shareProgress(BuildContext context, StreakState streakState, HistoryState historyState, PrayerState prayerState) {
     final streak = streakState.streak.displayStreak;
     final weeklyCount = historyState.weeklyPrayerCount;
-    final todayCount = prayerState.completedCount;
+    final todayCount = prayerState.prayers.where((p) => p.isCompleted && !p.isExcused).length;
 
     final message = StringBuffer();
     message.writeln('🕌 Falah Prayer Tracker Progress');

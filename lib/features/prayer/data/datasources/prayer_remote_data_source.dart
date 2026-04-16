@@ -22,18 +22,20 @@ class PrayerRemoteDataSource {
     String? reason,
     String? dateKey,
   }) async {
-    final response = await dio.post('/api/prayers/log/', data: {
-      'prayer': prayerName.toLowerCase(),
-      'completed': completed,
-      'in_jamaat': inJamaat,
-      'location': location,
-      'status': ?status,
-      'reason': ?reason,
-      'date': ?dateKey,
-    });
+    final response = await dio.post(
+      '/api/prayers/log/',
+      data: {
+        'prayer': prayerName.toLowerCase(),
+        'completed': completed,
+        'in_jamaat': inJamaat,
+        'location': location,
+        if (status case final status?) 'status': status,
+        if (reason case final reason?) 'reason': reason,
+        if (dateKey case final dateKey?) 'date': dateKey,
+      },
+    );
     return response.data as Map<String, dynamic>;
   }
-
 
   /// GET /api/streak/
   Future<Map<String, dynamic>> getStreak() async {
@@ -43,11 +45,14 @@ class PrayerRemoteDataSource {
 
   /// GET /api/prayers/history/?days=90&page=1
   /// Returns paginated response: {results: [...], count, page, total_pages, page_size}
-  Future<Map<String, dynamic>> getWeeklyHistory({int days = 90, int page = 1}) async {
-    final response = await dio.get('/api/prayers/history/', queryParameters: {
-      'days': days,
-      'page': page,
-    });
+  Future<Map<String, dynamic>> getWeeklyHistory({
+    int days = 90,
+    int page = 1,
+  }) async {
+    final response = await dio.get(
+      '/api/prayers/history/',
+      queryParameters: {'days': days, 'page': page},
+    );
     return response.data as Map<String, dynamic>;
   }
 
@@ -58,11 +63,10 @@ class PrayerRemoteDataSource {
     required int month,
     int page = 1,
   }) async {
-    final response = await dio.get('/api/prayers/history/detailed/', queryParameters: {
-      'year': year,
-      'month': month,
-      'page': page,
-    });
+    final response = await dio.get(
+      '/api/prayers/history/detailed/',
+      queryParameters: {'year': year, 'month': month, 'page': page},
+    );
     return response.data as Map<String, dynamic>;
   }
 
@@ -70,6 +74,33 @@ class PrayerRemoteDataSource {
   /// Returns pre-aggregated reason counts: { "reasons": { "Work": 5, ... } }
   Future<Map<String, dynamic>> getReasonSummary() async {
     final response = await dio.get('/api/prayers/reasons/');
+    return response.data as Map<String, dynamic>;
+  }
+
+  // ── Phase 2: Streak Freeze System ──
+
+  /// POST /api/streak/consume-token/
+  /// Consume a protector token to save streak after Qada prayer.
+  /// Body: { "date": "2026-04-15" } (optional, defaults to yesterday)
+  Future<Map<String, dynamic>> consumeProtectorToken({String? date}) async {
+    final response = await dio.post(
+      '/api/streak/consume-token/',
+      data: {if (date case final date?) 'date': date},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// POST /api/prayers/excused/
+  /// Mark a day as excused (travel, sickness, women's period).
+  /// Body: { "date": "2026-04-15", "reason": "travel" }
+  Future<Map<String, dynamic>> setExcusedDay({
+    required String date,
+    String? reason,
+  }) async {
+    final response = await dio.post(
+      '/api/prayers/excused/',
+      data: {'date': date, if (reason case final reason?) 'reason': reason},
+    );
     return response.data as Map<String, dynamic>;
   }
 }

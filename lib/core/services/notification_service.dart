@@ -2,6 +2,7 @@ import 'package:adhan/adhan.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:intl/intl.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -349,6 +350,7 @@ class NotificationService implements NotificationServiceInterface {
     String alarmSound = 'system',
     Map<String, int>? manualOffsets,
     int alarmDurationMinutes = 1,
+    Set<String>? excusedDays,
   }) async {
     await cancelAllNotifications();
 
@@ -356,10 +358,18 @@ class NotificationService implements NotificationServiceInterface {
 
     int scheduledCount = 0;
     final now = DateTime.now();
+    final dateFormat = DateFormat('yyyy-MM-dd');
 
     // Schedule for 3 days ahead to prevent hitting Android exact alarm limits (50 alarms)
     for (int dayOffset = 0; dayOffset < 3; dayOffset++) {
       final date = now.add(Duration(days: dayOffset));
+      final dateKey = dateFormat.format(date);
+
+      // Skip entire day if marked as excused
+      if (excusedDays != null && excusedDays.contains(dateKey)) {
+        continue;
+      }
+
       final times = PrayerTimeService.calculateTimesForDate(
         coordinates: coordinates,
         date: date,
@@ -467,7 +477,7 @@ class NotificationService implements NotificationServiceInterface {
     debugPrint('[Notification] Scheduled $scheduledCount notifications for 3 days');
 
     // Schedule daily 10 PM reminder
-    final reminderCount = await _scheduleDailyReminders(now: now);
+    final reminderCount = await _scheduleDailyReminders(now: now, excusedDays: excusedDays);
     scheduledCount += reminderCount;
 
     return scheduledCount;
@@ -475,11 +485,19 @@ class NotificationService implements NotificationServiceInterface {
 
   /// Schedule daily reminder notifications at 10 PM for the next 3 days.
   /// ID scheme: 9000 + dayOffset
-  Future<int> _scheduleDailyReminders({required DateTime now}) async {
+  Future<int> _scheduleDailyReminders({required DateTime now, Set<String>? excusedDays}) async {
     int count = 0;
+    final dateFormat = DateFormat('yyyy-MM-dd');
 
     for (int dayOffset = 0; dayOffset < 3; dayOffset++) {
       final date = now.add(Duration(days: dayOffset));
+      final dateKey = dateFormat.format(date);
+
+      // Skip if this day is excused
+      if (excusedDays != null && excusedDays.contains(dateKey)) {
+        continue;
+      }
+
       final reminderTime = DateTime(date.year, date.month, date.day, 22, 0); // 10 PM
 
       if (reminderTime.isAfter(now)) {

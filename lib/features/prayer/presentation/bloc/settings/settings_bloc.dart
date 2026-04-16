@@ -1,15 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import '../../../../../core/services/notification_service.dart';
+import '../../../../auth/domain/repositories/auth_repository.dart';
 import '../../../domain/entities/prayer_notification_config.dart';
 import 'settings_event.dart';
 import 'settings_state.dart';
 
 class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
   final NotificationService notificationService;
+  final AuthRepository? authRepository;
 
   SettingsBloc({
     required this.notificationService,
+    this.authRepository,
   }) : super(const SettingsState()) {
     on<UpdateCalculationSettings>(_onUpdateCalculationSettings);
     on<UpdatePrayerNotificationConfig>(_onUpdatePrayerNotificationConfig);
@@ -20,6 +23,10 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     on<CycleThemeMode>(_onCycleThemeMode);
     on<UpdateThemeMode>(_onUpdateThemeMode);
     on<UpdateAlarmDuration>(_onUpdateAlarmDuration);
+    on<SyncSettingsToCloud>(_onSyncSettingsToCloud);
+    on<LoadSettingsFromCloud>(_onLoadSettingsFromCloud);
+    on<AddExcusedDay>(_onAddExcusedDay);
+    on<ClearExcusedDay>(_onClearExcusedDay);
   }
 
   void _onUpdateCalculationSettings(
@@ -31,6 +38,7 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
       useHanafi: event.useHanafi ?? state.useHanafi,
       methodAutoDetected: true,
     ));
+    add(const SyncSettingsToCloud());
   }
 
   Future<void> _onUpdatePrayerNotificationConfig(
@@ -77,6 +85,8 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     emit(state.copyWith(manualOffsets: event.manualOffsets));
+    // Kick off cloud sync without blocking the UI
+    add(const SyncSettingsToCloud());
   }
 
   void _onUpdateMissedReasons(
@@ -114,6 +124,46 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     emit(state.copyWith(alarmDurationMinutes: event.duration));
+  }
+
+  Future<void> _onSyncSettingsToCloud(
+    SyncSettingsToCloud event,
+    Emitter<SettingsState> emit,
+  ) async {
+    if (authRepository == null) return;
+    try {
+      await authRepository!.updateSettings(
+        manualOffsets: state.manualOffsets,
+        calculationMethod: state.calculationMethod,
+        useHanafi: state.useHanafi,
+      );
+    } catch (e) {
+      debugPrint('[SettingsBloc] Cloud sync failed: $e');
+    }
+  }
+
+  Future<void> _onLoadSettingsFromCloud(
+    LoadSettingsFromCloud event,
+    Emitter<SettingsState> emit,
+  ) async {
+    // HydratedBloc restores state automatically; this handler is for
+    // post-login cloud load if needed in the future.
+  }
+
+  void _onAddExcusedDay(
+    AddExcusedDay event,
+    Emitter<SettingsState> emit,
+  ) {
+    final newExcused = Set<String>.from(state.excusedDays)..add(event.date);
+    emit(state.copyWith(excusedDays: newExcused));
+  }
+
+  void _onClearExcusedDay(
+    ClearExcusedDay event,
+    Emitter<SettingsState> emit,
+  ) {
+    final newExcused = Set<String>.from(state.excusedDays)..remove(event.date);
+    emit(state.copyWith(excusedDays: newExcused));
   }
 
   @override

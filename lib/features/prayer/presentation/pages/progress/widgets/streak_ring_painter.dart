@@ -33,7 +33,9 @@ class StreakRingPainter extends CustomPainter {
       Color segmentColor = colors.statusNotLogged;
 
       if (prayer.isCompleted) {
-        if (prayer.status == 'late') {
+        if (prayer.isExcused) {
+          segmentColor = colors.statusExcused;
+        } else if (prayer.status == 'late') {
           segmentColor = colors.statusLate;
         } else if (prayer.status == 'missed') {
           segmentColor = colors.statusMissed;
@@ -76,7 +78,9 @@ class StreakRingPainter extends CustomPainter {
       Color segmentColor = colors.statusNotLogged;
 
       if (prayer.isCompleted) {
-        if (prayer.status == 'late') {
+        if (prayer.isExcused) {
+          segmentColor = colors.statusExcused;
+        } else if (prayer.status == 'late') {
           segmentColor = colors.statusLate;
         } else if (prayer.status == 'missed') {
           segmentColor = colors.statusMissed;

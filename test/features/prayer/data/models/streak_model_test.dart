@@ -10,6 +10,9 @@ void main() {
           'longest_streak': 14,
           'last_completed_date': '2026-04-14',
           'display_streak': 7,
+          'protector_tokens': 2,
+          'max_protector_tokens': 3,
+          'tokens_reset_date': '2026-04-14',
         };
 
         final streak = StreakModel.fromApiResponse(response);
@@ -18,6 +21,9 @@ void main() {
         expect(streak.longestStreak, 14);
         expect(streak.lastCompletedDate, '2026-04-14');
         expect(streak.displayStreak, 7);
+        expect(streak.protectorTokens, 2);
+        expect(streak.maxProtectorTokens, 3);
+        expect(streak.tokensResetDate, '2026-04-14');
       });
 
       test('handles zero streak values', () {
@@ -48,10 +54,7 @@ void main() {
       });
 
       test('handles partial response', () {
-        final response = {
-          'current_streak': 5,
-          'longest_streak': 10,
-        };
+        final response = {'current_streak': 5, 'longest_streak': 10};
 
         final streak = StreakModel.fromApiResponse(response);
 

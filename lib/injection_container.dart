@@ -18,6 +18,8 @@ import 'features/prayer/domain/usecases/get_weekly_history_usecase.dart';
 import 'features/prayer/domain/usecases/get_detailed_month_history_usecase.dart';
 import 'features/prayer/domain/usecases/get_reason_summary_usecase.dart';
 import 'features/prayer/domain/usecases/log_prayer_usecase.dart';
+import 'features/prayer/domain/usecases/consume_protector_token_usecase.dart';
+import 'features/prayer/domain/usecases/set_excused_day_usecase.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'features/prayer/presentation/bloc/history/history_bloc.dart';
@@ -155,6 +157,9 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => GetWeeklyHistoryUseCase(sl()));
   sl.registerLazySingleton(() => GetDetailedMonthHistoryUseCase(sl()));
   sl.registerLazySingleton(() => GetReasonSummaryUseCase(sl()));
+  // Phase 2: Streak Freeze System
+  sl.registerLazySingleton(() => ConsumeProtectorTokenUseCase(sl()));
+  sl.registerLazySingleton(() => SetExcusedDayUseCase(sl()));
 
   // ── Domain Services ──
   sl.registerLazySingleton(() => OfflineSyncService(
@@ -182,6 +187,8 @@ Future<void> initDependencies() async {
   // StreakBloc listens to HistoryBloc, so must be registered after HistoryBloc
   sl.registerLazySingleton(() => StreakBloc(
         getStreakUseCase: sl(),
+        consumeProtectorTokenUseCase: sl(),
+        setExcusedDayUseCase: sl(),
         historyBloc: sl(),
       ));
 

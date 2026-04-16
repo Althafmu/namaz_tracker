@@ -160,7 +160,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 24),
 
                     // Prayer Status
@@ -171,7 +171,9 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
                         StatusButton(
                           icon: Icons.schedule,
@@ -182,7 +184,6 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                             _status = 'on_time';
                           }),
                         ),
-                        const SizedBox(width: 12),
                         StatusButton(
                           icon: Icons.history,
                           label: 'Late',
@@ -192,7 +193,6 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                             _status = 'late';
                           }),
                         ),
-                        const SizedBox(width: 12),
                         StatusButton(
                           icon: Icons.cancel,
                           label: 'Missed',
@@ -201,6 +201,16 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                           onTap: () => setState(() {
                             _status = 'missed';
                             _inJamaat = false; // Cannot pray in jamaat if missed
+                          }),
+                        ),
+                        // Phase 2: Qada status option
+                        StatusButton(
+                          icon: Icons.autorenew,
+                          label: 'Qada',
+                          color: c.statusQada,
+                          isSelected: _status == 'qada',
+                          onTap: () => setState(() {
+                            _status = 'qada';
                           }),
                         ),
                       ],

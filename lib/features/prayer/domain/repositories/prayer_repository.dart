@@ -33,4 +33,17 @@ abstract class PrayerRepository {
   /// Get pre-aggregated reason counts (all-time).
   /// Returns reason string -> count.
   Future<Map<String, int>> getReasonSummary();
+
+  // ── Phase 2: Streak Freeze System ──
+
+  /// Consume a protector token to save streak after Qada prayer.
+  /// Returns updated streak info with tokens_remaining.
+  Future<Streak> consumeProtectorToken({String? date});
+
+  /// Mark a day as excused (travel, sickness, women's period).
+  /// Returns the updated prayer log.
+  Future<List<Prayer>> setExcusedDay({
+    required String date,
+    String? reason,
+  });
 }

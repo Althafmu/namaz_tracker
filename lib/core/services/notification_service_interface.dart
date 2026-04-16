@@ -24,5 +24,6 @@ abstract class NotificationServiceInterface {
     String alarmSound,
     Map<String, int>? manualOffsets,
     int alarmDurationMinutes,
+    Set<String>? excusedDays,
   });
 }

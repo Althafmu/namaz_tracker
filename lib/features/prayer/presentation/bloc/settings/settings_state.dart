@@ -24,6 +24,9 @@ class SettingsState extends Equatable {
   final List<String> missedReasons;
   final int alarmDurationMinutes;
 
+  // Dates marked as excused (yyyy-MM-dd strings) — notifications suppressed for these days
+  final Set<String> excusedDays;
+
   const SettingsState({
     this.calculationMethod = 'MWL',
     this.useHanafi = false,
@@ -55,6 +58,7 @@ class SettingsState extends Equatable {
       'Other',
     ],
     this.alarmDurationMinutes = 1,
+    this.excusedDays = const {},
   });
 
   SettingsState copyWith({
@@ -68,6 +72,7 @@ class SettingsState extends Equatable {
     bool? methodAutoDetected,
     List<String>? missedReasons,
     int? alarmDurationMinutes,
+    Set<String>? excusedDays,
   }) {
     return SettingsState(
       calculationMethod: calculationMethod ?? this.calculationMethod,
@@ -81,6 +86,7 @@ class SettingsState extends Equatable {
       methodAutoDetected: methodAutoDetected ?? this.methodAutoDetected,
       missedReasons: missedReasons ?? this.missedReasons,
       alarmDurationMinutes: alarmDurationMinutes ?? this.alarmDurationMinutes,
+      excusedDays: excusedDays ?? this.excusedDays,
     );
   }
 
@@ -98,6 +104,7 @@ class SettingsState extends Equatable {
       'methodAutoDetected': methodAutoDetected,
       'missedReasons': missedReasons,
       'alarmDurationMinutes': alarmDurationMinutes,
+      'excusedDays': excusedDays.toList(),
     };
   }
 
@@ -179,6 +186,10 @@ class SettingsState extends Equatable {
             'Other',
           ],
       alarmDurationMinutes: json['alarmDurationMinutes'] as int? ?? 1,
+      excusedDays: (json['excusedDays'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toSet() ??
+          {},
     );
   }
 
@@ -194,5 +205,6 @@ class SettingsState extends Equatable {
     methodAutoDetected,
     missedReasons,
     alarmDurationMinutes,
+    excusedDays,
   ];
 }

@@ -94,3 +94,33 @@ class UpdateAlarmDuration extends SettingsEvent {
   @override
   List<Object?> get props => [duration];
 }
+
+/// Syncs manual offsets, calculation method, and hanafi setting to cloud.
+class SyncSettingsToCloud extends SettingsEvent {
+  const SyncSettingsToCloud();
+}
+
+/// Loads settings from cloud on app startup / login.
+class LoadSettingsFromCloud extends SettingsEvent {
+  const LoadSettingsFromCloud();
+}
+
+/// Marks a date as excused — suppresses all notifications for that day.
+class AddExcusedDay extends SettingsEvent {
+  final String date; // yyyy-MM-dd
+
+  const AddExcusedDay(this.date);
+
+  @override
+  List<Object?> get props => [date];
+}
+
+/// Removes a date from the excused list — re-enables notifications.
+class ClearExcusedDay extends SettingsEvent {
+  final String date; // yyyy-MM-dd
+
+  const ClearExcusedDay(this.date);
+
+  @override
+  List<Object?> get props => [date];
+}

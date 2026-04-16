@@ -42,6 +42,11 @@ class PrayerSchedulerService {
     }
   }
 
+  /// Cancels all scheduled prayer notifications.
+  Future<void> cancelAllNotifications() async {
+    await _notificationService.cancelAllNotifications();
+  }
+
   /// Recalculate prayer times using only cached coordinates (zero async wait).
   /// Returns updated prayer list, or the original list if no coords are cached.
   List<Prayer> recalculateWithCachedCoords({
@@ -123,6 +128,7 @@ class PrayerSchedulerService {
         alarmSound: settings.alarmSound,
         manualOffsets: settings.manualOffsets,
         alarmDurationMinutes: settings.alarmDurationMinutes,
+        excusedDays: settings.excusedDays,
       );
     } catch (e) {
       debugPrint('[PrayerScheduler] Failed to schedule notifications: $e');

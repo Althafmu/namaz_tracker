@@ -50,18 +50,19 @@ class HistoryState extends Equatable {
   }
 
   /// Get the last 7 days' completion percentages for the weekly chart.
+  /// Excused prayers are excluded from the count (they don't inflate completion %).
   List<double> get weeklyPercentages {
     final effectiveNow = DateTime.now();
     return List.generate(7, (i) {
       final date = effectiveNow.subtract(Duration(days: 6 - i));
       final key = DateFormat('yyyy-MM-dd').format(date);
       final pastPrayers = historicalLog[key] ?? [];
-      final completed = pastPrayers.where((p) => p.isCompleted).length;
-      return completed / 5.0;
+      final validCompleted = pastPrayers.where((p) => p.isCompleted && !p.isExcused).length;
+      return validCompleted / 5.0;
     });
   }
 
-  /// Total prayers completed in the last 7 days.
+  /// Total valid prayers completed in the last 7 days (excused excluded).
   int get weeklyPrayerCount {
     final effectiveNow = DateTime.now();
     int total = 0;
@@ -69,7 +70,7 @@ class HistoryState extends Equatable {
       final date = effectiveNow.subtract(Duration(days: i));
       final key = DateFormat('yyyy-MM-dd').format(date);
       final pastPrayers = historicalLog[key] ?? [];
-      total += pastPrayers.where((p) => p.isCompleted).length;
+      total += pastPrayers.where((p) => p.isCompleted && !p.isExcused).length;
     }
     return total;
   }

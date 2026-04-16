@@ -25,6 +25,8 @@ void main() {
         expect(streak.longestStreak, 0);
         expect(streak.lastCompletedDate, null);
         expect(streak.displayStreak, 0);
+        expect(streak.protectorTokens, 3);
+        expect(streak.maxProtectorTokens, 3);
       });
     });
 

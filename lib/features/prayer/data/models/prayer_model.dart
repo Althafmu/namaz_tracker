@@ -27,7 +27,7 @@ class PrayerModel extends Prayer {
         isCompleted: json[key] as bool? ?? false,
         inJamaat: json['${key}_in_jamaat'] as bool? ?? false,
         location: json['location'] as String? ?? 'home',
-        status: json['${key}_status'] as String? ?? 'on_time',
+        status: json['${key}_status'] as String? ?? 'pending',
         reason: json['${key}_reason'] as String?,
       );
     });

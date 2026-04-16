@@ -192,4 +192,35 @@ class PrayerRepositoryImpl implements PrayerRepository {
       throw NetworkException('Unexpected error during getReasonSummary', originalError: e);
     }
   }
+
+  // ── Phase 2: Streak Freeze System ──
+
+  @override
+  Future<Streak> consumeProtectorToken({String? date}) async {
+    try {
+      final data = await remoteDataSource.consumeProtectorToken(date: date);
+      // Response includes 'streak' object with updated token count
+      final streakData = data['streak'] as Map<String, dynamic>? ?? data;
+      return StreakModel.fromApiResponse(streakData);
+    } on DioException catch (e) {
+      _handleDioError(e, 'consumeProtectorToken');
+    } catch (e) {
+      throw NetworkException('Unexpected error during consumeProtectorToken', originalError: e);
+    }
+  }
+
+  @override
+  Future<List<Prayer>> setExcusedDay({
+    required String date,
+    String? reason,
+  }) async {
+    try {
+      final data = await remoteDataSource.setExcusedDay(date: date, reason: reason);
+      return PrayerModel.fromApiResponse(data);
+    } on DioException catch (e) {
+      _handleDioError(e, 'setExcusedDay');
+    } catch (e) {
+      throw NetworkException('Unexpected error during setExcusedDay', originalError: e);
+    }
+  }
 }

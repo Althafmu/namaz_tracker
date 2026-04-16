@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
+import 'streak.dart'; // For PrayerStatus enum
 
 /// Represents a single prayer entry for a day.
+/// Phase 2: Uses PrayerStatus enum for status, adds isQada and isExcused helpers.
 class Prayer extends Equatable {
   final String name;
   final String timeRange;
@@ -18,11 +20,23 @@ class Prayer extends Equatable {
     this.isCompleted = false,
     this.inJamaat = false,
     this.location = 'home',
-    this.status = 'on_time',
+    this.status = 'pending',
     this.reason,
     this.baseTime,
     this.offset,
   });
+
+  // Phase 2: Helper getters for status
+  bool get isQada => status == 'qada';
+  bool get isExcused => status == 'excused';
+  bool get isOnTime => status == 'on_time';
+  bool get isLate => status == 'late';
+  bool get isMissed => status == 'missed';
+  bool get isPending => status == 'pending';
+
+  /// Returns true if this prayer counts towards streak (completed with valid status).
+  /// Excused days preserve streak continuity (freeze) but don't increment it.
+  bool get isValidForStreak => isCompleted && (isOnTime || isLate || isQada || isExcused);
 
   Prayer copyWith({
     String? name,
@@ -80,7 +94,7 @@ class Prayer extends Equatable {
       isCompleted: json['isCompleted'] as bool? ?? false,
       inJamaat: json['inJamaat'] as bool? ?? false,
       location: json['location'] as String? ?? 'home',
-      status: json['status'] as String? ?? 'on_time',
+      status: json['status'] as String? ?? 'pending',
       reason: json['reason'] as String?,
       baseTime: json['baseTime'] as String?,
       offset: json['offset'] as int?,
