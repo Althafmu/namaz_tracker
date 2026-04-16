@@ -10,17 +10,23 @@ class PrayerModel extends Prayer {
     super.location,
     super.status,
     super.reason,
+    super.recoveryState,
   });
 
   /// Map Django DailyPrayerLog response into a list of PrayerModels.
-  /// Parses all per-prayer fields: completed, inJamaat, status, reason.
+  /// Parses all per-prayer fields: completed, inJamaat, status, reason, recovery.
   static List<PrayerModel> fromApiResponse(Map<String, dynamic> json) {
     final defaults = Prayer.defaultPrayers();
     final prayerNames = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
     final displayNames = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
+    // Extract recovery data from API response
+    final recoveryMap = json['recovery'] as Map<String, dynamic>?;
+
     return List.generate(5, (i) {
       final key = prayerNames[i];
+      final recoveryData = recoveryMap?[key] as Map<String, dynamic>?;
+
       return PrayerModel(
         name: displayNames[i],
         timeRange: defaults[i].timeRange,
@@ -29,6 +35,9 @@ class PrayerModel extends Prayer {
         location: json['location'] as String? ?? 'home',
         status: json['${key}_status'] as String? ?? 'pending',
         reason: json['${key}_reason'] as String?,
+        recoveryState: recoveryData != null
+            ? RecoveryState.fromJson(recoveryData)
+            : null,
       );
     });
   }

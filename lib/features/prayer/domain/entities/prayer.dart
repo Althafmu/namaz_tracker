@@ -1,5 +1,31 @@
 import 'package:equatable/equatable.dart';
-import 'streak.dart'; // For PrayerStatus enum
+
+/// Recovery state for temporary streak protection UX (Sprint 1).
+/// Shows when a missed prayer can still be recovered via Qada within 24h.
+class RecoveryState extends Equatable {
+  final bool isProtected;
+  final DateTime? expiresAt;
+  final bool requiresQada;
+
+  const RecoveryState({
+    required this.isProtected,
+    this.expiresAt,
+    required this.requiresQada,
+  });
+
+  factory RecoveryState.fromJson(Map<String, dynamic> json) {
+    return RecoveryState(
+      isProtected: json['is_protected'] as bool? ?? false,
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'] as String)
+          : null,
+      requiresQada: json['requires_qada'] as bool? ?? false,
+    );
+  }
+
+  @override
+  List<Object?> get props => [isProtected, expiresAt, requiresQada];
+}
 
 /// Represents a single prayer entry for a day.
 /// Phase 2: Uses PrayerStatus enum for status, adds isQada and isExcused helpers.
@@ -13,6 +39,7 @@ class Prayer extends Equatable {
   final String? reason;
   final String? baseTime;
   final int? offset;
+  final RecoveryState? recoveryState;
 
   const Prayer({
     required this.name,
@@ -24,6 +51,7 @@ class Prayer extends Equatable {
     this.reason,
     this.baseTime,
     this.offset,
+    this.recoveryState,
   });
 
   // Phase 2: Helper getters for status
@@ -48,6 +76,7 @@ class Prayer extends Equatable {
     String? reason,
     String? baseTime,
     int? offset,
+    RecoveryState? recoveryState,
   }) {
     return Prayer(
       name: name ?? this.name,
@@ -59,6 +88,7 @@ class Prayer extends Equatable {
       reason: reason ?? this.reason,
       baseTime: baseTime ?? this.baseTime,
       offset: offset ?? this.offset,
+      recoveryState: recoveryState ?? this.recoveryState,
     );
   }
 
@@ -84,6 +114,13 @@ class Prayer extends Equatable {
       'reason': reason,
       'baseTime': baseTime,
       'offset': offset,
+      'recoveryState': recoveryState != null
+          ? {
+              'is_protected': recoveryState!.isProtected,
+              'expires_at': recoveryState!.expiresAt?.toIso8601String(),
+              'requires_qada': recoveryState!.requiresQada,
+            }
+          : null,
     };
   }
 
@@ -98,19 +135,23 @@ class Prayer extends Equatable {
       reason: json['reason'] as String?,
       baseTime: json['baseTime'] as String?,
       offset: json['offset'] as int?,
+      recoveryState: json['recoveryState'] != null
+          ? RecoveryState.fromJson(json['recoveryState'] as Map<String, dynamic>)
+          : null,
     );
   }
 
   @override
   List<Object?> get props => [
-    name,
-    timeRange,
-    isCompleted,
-    inJamaat,
-    location,
-    status,
-    reason,
-    baseTime,
-    offset,
-  ];
+        name,
+        timeRange,
+        isCompleted,
+        inJamaat,
+        location,
+        status,
+        reason,
+        baseTime,
+        offset,
+        recoveryState,
+      ];
 }

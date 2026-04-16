@@ -85,6 +85,9 @@ class StreakBloc extends HydratedBloc<StreakEvent, StreakState> {
           ? event.longestStreak
           : state.streak.longestStreak,
       displayStreak: event.displayStreak,
+      protectorTokens: event.protectorTokens,
+      weeklyTokensUsed: event.weeklyTokensUsed,
+      weeklyTokensRemaining: event.weeklyTokensRemaining,
     );
     emit(state.copyWith(streak: newStreak));
   }

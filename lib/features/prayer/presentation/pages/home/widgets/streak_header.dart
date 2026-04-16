@@ -9,7 +9,7 @@ import '../../../bloc/streak/streak_state.dart';
 
 /// Yellow streak banner: "12 Day Streak!"
 /// Uses StreakBloc to get the current streak value.
-/// Phase 2: Shows protector token count.
+/// Sprint 1 (Phase 3 PRD): Shows protector token count + weekly tokens remaining.
 class StreakHeader extends StatelessWidget {
   const StreakHeader({super.key});
 
@@ -22,6 +22,10 @@ class StreakHeader extends StatelessWidget {
         final streak = state.streak.displayStreak;
         final tokens = state.streak.protectorTokens;
         final maxTokens = state.streak.maxProtectorTokens;
+        final weeklyRemaining = state.streak.weeklyTokensRemaining;
+        final weeklyLimit = state.streak.weeklyTokenLimit;
+        final weeklyUsed = state.streak.weeklyTokensUsed;
+        final weeklyLimitReached = state.streak.weeklyLimitReached;
 
         return NeoCard(
           color: c.streak,
@@ -68,6 +72,39 @@ class StreakHeader extends StatelessWidget {
                           style: AppTextStyles.bodySmall.copyWith(
                             color: const Color(0xFF2B2D42),
                             fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // ── Weekly Recovery Tokens (Sprint 1) ──
+                if (weeklyUsed > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: weeklyLimitReached
+                          ? Colors.red.withValues(alpha: 0.3)
+                          : c.primary.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          weeklyLimitReached ? Icons.lock : Icons.refresh,
+                          color: const Color(0xFF2B2D42),
+                          size: 12,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '$weeklyRemaining/$weeklyLimit',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: const Color(0xFF2B2D42),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
                           ),
                         ),
                       ],

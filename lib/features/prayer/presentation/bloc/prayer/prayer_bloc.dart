@@ -146,6 +146,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
             inJamaat: server.first.inJamaat,
             status: server.first.status,
             reason: server.first.reason,
+            recoveryState: server.first.recoveryState,
           );
         }
         return local;

@@ -26,6 +26,10 @@ class QadaRecoveryDialog extends StatelessWidget {
       builder: (context, state) {
         final tokens = state.streak.protectorTokens;
         final maxTokens = state.streak.maxProtectorTokens;
+        final weeklyLimitReached = state.streak.weeklyLimitReached;
+
+        // Sprint 1: Button is disabled if no tokens OR weekly limit reached
+        final canUseToken = tokens > 0 && !weeklyLimitReached;
 
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -129,7 +133,7 @@ class QadaRecoveryDialog extends StatelessWidget {
                       child: NeoButton(
                         text: 'Use Token',
                         icon: Icons.check,
-                        onPressed: tokens > 0
+                        onPressed: canUseToken
                             ? () => _useToken(context)
                             : null,
                         color: c.streak,
@@ -138,13 +142,22 @@ class QadaRecoveryDialog extends StatelessWidget {
                   ],
                 ),
 
-                // ── Out of Tokens Message ──
+                // ── Token Status Message (Sprint 1) ──
                 if (tokens == 0) ...[
                   const SizedBox(height: 12),
                   Text(
-                    'No tokens available. Tokens reset monthly.',
+                    'No tokens available. Tokens reset every Sunday.',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: c.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ] else if (weeklyLimitReached) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Weekly recovery limit reached. Reset every Sunday.',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.red.shade300,
                       fontStyle: FontStyle.italic,
                     ),
                   ),

@@ -19,15 +19,28 @@ class UpdateStreak extends StreakEvent {
   final int currentStreak;
   final int longestStreak;
   final int displayStreak;
+  final int protectorTokens;
+  final int weeklyTokensUsed;
+  final int weeklyTokensRemaining;
 
   const UpdateStreak({
     required this.currentStreak,
     required this.longestStreak,
     required this.displayStreak,
+    this.protectorTokens = 3,
+    this.weeklyTokensUsed = 0,
+    this.weeklyTokensRemaining = 3,
   });
 
   @override
-  List<Object?> get props => [currentStreak, longestStreak, displayStreak];
+  List<Object?> get props => [
+        currentStreak,
+        longestStreak,
+        displayStreak,
+        protectorTokens,
+        weeklyTokensUsed,
+        weeklyTokensRemaining,
+      ];
 }
 
 /// Recalculate streak from historical prayer data.

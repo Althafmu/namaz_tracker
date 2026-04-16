@@ -50,7 +50,7 @@ extension PrayerStatusX on PrayerStatus {
 }
 
 /// Represents the user's prayer streak.
-/// Phase 2: Includes protector tokens for streak freeze system.
+/// Sprint 1 (Phase 3 PRD): Includes weekly token limits + anti-gaming cooldown.
 class Streak extends Equatable {
   final int currentStreak;
   final int longestStreak;
@@ -62,6 +62,13 @@ class Streak extends Equatable {
   final int maxProtectorTokens;
   final String? tokensResetDate;
 
+  // Sprint 1: Weekly token tracking + anti-gaming
+  final int weeklyTokensUsed;
+  final int weeklyTokenLimit;
+  final int weeklyTokensRemaining;
+  final String? lastTokenUsedAt;  // ISO8601 timestamp
+  final int antiGamingCooldownHours;
+
   const Streak({
     this.currentStreak = 0,
     this.longestStreak = 0,
@@ -70,9 +77,17 @@ class Streak extends Equatable {
     this.protectorTokens = 3,
     this.maxProtectorTokens = 3,
     this.tokensResetDate,
+    this.weeklyTokensUsed = 0,
+    this.weeklyTokenLimit = 3,
+    this.weeklyTokensRemaining = 3,
+    this.lastTokenUsedAt,
+    this.antiGamingCooldownHours = 24,
   });
 
   bool get hasProtectorTokens => protectorTokens > 0;
+
+  /// Sprint 1: Check if weekly recovery limit has been reached.
+  bool get weeklyLimitReached => weeklyTokensUsed >= weeklyTokenLimit;
 
   Streak copyWith({
     int? currentStreak,
@@ -82,6 +97,11 @@ class Streak extends Equatable {
     int? protectorTokens,
     int? maxProtectorTokens,
     String? tokensResetDate,
+    int? weeklyTokensUsed,
+    int? weeklyTokenLimit,
+    int? weeklyTokensRemaining,
+    String? lastTokenUsedAt,
+    int? antiGamingCooldownHours,
   }) {
     return Streak(
       currentStreak: currentStreak ?? this.currentStreak,
@@ -91,6 +111,11 @@ class Streak extends Equatable {
       protectorTokens: protectorTokens ?? this.protectorTokens,
       maxProtectorTokens: maxProtectorTokens ?? this.maxProtectorTokens,
       tokensResetDate: tokensResetDate ?? this.tokensResetDate,
+      weeklyTokensUsed: weeklyTokensUsed ?? this.weeklyTokensUsed,
+      weeklyTokenLimit: weeklyTokenLimit ?? this.weeklyTokenLimit,
+      weeklyTokensRemaining: weeklyTokensRemaining ?? this.weeklyTokensRemaining,
+      lastTokenUsedAt: lastTokenUsedAt ?? this.lastTokenUsedAt,
+      antiGamingCooldownHours: antiGamingCooldownHours ?? this.antiGamingCooldownHours,
     );
   }
 
@@ -103,6 +128,11 @@ class Streak extends Equatable {
       'protectorTokens': protectorTokens,
       'maxProtectorTokens': maxProtectorTokens,
       'tokensResetDate': tokensResetDate,
+      'weeklyTokensUsed': weeklyTokensUsed,
+      'weeklyTokenLimit': weeklyTokenLimit,
+      'weeklyTokensRemaining': weeklyTokensRemaining,
+      'lastTokenUsedAt': lastTokenUsedAt,
+      'antiGamingCooldownHours': antiGamingCooldownHours,
     };
   }
 
@@ -115,6 +145,11 @@ class Streak extends Equatable {
       protectorTokens: json['protectorTokens'] as int? ?? 3,
       maxProtectorTokens: json['maxProtectorTokens'] as int? ?? 3,
       tokensResetDate: json['tokensResetDate'] as String?,
+      weeklyTokensUsed: json['weeklyTokensUsed'] as int? ?? 0,
+      weeklyTokenLimit: json['weeklyTokenLimit'] as int? ?? 3,
+      weeklyTokensRemaining: json['weeklyTokensRemaining'] as int? ?? 3,
+      lastTokenUsedAt: json['lastTokenUsedAt'] as String?,
+      antiGamingCooldownHours: json['antiGamingCooldownHours'] as int? ?? 24,
     );
   }
 
@@ -127,5 +162,10 @@ class Streak extends Equatable {
         protectorTokens,
         maxProtectorTokens,
         tokensResetDate,
+        weeklyTokensUsed,
+        weeklyTokenLimit,
+        weeklyTokensRemaining,
+        lastTokenUsedAt,
+        antiGamingCooldownHours,
       ];
 }
