@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/router/app_router.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/offline_sync_service.dart';
+import 'core/services/session_coordinator.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/prayer/data/repositories/offline_queue_repository.dart';
@@ -101,6 +102,9 @@ void main() async {
 
   // Initialize app router using injected blocs
   final appRouter = buildAppRouter(sl<AuthBloc>(), sl<SettingsBloc>());
+
+  // Start the session coordinator to manage background data syncing
+  sl<SessionCoordinator>();
 
   runApp(FalahApp(appRouter: appRouter));
 }

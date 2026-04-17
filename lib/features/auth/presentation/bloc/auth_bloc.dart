@@ -10,18 +10,17 @@ import '../../../prayer/presentation/bloc/settings/settings_event.dart';
 class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
   final TokenProvider tokenProvider;
-  final SettingsBloc settingsBloc;
 
   AuthBloc({
     required this.authRepository,
     required this.tokenProvider,
-    required this.settingsBloc,
   }) : super(AuthState.initial()) {
     on<LoginRequested>(_onLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<InitAuthRequested>(_onInitAuthRequested);
     on<UpdateProfileRequested>(_onUpdateProfileRequested);
+    on<ConfigLoadComplete>(_onConfigLoadComplete);
   }
 
   Future<void> _onLoginRequested(
@@ -34,12 +33,10 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
-      
-      await _hydrateIntent();
 
       // Token is persisted in secure storage by the repository/tokenProvider
       emit(state.copyWith(
-        status: AuthStatus.authenticated,
+        status: AuthStatus.loadingConfig,
         user: response.user,
         errorMessage: null,
         hasSeenOnboarding: true,
@@ -90,8 +87,7 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     // Token lives in secure storage, not in HydratedBloc state
     await tokenProvider.loadTokens();
     if (tokenProvider.token != null) {
-      await _hydrateIntent();
-      emit(state.copyWith(status: AuthStatus.authenticated));
+      emit(state.copyWith(status: AuthStatus.loadingConfig));
     } else {
       emit(state.copyWith(status: AuthStatus.unauthenticated));
     }
@@ -126,20 +122,8 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _hydrateIntent() async {
-    try {
-      final config = await authRepository.getUserConfig();
-      final intent = config['data']?['intent_level'];
-      if (intent != null) {
-        settingsBloc.add(LoadIntentFromBackend(intent));
-      } else if (!settingsBloc.state.isIntentSet) {
-        settingsBloc.add(const LoadIntentFromBackend('foundation', isFallback: true));
-      }
-    } catch (_) {
-      if (!settingsBloc.state.isIntentSet) {
-        settingsBloc.add(const LoadIntentFromBackend('foundation', isFallback: true));
-      }
-    }
+  void _onConfigLoadComplete(ConfigLoadComplete event, Emitter<AuthState> emit) {
+    emit(state.copyWith(status: AuthStatus.authenticated));
   }
 
   @override

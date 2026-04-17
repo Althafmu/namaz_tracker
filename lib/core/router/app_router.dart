@@ -66,7 +66,7 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
     final intentSetup = state.uri.path == '/intent-setup';
 
     // While loading or unknown, stay on splash (or current page)
-    if (status == AuthStatus.unknown || status == AuthStatus.loading) {
+    if (status == AuthStatus.unknown || status == AuthStatus.loading || status == AuthStatus.loadingConfig) {
       return null;
     }
 

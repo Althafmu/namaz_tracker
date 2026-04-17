@@ -48,3 +48,5 @@ class UpdateProfileRequested extends AuthEvent {
   @override
   List<Object?> get props => [firstName, lastName];
 }
+
+class ConfigLoadComplete extends AuthEvent {}

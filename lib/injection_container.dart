@@ -25,6 +25,7 @@ import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'features/prayer/presentation/bloc/history/history_bloc.dart';
 import 'features/prayer/presentation/bloc/stats/stats_bloc.dart';
 import 'features/prayer/presentation/bloc/streak/streak_bloc.dart';
+import 'core/services/session_coordinator.dart';
 
 import 'core/network/token_provider.dart';
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
@@ -218,7 +219,14 @@ Future<void> initDependencies() async {
     () => AuthBloc(
       authRepository: sl(),
       tokenProvider: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => SessionCoordinator(
+      authBloc: sl(),
       settingsBloc: sl(),
+      authRepository: sl(),
     ),
   );
 }

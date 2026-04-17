@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../domain/entities/user.dart';
 import '../../data/models/user_model.dart';
 
-enum AuthStatus { unknown, authenticated, unauthenticated, loading, error }
+enum AuthStatus { unknown, authenticated, unauthenticated, loading, error, loadingConfig }
 
 /// Sentinel used by [copyWith] to explicitly set a nullable field to null.
 class _Undefined {
