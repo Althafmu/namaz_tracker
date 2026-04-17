@@ -52,12 +52,13 @@ class AppRefreshListenable extends ChangeNotifier {
   }
 }
 
-final GoRouter appRouter = GoRouter(
-  initialLocation: '/splash',
-  refreshListenable: AppRefreshListenable(GetIt.I<AuthBloc>(), GetIt.I<SettingsBloc>()),
-  redirect: (context, state) {
-    final authState = GetIt.I<AuthBloc>().state;
-    final status = authState.status;
+GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
+  return GoRouter(
+    initialLocation: '/splash',
+    refreshListenable: AppRefreshListenable(authBloc, settingsBloc),
+    redirect: (context, state) {
+      final authState = authBloc.state;
+      final status = authState.status;
     final loggingIn = state.uri.path == '/login';
     final signingUp = state.uri.path == '/signup';
     final splash = state.uri.path == '/splash';
@@ -71,7 +72,7 @@ final GoRouter appRouter = GoRouter(
 
     // If authenticated, don't allow login/signup/onboarding/splash/intent-setup
     if (status == AuthStatus.authenticated) {
-      final isIntentSet = GetIt.I<SettingsBloc>().state.isIntentSet;
+      final isIntentSet = settingsBloc.state.isIntentSet;
       
       if (!isIntentSet && !intentSetup) {
         return '/intent-setup';
@@ -170,6 +171,7 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 );
+}
 
 /// App shell with Neo-brutalist bottom navigation bar.
 class _AppShell extends StatelessWidget {

@@ -36,11 +36,17 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
       
       try {
         final config = await authRepository.getUserConfig();
-        if (config['intent'] != null) {
-          GetIt.I<SettingsBloc>().add(LoadIntentFromBackend(config['intent']));
-          await Future.microtask(() {});
+        final intent = config['data']?['intent_level'];
+        if (intent != null) {
+          GetIt.I<SettingsBloc>().add(LoadIntentFromBackend(intent));
+        } else if (!GetIt.I<SettingsBloc>().state.isIntentSet) {
+          GetIt.I<SettingsBloc>().add(const LoadIntentFromBackend('foundation'));
         }
-      } catch (_) {}
+      } catch (_) {
+        if (!GetIt.I<SettingsBloc>().state.isIntentSet) {
+          GetIt.I<SettingsBloc>().add(const LoadIntentFromBackend('foundation'));
+        }
+      }
 
       // Token is persisted in secure storage by the repository/tokenProvider
       emit(state.copyWith(
@@ -97,11 +103,17 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     if (tokenProvider.token != null) {
       try {
         final config = await authRepository.getUserConfig();
-        if (config['intent'] != null) {
-          GetIt.I<SettingsBloc>().add(LoadIntentFromBackend(config['intent']));
-          await Future.microtask(() {});
+        final intent = config['data']?['intent_level'];
+        if (intent != null) {
+          GetIt.I<SettingsBloc>().add(LoadIntentFromBackend(intent));
+        } else if (!GetIt.I<SettingsBloc>().state.isIntentSet) {
+          GetIt.I<SettingsBloc>().add(const LoadIntentFromBackend('foundation'));
         }
-      } catch (_) {}
+      } catch (_) {
+        if (!GetIt.I<SettingsBloc>().state.isIntentSet) {
+          GetIt.I<SettingsBloc>().add(const LoadIntentFromBackend('foundation'));
+        }
+      }
       emit(state.copyWith(status: AuthStatus.authenticated));
     } else {
       emit(state.copyWith(status: AuthStatus.unauthenticated));

@@ -99,7 +99,10 @@ void main() async {
     debugPrint('NotificationService init failed: $e');
   }
 
-  runApp(const FalahApp());
+  // Initialize app router using injected blocs
+  final appRouter = buildAppRouter(sl<AuthBloc>(), sl<SettingsBloc>());
+
+  runApp(FalahApp(appRouter: appRouter));
 }
 
 /// Attempts to recover data from corrupted Hive storage.
@@ -191,7 +194,8 @@ Future<void> checkAndClearStorageCorruptionFlag(BuildContext context) async {
 }
 
 class FalahApp extends StatelessWidget {
-  const FalahApp({super.key});
+  final GoRouter appRouter;
+  const FalahApp({super.key, required this.appRouter});
 
   @override
   Widget build(BuildContext context) {
