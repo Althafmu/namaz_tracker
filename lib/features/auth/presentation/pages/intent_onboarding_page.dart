@@ -60,7 +60,23 @@ class IntentOnboardingPage extends StatelessWidget {
                   onTap: () => _selectIntent(context, IntentLevel.growth),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    GetIt.I<SettingsBloc>().add(const UpdateIntentLevel('foundation'));
+                    context.go('/');
+                  },
+                  child: Text(
+                    'Not ready yet? Start Simple',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: AppColors.of(context).primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -70,7 +86,7 @@ class IntentOnboardingPage extends StatelessWidget {
 
   void _selectIntent(BuildContext context, IntentLevel intent) {
     GetIt.I<SettingsBloc>().add(UpdateIntentLevel(intent.name));
-    context.go('/home');
+    context.go('/');
   }
 }
 

@@ -11,6 +11,10 @@ import '../../../prayer/presentation/bloc/settings/settings_state.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import 'package:get_it/get_it.dart';
+import '../../domain/repositories/auth_repository.dart';
+import '../../../prayer/presentation/bloc/settings/settings_bloc.dart';
+import '../../../prayer/presentation/bloc/settings/settings_event.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -87,14 +91,23 @@ class _SignupPageState extends State<SignupPage> {
         ),
       ),
       body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
+        listener: (context, state) async {
           if (state.status == AuthStatus.authenticated) {
-            // Check if intentLevel already set (returning user) → go to home
-            // Otherwise → go to intent-setup
-            final settingsState = GetIt.I<SettingsBloc>().state;
-            if (settingsState.intentLevel != IntentLevel.foundation) {
+            try {
+              final config = await GetIt.I<AuthRepository>().getUserConfig();
+              if (config['intent_level'] != null && mounted) {
+                context.read<SettingsBloc>().add(LoadIntentFromBackend(config['intent_level']));
+                if (config['intent_level'] != 'foundation') {
+                  context.go('/');
+                  return;
+                }
+              }
+            } catch (_) {}
+
+            final settingsState = context.read<SettingsBloc>().state;
+            if (settingsState.isIntentSet && mounted) {
               context.go('/');
-            } else {
+            } else if (mounted) {
               context.go('/intent-setup');
             }
           } else if (state.status == AuthStatus.error) {

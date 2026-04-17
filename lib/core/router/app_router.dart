@@ -9,6 +9,7 @@ import '../../features/prayer/presentation/pages/profile/settings_page.dart';
 import '../../features/prayer/presentation/pages/settings/notifications_settings_page.dart';
 import '../../features/prayer/presentation/pages/settings/calculation_settings_page.dart';
 import '../../features/prayer/presentation/pages/settings/reasons_settings_page.dart';
+import '../../features/prayer/presentation/bloc/settings/settings_bloc.dart';
 
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/onboarding1_page.dart';
@@ -66,7 +67,15 @@ final GoRouter appRouter = GoRouter(
 
     // If authenticated, don't allow login/signup/onboarding/splash/intent-setup
     if (status == AuthStatus.authenticated) {
-      if (loggingIn || signingUp || onboarding || splash || intentSetup) {
+      final isIntentSet = GetIt.I<SettingsBloc>().state.isIntentSet;
+      
+      if (!isIntentSet && !intentSetup) {
+        return '/intent-setup';
+      } else if (isIntentSet && intentSetup) {
+        return '/';
+      }
+
+      if (loggingIn || signingUp || onboarding || splash) {
         return '/';
       }
       return null;

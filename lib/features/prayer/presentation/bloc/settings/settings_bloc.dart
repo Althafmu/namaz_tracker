@@ -28,6 +28,7 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     on<AddExcusedDay>(_onAddExcusedDay);
     on<ClearExcusedDay>(_onClearExcusedDay);
     on<UpdateIntentLevel>(_onUpdateIntentLevel);
+    on<LoadIntentFromBackend>(_onLoadIntentFromBackend);
     on<UpdateStreakHistory>(_onUpdateStreakHistory);
     on<MarkMilestoneShown>(_onMarkMilestoneShown);
     on<DismissUpgradePrompt>(_onDismissUpgradePrompt);
@@ -176,8 +177,19 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     final intent = IntentLevel.fromString(event.intentLevel);
-    emit(state.copyWith(intentLevel: intent));
+    emit(state.copyWith(intentLevel: intent, isIntentSet: true));
     add(const SyncSettingsToCloud());
+  }
+
+  void _onLoadIntentFromBackend(
+    LoadIntentFromBackend event,
+    Emitter<SettingsState> emit,
+  ) {
+    final intent = IntentLevel.fromString(event.intentLevel);
+    emit(state.copyWith(
+      intentLevel: intent,
+      isIntentSet: true,
+    ));
   }
 
   void _onUpdateStreakHistory(

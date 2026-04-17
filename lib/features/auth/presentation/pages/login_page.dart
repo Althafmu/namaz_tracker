@@ -8,6 +8,10 @@ import '../../../../core/widgets/neo_text_field.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import 'package:get_it/get_it.dart';
+import '../../domain/repositories/auth_repository.dart';
+import '../../../prayer/presentation/bloc/settings/settings_bloc.dart';
+import '../../../prayer/presentation/bloc/settings/settings_event.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -65,9 +69,25 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: AppColors.of(context).background,
       body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
+        listener: (context, state) async {
           if (state.status == AuthStatus.authenticated) {
-            context.go('/');
+            try {
+              final config = await GetIt.I<AuthRepository>().getUserConfig();
+              if (config['intent_level'] != null && mounted) {
+                context.read<SettingsBloc>().add(LoadIntentFromBackend(config['intent_level']));
+                if (config['intent_level'] != 'foundation') {
+                  context.go('/');
+                  return;
+                }
+              }
+            } catch (_) {}
+
+            final settingsState = context.read<SettingsBloc>().state;
+            if (settingsState.isIntentSet && mounted) {
+              context.go('/');
+            } else if (mounted) {
+              context.go('/intent-setup');
+            }
           } else if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.errorMessage ?? 'Login Failed'), backgroundColor: AppColors.of(context).primary),

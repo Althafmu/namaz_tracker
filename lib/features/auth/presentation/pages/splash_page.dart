@@ -6,6 +6,10 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import 'package:get_it/get_it.dart';
+import '../../domain/repositories/auth_repository.dart';
+import '../../../prayer/presentation/bloc/settings/settings_bloc.dart';
+import '../../../prayer/presentation/bloc/settings/settings_event.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -29,16 +33,23 @@ class _SplashPageState extends State<SplashPage> {
     });
   }
 
-  void _navigateIfNeeded() {
+  void _navigateIfNeeded() async {
     if (_navigated || !mounted) return;
     _navigated = true;
     final authState = context.read<AuthBloc>().state;
     if (authState.status == AuthStatus.authenticated) {
-      context.go('/');
+      try {
+        final config = await GetIt.I<AuthRepository>().getUserConfig();
+        if (config['intent_level'] != null && mounted) {
+          context.read<SettingsBloc>().add(LoadIntentFromBackend(config['intent_level']));
+        }
+      } catch (_) {}
+      
+      if (mounted) context.go('/');
     } else if (authState.hasSeenOnboarding) {
-      context.go('/login');
+      if (mounted) context.go('/login');
     } else {
-      context.go('/onboarding1');
+      if (mounted) context.go('/onboarding1');
     }
   }
 

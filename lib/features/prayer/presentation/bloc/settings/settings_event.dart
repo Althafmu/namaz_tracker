@@ -135,6 +135,15 @@ class UpdateIntentLevel extends SettingsEvent {
   List<Object?> get props => [intentLevel];
 }
 
+class LoadIntentFromBackend extends SettingsEvent {
+  final String intentLevel;
+
+  const LoadIntentFromBackend(this.intentLevel);
+
+  @override
+  List<Object?> get props => [intentLevel];
+}
+
 /// Phase 3.1: Track streak history for soft landing and upgrade prompts
 class UpdateStreakHistory extends SettingsEvent {
   final int currentStreak;

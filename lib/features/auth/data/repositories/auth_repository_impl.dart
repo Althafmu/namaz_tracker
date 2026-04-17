@@ -107,4 +107,9 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     await remoteDataSource.patchProfileOffsets(data);
   }
+
+  @override
+  Future<Map<String, dynamic>> getUserConfig() async {
+    return await remoteDataSource.getUserConfig();
+  }
 }

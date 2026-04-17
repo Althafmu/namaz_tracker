@@ -139,15 +139,22 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                 child: Column(
                   children: [
-                    // ── Streak Header ──
-                    const StreakHeader(),
-
-                    const SizedBox(height: 16),
-
-                    // ── Weekly Calendar ──
-                    const WeeklyCalendar(),
-
-                    const SizedBox(height: 24),
+                    // ── Optional Advanced Modules ──
+                    BlocBuilder<SettingsBloc, SettingsState>(
+                      builder: (context, settingsState) {
+                        if (settingsState.intentLevel == IntentLevel.foundation) {
+                          return const SizedBox.shrink();
+                        }
+                        return Column(
+                          children: const [
+                            StreakHeader(),
+                            SizedBox(height: 16),
+                            WeeklyCalendar(),
+                            SizedBox(height: 24),
+                          ],
+                        );
+                      },
+                    ),
 
                     // ── Prayer List ──
                     Expanded(

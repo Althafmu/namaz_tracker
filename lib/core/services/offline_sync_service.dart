@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart';
 
 import '../../features/prayer/data/repositories/offline_queue_repository.dart';
 import '../../features/prayer/domain/usecases/log_prayer_usecase.dart';
+import 'package:get_it/get_it.dart';
+import '../../features/prayer/presentation/bloc/settings/settings_bloc.dart';
+import '../../features/prayer/presentation/bloc/settings/settings_event.dart';
 
 /// Coordinates offline→online sync of queued prayer logs.
 ///
@@ -59,6 +62,7 @@ class OfflineSyncService {
       if (_queueRepository.isEmpty) return;
 
       final actions = _queueRepository.getAllActions();
+      bool processedAny = false;
       for (final entry in actions) {
         final action = entry.value;
         try {
@@ -72,10 +76,17 @@ class OfflineSyncService {
             dateKey: action['dateKey'] as String?,
           );
           await _queueRepository.dequeueAction(entry.key);
+          processedAny = true;
         } catch (e) {
           debugPrint('[OfflineSync] Sync failed for queued action: $e');
           break; // Network still down — stop this batch
         }
+      }
+      
+      if (processedAny) {
+        try {
+          GetIt.I<SettingsBloc>().add(const SyncSettingsToCloud());
+        } catch (_) {}
       }
     } finally {
       _isProcessing = false;

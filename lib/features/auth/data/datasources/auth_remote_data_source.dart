@@ -117,4 +117,18 @@ class AuthRemoteDataSource {
       throw Exception(message);
     }
   }
+
+  Future<Map<String, dynamic>> getUserConfig() async {
+    try {
+      final response = await dio.get('/api/profile/offsets/');
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      String message = 'Failed to get user config';
+      if (data is Map<String, dynamic>) {
+        message = data['detail']?.toString() ?? data.values.first.toString();
+      }
+      throw Exception(message);
+    }
+  }
 }

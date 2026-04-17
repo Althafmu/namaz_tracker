@@ -30,4 +30,6 @@ abstract class AuthRepository {
     bool? useHanafi,
     String? intentLevel,
   });
+
+  Future<Map<String, dynamic>> getUserConfig();
 }
