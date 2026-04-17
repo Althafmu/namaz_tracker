@@ -4,17 +4,18 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../../../core/network/token_provider.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
-import 'package:get_it/get_it.dart';
-import '../../prayer/presentation/bloc/settings/settings_bloc.dart';
-import '../../prayer/presentation/bloc/settings/settings_event.dart';
+import '../../../prayer/presentation/bloc/settings/settings_bloc.dart';
+import '../../../prayer/presentation/bloc/settings/settings_event.dart';
 
 class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
   final TokenProvider tokenProvider;
+  final SettingsBloc settingsBloc;
 
   AuthBloc({
     required this.authRepository,
     required this.tokenProvider,
+    required this.settingsBloc,
   }) : super(AuthState.initial()) {
     on<LoginRequested>(_onLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
@@ -34,19 +35,7 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
         password: event.password,
       );
       
-      try {
-        final config = await authRepository.getUserConfig();
-        final intent = config['data']?['intent_level'];
-        if (intent != null) {
-          GetIt.I<SettingsBloc>().add(LoadIntentFromBackend(intent));
-        } else if (!GetIt.I<SettingsBloc>().state.isIntentSet) {
-          GetIt.I<SettingsBloc>().add(const LoadIntentFromBackend('foundation'));
-        }
-      } catch (_) {
-        if (!GetIt.I<SettingsBloc>().state.isIntentSet) {
-          GetIt.I<SettingsBloc>().add(const LoadIntentFromBackend('foundation'));
-        }
-      }
+      await _hydrateIntent();
 
       // Token is persisted in secure storage by the repository/tokenProvider
       emit(state.copyWith(
@@ -101,19 +90,7 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     // Token lives in secure storage, not in HydratedBloc state
     await tokenProvider.loadTokens();
     if (tokenProvider.token != null) {
-      try {
-        final config = await authRepository.getUserConfig();
-        final intent = config['data']?['intent_level'];
-        if (intent != null) {
-          GetIt.I<SettingsBloc>().add(LoadIntentFromBackend(intent));
-        } else if (!GetIt.I<SettingsBloc>().state.isIntentSet) {
-          GetIt.I<SettingsBloc>().add(const LoadIntentFromBackend('foundation'));
-        }
-      } catch (_) {
-        if (!GetIt.I<SettingsBloc>().state.isIntentSet) {
-          GetIt.I<SettingsBloc>().add(const LoadIntentFromBackend('foundation'));
-        }
-      }
+      await _hydrateIntent();
       emit(state.copyWith(status: AuthStatus.authenticated));
     } else {
       emit(state.copyWith(status: AuthStatus.unauthenticated));
@@ -146,6 +123,22 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
       emit(state.copyWith(user: serverUser));
     } catch (_) {
       // Offline or API error — keep the optimistic local update
+    }
+  }
+
+  Future<void> _hydrateIntent() async {
+    try {
+      final config = await authRepository.getUserConfig();
+      final intent = config['data']?['intent_level'];
+      if (intent != null) {
+        settingsBloc.add(LoadIntentFromBackend(intent));
+      } else if (!settingsBloc.state.isIntentSet) {
+        settingsBloc.add(const LoadIntentFromBackend('foundation'));
+      }
+    } catch (_) {
+      if (!settingsBloc.state.isIntentSet) {
+        settingsBloc.add(const LoadIntentFromBackend('foundation'));
+      }
     }
   }
 

@@ -215,6 +215,10 @@ Future<void> initDependencies() async {
   );
 
   sl.registerLazySingleton(
-    () => AuthBloc(authRepository: sl(), tokenProvider: sl()),
+    () => AuthBloc(
+      authRepository: sl(),
+      tokenProvider: sl(),
+      settingsBloc: sl(),
+    ),
   );
 }
