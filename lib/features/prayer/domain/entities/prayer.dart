@@ -6,11 +6,13 @@ class RecoveryState extends Equatable {
   final bool isProtected;
   final DateTime? expiresAt;
   final bool requiresQada;
+  final bool isExpired;
 
   const RecoveryState({
     required this.isProtected,
     this.expiresAt,
     required this.requiresQada,
+    this.isExpired = false,
   });
 
   factory RecoveryState.fromJson(Map<String, dynamic> json) {
@@ -20,11 +22,12 @@ class RecoveryState extends Equatable {
           ? DateTime.parse(json['expires_at'] as String)
           : null,
       requiresQada: json['requires_qada'] as bool? ?? false,
+      isExpired: json['is_expired'] as bool? ?? false,
     );
   }
 
   @override
-  List<Object?> get props => [isProtected, expiresAt, requiresQada];
+  List<Object?> get props => [isProtected, expiresAt, requiresQada, isExpired];
 }
 
 /// Represents a single prayer entry for a day.

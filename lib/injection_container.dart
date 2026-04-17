@@ -40,7 +40,7 @@ final sl = GetIt.instance;
 /// SECURITY: No default URL is provided. The API URL MUST be specified at build time.
 const _baseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: '',  // Empty by default — forces explicit configuration
+  defaultValue: '', // Empty by default — forces explicit configuration
 );
 
 /// Validates that API_BASE_URL is configured.
@@ -49,13 +49,13 @@ void _validateBaseUrl() {
     throw AssertionError(
       'API_BASE_URL must be set at build time.\n'
       'Example: flutter run --dart-define=API_BASE_URL=https://your-server.com\n'
-      'Or set it in your launch configuration or CI/CD pipeline.'
+      'Or set it in your launch configuration or CI/CD pipeline.',
     );
   }
   if (!_baseUrl.startsWith('https://') && !_baseUrl.startsWith('http://')) {
     throw AssertionError(
       'API_BASE_URL must start with https:// or http://\n'
-      'Got: $_baseUrl'
+      'Got: $_baseUrl',
     );
   }
 }
@@ -73,61 +73,71 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => OfflineQueueRepository());
   // Register interface and implementation for NotificationService
   final notificationService = NotificationService();
-  sl.registerLazySingleton<NotificationServiceInterface>(() => notificationService);
+  sl.registerLazySingleton<NotificationServiceInterface>(
+    () => notificationService,
+  );
   sl.registerLazySingleton(() => notificationService);
 
   // ── External (Dio) ──
-  final dio = Dio(BaseOptions(
-    baseUrl: _baseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {'Content-Type': 'application/json'},
-  ));
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: _baseUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      headers: {'Content-Type': 'application/json'},
+    ),
+  );
 
   // Certificate pinning — reject self-signed certs
   if (!kIsWeb) {
     (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
       final client = HttpClient();
-      client.badCertificateCallback = (X509Certificate cert, String host, int port) {
-        debugPrint('[CertPin] Rejected untrusted certificate for $host:$port');
-        return false;
-      };
+      client.badCertificateCallback =
+          (X509Certificate cert, String host, int port) {
+            debugPrint(
+              '[CertPin] Rejected untrusted certificate for $host:$port',
+            );
+            return false;
+          };
       return client;
     };
   }
 
   // Auth interceptor: attach token + 401 refresh + logout
-  dio.interceptors.add(InterceptorsWrapper(
-    onRequest: (options, handler) {
-      final token = sl<TokenProvider>().token;
-      if (token != null) {
-        options.headers['Authorization'] = 'Bearer $token';
-      }
-      return handler.next(options);
-    },
-    onError: (error, handler) async {
-      if (error.response?.statusCode == 401 &&
-          !error.requestOptions.path.contains('/auth/token/refresh/')) {
-        debugPrint('[Auth] 401 received — attempting token refresh');
-        try {
-          final authRepo = sl<AuthRepository>() as AuthRepositoryImpl;
-          final newToken = await authRepo.refreshAccessToken();
-          if (newToken != null) {
-            error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-            final retryResponse = await dio.fetch(error.requestOptions);
-            return handler.resolve(retryResponse);
-          }
-        } catch (e) {
-          debugPrint('[Auth] Token refresh failed: $e');
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final token = sl<TokenProvider>().token;
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
         }
-        debugPrint('[Auth] Refresh failed — triggering logout');
-        try {
-          sl<AuthBloc>().add(LogoutRequested());
-        } catch (_) {}
-      }
-      return handler.next(error);
-    },
-  ));
+        return handler.next(options);
+      },
+      onError: (error, handler) async {
+        if (error.response?.statusCode == 401 &&
+            !error.requestOptions.path.contains('/auth/token/refresh/')) {
+          debugPrint('[Auth] 401 received — attempting token refresh');
+          try {
+            final authRepo = sl<AuthRepository>() as AuthRepositoryImpl;
+            final newToken = await authRepo.refreshAccessToken();
+            if (newToken != null) {
+              error.requestOptions.headers['Authorization'] =
+                  'Bearer $newToken';
+              final retryResponse = await dio.fetch(error.requestOptions);
+              return handler.resolve(retryResponse);
+            }
+          } catch (e) {
+            debugPrint('[Auth] Token refresh failed: $e');
+          }
+          debugPrint('[Auth] Refresh failed — triggering logout');
+          try {
+            sl<AuthBloc>().add(LogoutRequested());
+          } catch (_) {}
+        }
+        return handler.next(error);
+      },
+    ),
+  );
 
   sl.registerLazySingleton<Dio>(() => dio);
 
@@ -144,10 +154,7 @@ Future<void> initDependencies() async {
     () => PrayerRepositoryImpl(remoteDataSource: sl()),
   );
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(
-      remoteDataSource: sl(),
-      tokenProvider: sl(),
-    ),
+    () => AuthRepositoryImpl(remoteDataSource: sl(), tokenProvider: sl()),
   );
 
   // ── Use Cases ──
@@ -162,49 +169,47 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => SetExcusedDayUseCase(sl()));
 
   // ── Domain Services ──
-  sl.registerLazySingleton(() => OfflineSyncService(
-        queueRepository: sl(),
-        logPrayerUseCase: sl(),
-      ));
-  sl.registerLazySingleton(() => PrayerSchedulerService(
-        notificationService: sl(),
-      ));
+  sl.registerLazySingleton(
+    () => OfflineSyncService(queueRepository: sl(), logPrayerUseCase: sl()),
+  );
+  sl.registerLazySingleton(
+    () => PrayerSchedulerService(notificationService: sl()),
+  );
 
   // ── BLoC ──
-  sl.registerLazySingleton(() => SettingsBloc(
-        notificationService: sl(),
-      ));
+  sl.registerLazySingleton(() => SettingsBloc(notificationService: sl()));
 
   // HistoryBloc and StatsBloc must be registered before PrayerBloc and StreakBloc
-  sl.registerLazySingleton(() => HistoryBloc(
-        getDetailedMonthHistoryUseCase: sl(),
-      ));
+  sl.registerLazySingleton(
+    () => HistoryBloc(getDetailedMonthHistoryUseCase: sl()),
+  );
 
-  sl.registerLazySingleton(() => StatsBloc(
-        getReasonSummaryUseCase: sl(),
-      ));
+  sl.registerLazySingleton(() => StatsBloc(getReasonSummaryUseCase: sl()));
 
   // StreakBloc listens to HistoryBloc, so must be registered after HistoryBloc
-  sl.registerLazySingleton(() => StreakBloc(
-        getStreakUseCase: sl(),
-        consumeProtectorTokenUseCase: sl(),
-        setExcusedDayUseCase: sl(),
-        historyBloc: sl(),
-      ));
+  sl.registerLazySingleton(
+    () => StreakBloc(
+      getStreakUseCase: sl(),
+      consumeProtectorTokenUseCase: sl(),
+      setExcusedDayUseCase: sl(),
+      historyBloc: sl(),
+    ),
+  );
 
-  sl.registerFactory(() => PrayerBloc(
-        logPrayerUseCase: sl(),
-        getDailyStatusUseCase: sl(),
-        offlineSyncService: sl(),
-        prayerSchedulerService: sl(),
-        notificationService: sl(),
-        settingsBloc: sl(),
-        historyBloc: sl(),
-        statsBloc: sl(),
-      ));
+  sl.registerFactory(
+    () => PrayerBloc(
+      logPrayerUseCase: sl(),
+      getDailyStatusUseCase: sl(),
+      offlineSyncService: sl(),
+      prayerSchedulerService: sl(),
+      notificationService: sl(),
+      settingsBloc: sl(),
+      historyBloc: sl(),
+      statsBloc: sl(),
+    ),
+  );
 
-  sl.registerLazySingleton(() => AuthBloc(
-        authRepository: sl(),
-        tokenProvider: sl(),
-      ));
+  sl.registerLazySingleton(
+    () => AuthBloc(authRepository: sl(), tokenProvider: sl()),
+  );
 }

@@ -29,7 +29,14 @@ class PrayerCard extends StatelessWidget {
 
   String _getRecoveryMessage() {
     final recovery = prayer.recoveryState;
-    if (recovery == null || !recovery.isProtected || recovery.expiresAt == null) {
+    if (recovery == null) return '';
+
+    // Phase 3: Expired state — window has closed
+    if (recovery.isExpired) {
+      return 'You needed to complete this prayer before the day ended';
+    }
+
+    if (!recovery.isProtected || recovery.expiresAt == null) {
       return '';
     }
 
@@ -51,8 +58,9 @@ class PrayerCard extends StatelessWidget {
     final isCompleted = prayer.isCompleted;
     final cardColor = _getPrayerColor(prayer, c);
     final recoveryMessage = _getRecoveryMessage();
+    // Phase 3: Show banner for protected (active window) OR expired (window closed)
     final showRecoveryWarning =
-        prayer.isMissed && prayer.recoveryState?.isProtected == true && recoveryMessage.isNotEmpty;
+        prayer.isMissed && (prayer.recoveryState?.isProtected == true || prayer.recoveryState?.isExpired == true) && recoveryMessage.isNotEmpty;
 
     return NeoCard(
       color: isCompleted ? cardColor : c.surface,
