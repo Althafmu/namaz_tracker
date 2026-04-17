@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 
@@ -108,14 +109,10 @@ class AuthRemoteDataSource {
         '/api/auth/logout/',
         data: {'refresh': refreshToken},
       );
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      String message = 'Logout failed';
-      if (data is Map<String, dynamic>) {
-        message = data['detail']?.toString() ?? data.values.first.toString();
-      }
-      // Depending on requirements, we might just ignore token blacklist failures locally
-      throw Exception(message);
+    } catch (e) {
+      debugPrint('[AuthRemoteDataSource] Logout failed or token already invalid: $e');
+      // We explicitly swallow this so the local logout sequence continues smoothly
+      return;
     }
   }
 

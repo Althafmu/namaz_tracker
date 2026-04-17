@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -33,7 +34,7 @@ class SessionCoordinator {
     const int baseDelayMs = 1000;
     final random = Random();
 
-    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
         final config = await authRepository.getUserConfig();
         final intent = config['data']?['intent_level'];
@@ -57,11 +58,11 @@ class SessionCoordinator {
             shouldRetry = true;
           }
           // Do not retry 400, 401, 403, 404, etc.
-        } else if (e.toString().contains('SocketException') || e.toString().contains('TimeoutException')) {
+        } else if (e is SocketException || e is TimeoutException) {
           shouldRetry = true;
         }
 
-        if (attempt == maxRetries || !shouldRetry) {
+        if (attempt == maxRetries - 1 || !shouldRetry) {
           debugPrint('[SessionCoordinator] Config fetch failed permanently: $e');
           if (!settingsBloc.state.isIntentSet) {
             settingsBloc.add(const LoadIntentFromBackend('foundation', isFallback: true));
