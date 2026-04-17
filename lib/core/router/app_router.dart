@@ -12,7 +12,9 @@ import '../../features/prayer/presentation/pages/settings/reasons_settings_page.
 
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/onboarding1_page.dart';
+import '../../features/auth/presentation/pages/onboarding_psych_page.dart';
 import '../../features/auth/presentation/pages/onboarding2_page.dart';
+import '../../features/auth/presentation/pages/intent_onboarding_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
@@ -55,15 +57,16 @@ final GoRouter appRouter = GoRouter(
     final signingUp = state.uri.path == '/signup';
     final splash = state.uri.path == '/splash';
     final onboarding = state.uri.path.startsWith('/onboarding');
+    final intentSetup = state.uri.path == '/intent-setup';
 
     // While loading or unknown, stay on splash (or current page)
     if (status == AuthStatus.unknown || status == AuthStatus.loading) {
       return null;
     }
 
-    // If authenticated, don't allow login/signup/onboarding/splash
+    // If authenticated, don't allow login/signup/onboarding/splash/intent-setup
     if (status == AuthStatus.authenticated) {
-      if (loggingIn || signingUp || onboarding || splash) {
+      if (loggingIn || signingUp || onboarding || splash || intentSetup) {
         return '/';
       }
       return null;
@@ -89,8 +92,16 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const Onboarding1Page(),
     ),
     GoRoute(
+      path: '/onboarding-psych',
+      builder: (context, state) => const OnboardingPsychPage(),
+    ),
+    GoRoute(
       path: '/onboarding2',
       builder: (context, state) => const Onboarding2Page(),
+    ),
+    GoRoute(
+      path: '/intent-setup',
+      builder: (context, state) => const IntentOnboardingPage(),
     ),
     GoRoute(
       path: '/login',

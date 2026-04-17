@@ -177,7 +177,12 @@ Future<void> initDependencies() async {
   );
 
   // ── BLoC ──
-  sl.registerLazySingleton(() => SettingsBloc(notificationService: sl()));
+  sl.registerLazySingleton(
+    () => SettingsBloc(
+      notificationService: sl(),
+      authRepository: sl(),
+    ),
+  );
 
   // HistoryBloc and StatsBloc must be registered before PrayerBloc and StreakBloc
   sl.registerLazySingleton(

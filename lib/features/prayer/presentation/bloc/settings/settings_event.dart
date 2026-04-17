@@ -124,3 +124,38 @@ class ClearExcusedDay extends SettingsEvent {
   @override
   List<Object?> get props => [date];
 }
+
+/// Phase 3.1: Intent level selection
+class UpdateIntentLevel extends SettingsEvent {
+  final String intentLevel;
+
+  const UpdateIntentLevel(this.intentLevel);
+
+  @override
+  List<Object?> get props => [intentLevel];
+}
+
+/// Phase 3.1: Track streak history for soft landing and upgrade prompts
+class UpdateStreakHistory extends SettingsEvent {
+  final int currentStreak;
+
+  const UpdateStreakHistory(this.currentStreak);
+
+  @override
+  List<Object?> get props => [currentStreak];
+}
+
+/// Phase 3.1: Mark a milestone as shown
+class MarkMilestoneShown extends SettingsEvent {
+  final int milestone;
+
+  const MarkMilestoneShown(this.milestone);
+
+  @override
+  List<Object?> get props => [milestone];
+}
+
+/// Phase 3.1: Dismiss upgrade prompt
+class DismissUpgradePrompt extends SettingsEvent {
+  const DismissUpgradePrompt();
+}

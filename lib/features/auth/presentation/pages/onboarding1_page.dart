@@ -56,7 +56,7 @@ class Onboarding1Page extends StatelessWidget {
                 child: NeoButton(
                   text: 'Continue',
                   color: AppColors.of(context).primary,
-                  onPressed: () => context.go('/onboarding2'),
+                  onPressed: () => context.go('/onboarding-psych'),
                 ),
               ),
             ],

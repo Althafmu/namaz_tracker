@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/theme/app_text_styles.dart';
 import '../../../../../../core/widgets/neo_card.dart';
+import '../../../bloc/settings/settings_bloc.dart';
+import '../../../bloc/settings/settings_event.dart';
+import '../../../bloc/settings/settings_state.dart';
 import '../../../bloc/streak/streak_bloc.dart';
 import '../../../bloc/streak/streak_state.dart';
 
@@ -27,6 +31,16 @@ class StreakHeader extends StatelessWidget {
         final weeklyUsed = state.streak.weeklyTokensUsed;
         final weeklyLimitReached = state.streak.weeklyLimitReached;
 
+        // Dispatch streak history update on load
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          GetIt.I<SettingsBloc>().add(UpdateStreakHistory(streak));
+        });
+
+        // Get last streak from SettingsState for soft landing
+        final settingsState = GetIt.I<SettingsBloc>().state;
+        final lastStreak = settingsState.lastStreak;
+        final showSoftLanding = streak == 0 && lastStreak > 0;
+
         return NeoCard(
           color: c.streak,
           child: SizedBox(
@@ -42,7 +56,9 @@ class StreakHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '$streak Day Streak!',
+                  showSoftLanding
+                      ? 'Start again today. Stay consistent.'
+                      : '$streak Day Streak!',
                   style: AppTextStyles.headlineMedium.copyWith(
                     letterSpacing: 1.5,
                     color: const Color(0xFF2B2D42), // Always dark on yellow banner

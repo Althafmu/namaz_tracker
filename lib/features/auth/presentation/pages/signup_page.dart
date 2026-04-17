@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:get_it/get_it.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/neo_button.dart';
 import '../../../../core/widgets/neo_text_field.dart';
+import '../../../prayer/presentation/bloc/settings/settings_bloc.dart';
+import '../../../prayer/presentation/bloc/settings/settings_state.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -80,13 +83,20 @@ class _SignupPageState extends State<SignupPage> {
         iconTheme: IconThemeData(color: AppColors.of(context).textPrimary),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/onboarding2'),
+          onPressed: () => context.go('/onboarding-psych'),
         ),
       ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state.status == AuthStatus.authenticated) {
-            context.go('/');
+            // Check if intentLevel already set (returning user) → go to home
+            // Otherwise → go to intent-setup
+            final settingsState = GetIt.I<SettingsBloc>().state;
+            if (settingsState.intentLevel != IntentLevel.foundation) {
+              context.go('/');
+            } else {
+              context.go('/intent-setup');
+            }
           } else if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.errorMessage ?? 'Signup Failed'), backgroundColor: AppColors.of(context).primary),

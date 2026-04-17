@@ -8,6 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'prayer_time_service.dart';
 import '../../features/prayer/domain/entities/prayer_notification_config.dart';
+import '../../features/prayer/presentation/bloc/settings/settings_state.dart';
 import 'notification_service_interface.dart';
 
 /// Handles scheduling and cancelling local OS notifications for Adhan and reminders.
@@ -351,6 +352,7 @@ class NotificationService implements NotificationServiceInterface {
     Map<String, int>? manualOffsets,
     int alarmDurationMinutes = 1,
     Set<String>? excusedDays,
+    String? intentLevel,
   }) async {
     await cancelAllNotifications();
 
@@ -470,6 +472,25 @@ class NotificationService implements NotificationServiceInterface {
             }
           }
         }
+
+        // 4. Schedule Pre-Miss Nudge (30 mins after prayer time if reminderIsBefore)
+        if (config.reminderIsBefore && intentLevel != null) {
+          final nudgeTime = prayerTime.add(const Duration(minutes: 30));
+          if (nudgeTime.isAfter(now)) {
+            final nudgeId = (dayOffset * 100) + (prayerIndex * 10) + 4;
+            final body = _getPreMissNudgeBody(prayerName, intentLevel);
+            final result = await _scheduleAlarm(
+              id: nudgeId,
+              title: "⏰ $prayerName",
+              body: body,
+              scheduledTime: nudgeTime,
+              isAlarmStyle: true,
+              alarmSound: alarmSound,
+              alarmDurationMinutes: alarmDurationMinutes,
+            );
+            if (result == null) scheduledCount++;
+          }
+        }
         prayerIndex++;
       }
     }
@@ -516,6 +537,18 @@ class NotificationService implements NotificationServiceInterface {
 
     debugPrint('[Notification] Scheduled $count daily reminders at 10 PM');
     return count;
+  }
+
+  String _getPreMissNudgeBody(String prayerName, String intentLevel) {
+    final intent = IntentLevel.fromString(intentLevel);
+    switch (intent) {
+      case IntentLevel.foundation:
+        return "Don't forget your $prayerName — take a moment for it";
+      case IntentLevel.strengthening:
+        return "Your $prayerName time — stay consistent";
+      case IntentLevel.growth:
+        return "$prayerName time now";
+    }
   }
 
   /// Schedule a single alarm. Returns null on success, or error string on failure.

@@ -25,5 +25,6 @@ abstract class NotificationServiceInterface {
     Map<String, int>? manualOffsets,
     int alarmDurationMinutes,
     Set<String>? excusedDays,
+    String? intentLevel,
   });
 }

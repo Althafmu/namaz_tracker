@@ -1,6 +1,112 @@
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/prayer_notification_config.dart';
 
+enum IntentLevel {
+  foundation,
+  strengthening,
+  growth;
+
+  String get displayName {
+    switch (this) {
+      case IntentLevel.foundation:
+        return 'Foundation';
+      case IntentLevel.strengthening:
+        return 'Strengthening';
+      case IntentLevel.growth:
+        return 'Growth';
+    }
+  }
+
+  String get subtitle {
+    switch (this) {
+      case IntentLevel.foundation:
+        return 'Start your habit. Full recovery options if you miss.';
+      case IntentLevel.strengthening:
+        return 'Stay consistent. Priority prayer recovery.';
+      case IntentLevel.growth:
+        return 'Push yourself. Focus on priority prayers.';
+    }
+  }
+
+  static IntentLevel fromString(String value) {
+    switch (value) {
+      case 'strengthening':
+        return IntentLevel.strengthening;
+      case 'growth':
+        return IntentLevel.growth;
+      default:
+        return IntentLevel.foundation;
+    }
+  }
+}
+
+class MilestoneState extends Equatable {
+  final Map<int, bool> shownMilestones;
+
+  const MilestoneState({this.shownMilestones = const {}});
+
+  bool isShown(int milestone) => shownMilestones[milestone] ?? false;
+
+  MilestoneState markShown(int milestone) {
+    final updated = Map<int, bool>.from(shownMilestones);
+    updated[milestone] = true;
+    return MilestoneState(shownMilestones: updated);
+  }
+
+  Map<String, dynamic> toJson() => {'shownMilestones': shownMilestones};
+
+  factory MilestoneState.fromJson(Map<String, dynamic> json) {
+    final raw = json['shownMilestones'] as Map<String, dynamic>?;
+    if (raw == null) return const MilestoneState();
+    final converted = <int, bool>{};
+    raw.forEach((key, value) => converted[int.parse(key)] = value as bool);
+    return MilestoneState(shownMilestones: converted);
+  }
+
+  @override
+  List<Object?> get props => [shownMilestones];
+}
+
+class UpgradePromptState extends Equatable {
+  final DateTime? lastShownAt;
+  final bool dismissed;
+
+  const UpgradePromptState({this.lastShownAt, this.dismissed = false});
+
+  bool get canShow {
+    if (!dismissed) return true;
+    if (lastShownAt == null) return true;
+    return DateTime.now().difference(lastShownAt!).inDays >= 3;
+  }
+
+  UpgradePromptState markShown() {
+    return UpgradePromptState(lastShownAt: DateTime.now(), dismissed: false);
+  }
+
+  UpgradePromptState markDismissed() {
+    return UpgradePromptState(lastShownAt: lastShownAt, dismissed: true);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'lastShownAt': lastShownAt?.toIso8601String(),
+      'dismissed': dismissed,
+    };
+  }
+
+  factory UpgradePromptState.fromJson(Map<String, dynamic> json) {
+    return UpgradePromptState(
+      lastShownAt: json['lastShownAt'] != null
+          ? DateTime.parse(json['lastShownAt'] as String)
+          : null,
+      dismissed: json['dismissed'] as bool? ?? false,
+    );
+  }
+
+  @override
+  List<Object?> get props => [lastShownAt, dismissed];
+}
+
 class SettingsState extends Equatable {
   final String calculationMethod;
   final bool useHanafi;
@@ -26,6 +132,13 @@ class SettingsState extends Equatable {
 
   // Dates marked as excused (yyyy-MM-dd strings) — notifications suppressed for these days
   final Set<String> excusedDays;
+
+  // Phase 3.1: Intent-driven behavior
+  final IntentLevel intentLevel;
+  final int bestStreak;
+  final int lastStreak;
+  final MilestoneState milestones;
+  final UpgradePromptState upgradePrompt;
 
   const SettingsState({
     this.calculationMethod = 'MWL',
@@ -59,6 +172,11 @@ class SettingsState extends Equatable {
     ],
     this.alarmDurationMinutes = 1,
     this.excusedDays = const {},
+    this.intentLevel = IntentLevel.foundation,
+    this.bestStreak = 0,
+    this.lastStreak = 0,
+    this.milestones = const MilestoneState(),
+    this.upgradePrompt = const UpgradePromptState(),
   });
 
   SettingsState copyWith({
@@ -73,6 +191,11 @@ class SettingsState extends Equatable {
     List<String>? missedReasons,
     int? alarmDurationMinutes,
     Set<String>? excusedDays,
+    IntentLevel? intentLevel,
+    int? bestStreak,
+    int? lastStreak,
+    MilestoneState? milestones,
+    UpgradePromptState? upgradePrompt,
   }) {
     return SettingsState(
       calculationMethod: calculationMethod ?? this.calculationMethod,
@@ -87,6 +210,11 @@ class SettingsState extends Equatable {
       missedReasons: missedReasons ?? this.missedReasons,
       alarmDurationMinutes: alarmDurationMinutes ?? this.alarmDurationMinutes,
       excusedDays: excusedDays ?? this.excusedDays,
+      intentLevel: intentLevel ?? this.intentLevel,
+      bestStreak: bestStreak ?? this.bestStreak,
+      lastStreak: lastStreak ?? this.lastStreak,
+      milestones: milestones ?? this.milestones,
+      upgradePrompt: upgradePrompt ?? this.upgradePrompt,
     );
   }
 
@@ -105,6 +233,11 @@ class SettingsState extends Equatable {
       'missedReasons': missedReasons,
       'alarmDurationMinutes': alarmDurationMinutes,
       'excusedDays': excusedDays.toList(),
+      'intentLevel': intentLevel.name,
+      'bestStreak': bestStreak,
+      'lastStreak': lastStreak,
+      'milestones': milestones.toJson(),
+      'upgradePrompt': upgradePrompt.toJson(),
     };
   }
 
@@ -186,25 +319,41 @@ class SettingsState extends Equatable {
             'Other',
           ],
       alarmDurationMinutes: json['alarmDurationMinutes'] as int? ?? 1,
-      excusedDays: (json['excusedDays'] as List<dynamic>?)
+excusedDays: (json['excusedDays'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toSet() ??
           {},
+      intentLevel: json['intentLevel'] != null
+          ? IntentLevel.fromString(json['intentLevel'] as String)
+          : IntentLevel.foundation,
+      bestStreak: json['bestStreak'] as int? ?? 0,
+      lastStreak: json['lastStreak'] as int? ?? 0,
+      milestones: json['milestones'] != null
+          ? MilestoneState.fromJson(json['milestones'] as Map<String, dynamic>)
+          : const MilestoneState(),
+      upgradePrompt: json['upgradePrompt'] != null
+          ? UpgradePromptState.fromJson(json['upgradePrompt'] as Map<String, dynamic>)
+          : const UpgradePromptState(),
     );
   }
 
   @override
   List<Object?> get props => [
-    calculationMethod,
-    useHanafi,
-    alarmSound,
-    notificationsPermitted,
-    themeMode,
-    prayerConfigs,
-    manualOffsets,
-    methodAutoDetected,
-    missedReasons,
-    alarmDurationMinutes,
-    excusedDays,
-  ];
+        calculationMethod,
+        useHanafi,
+        alarmSound,
+        notificationsPermitted,
+        themeMode,
+        prayerConfigs,
+        manualOffsets,
+        methodAutoDetected,
+        missedReasons,
+        alarmDurationMinutes,
+        excusedDays,
+        intentLevel,
+        bestStreak,
+        lastStreak,
+        milestones,
+        upgradePrompt,
+      ];
 }

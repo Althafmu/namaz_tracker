@@ -28,5 +28,6 @@ abstract class AuthRepository {
     required Map<String, int> manualOffsets,
     String? calculationMethod,
     bool? useHanafi,
+    String? intentLevel,
   });
 }

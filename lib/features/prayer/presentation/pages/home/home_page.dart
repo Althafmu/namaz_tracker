@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
 
+
+import '../../../../../core/services/milestone_service.dart';
 import '../../bloc/prayer/prayer_bloc.dart';
 import '../../bloc/prayer/prayer_event.dart';
 import '../../bloc/prayer/prayer_state.dart';
 import '../../bloc/history/history_bloc.dart';
 import '../../bloc/history/history_state.dart';
 import '../../bloc/settings/settings_bloc.dart';
+import '../../bloc/settings/settings_state.dart';
+import '../../bloc/settings/settings_event.dart';
+import '../../bloc/streak/streak_bloc.dart';
 import '../prayer_logger/prayer_logger_sheet.dart';
 import 'widgets/streak_header.dart';
 import 'widgets/prayer_card.dart';
@@ -32,6 +39,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     Future.microtask(() {
       if (mounted) {
         context.read<PrayerBloc>().add(const LoadDailyStatus());
+        _checkMilestones();
+        _checkUpgradePrompt();
       }
     });
   }
@@ -57,6 +66,54 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         context.read<PrayerBloc>().add(const LoadDailyStatus());
       }
     }
+  }
+
+  void _checkMilestones() {
+    final settingsState = GetIt.I<SettingsBloc>().state;
+    final streakState = context.read<PrayerBloc>().state;
+    // Streak is accessed via streak bloc - check on next frame
+    Future.microtask(() {
+      final streakBloc = GetIt.I<StreakBloc>();
+      MilestoneService().checkAndShowMilestone(context, streakBloc.state.streak.displayStreak);
+    });
+  }
+
+  void _checkUpgradePrompt() {
+    final settingsState = GetIt.I<SettingsBloc>().state;
+    final streakState = context.read<PrayerBloc>().state;
+    Future.microtask(() {
+      final streakBloc = GetIt.I<StreakBloc>();
+      if (MilestoneService.shouldShowUpgradePrompt(settingsState, streakBloc.state.streak.displayStreak)) {
+        _showUpgradePromptBanner(context);
+      }
+    });
+  }
+
+  void _showUpgradePromptBanner(BuildContext context) {
+    final settingsState = GetIt.I<SettingsBloc>().state;
+    String message;
+    if (settingsState.intentLevel == IntentLevel.foundation) {
+      message = "You've been consistent. Want to take the next step?";
+    } else {
+      message = "You're growing strong. Ready to push further?";
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        action: SnackBarAction(
+          label: 'Upgrade',
+          textColor: Colors.white,
+          onPressed: () {
+            GetIt.I<SettingsBloc>().add(const DismissUpgradePrompt());
+            // Navigate to intent onboarding to upgrade
+            GoRouter.of(context).go('/intent-setup');
+          },
+        ),
+        duration: const Duration(seconds: 5),
+      ),
+    );
   }
 
   @override

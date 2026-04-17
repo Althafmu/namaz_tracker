@@ -27,6 +27,10 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     on<LoadSettingsFromCloud>(_onLoadSettingsFromCloud);
     on<AddExcusedDay>(_onAddExcusedDay);
     on<ClearExcusedDay>(_onClearExcusedDay);
+    on<UpdateIntentLevel>(_onUpdateIntentLevel);
+    on<UpdateStreakHistory>(_onUpdateStreakHistory);
+    on<MarkMilestoneShown>(_onMarkMilestoneShown);
+    on<DismissUpgradePrompt>(_onDismissUpgradePrompt);
   }
 
   void _onUpdateCalculationSettings(
@@ -136,6 +140,7 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
         manualOffsets: state.manualOffsets,
         calculationMethod: state.calculationMethod,
         useHanafi: state.useHanafi,
+        intentLevel: state.intentLevel.name,
       );
     } catch (e) {
       debugPrint('[SettingsBloc] Cloud sync failed: $e');
@@ -164,6 +169,52 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
   ) {
     final newExcused = Set<String>.from(state.excusedDays)..remove(event.date);
     emit(state.copyWith(excusedDays: newExcused));
+  }
+
+  void _onUpdateIntentLevel(
+    UpdateIntentLevel event,
+    Emitter<SettingsState> emit,
+  ) {
+    final intent = IntentLevel.fromString(event.intentLevel);
+    emit(state.copyWith(intentLevel: intent));
+    add(const SyncSettingsToCloud());
+  }
+
+  void _onUpdateStreakHistory(
+    UpdateStreakHistory event,
+    Emitter<SettingsState> emit,
+  ) {
+    int newBest = state.bestStreak;
+    int newLast = state.lastStreak;
+
+    if (event.currentStreak > state.bestStreak) {
+      newBest = event.currentStreak;
+    }
+
+    if (event.currentStreak == 0 && state.lastStreak > 0) {
+      newLast = state.lastStreak;
+    } else if (event.currentStreak > 0) {
+      newLast = event.currentStreak;
+    }
+
+    emit(state.copyWith(
+      bestStreak: newBest,
+      lastStreak: newLast,
+    ));
+  }
+
+  void _onMarkMilestoneShown(
+    MarkMilestoneShown event,
+    Emitter<SettingsState> emit,
+  ) {
+    emit(state.copyWith(milestones: state.milestones.markShown(event.milestone)));
+  }
+
+  void _onDismissUpgradePrompt(
+    DismissUpgradePrompt event,
+    Emitter<SettingsState> emit,
+  ) {
+    emit(state.copyWith(upgradePrompt: state.upgradePrompt.markDismissed()));
   }
 
   @override

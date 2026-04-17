@@ -93,6 +93,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required Map<String, int> manualOffsets,
     String? calculationMethod,
     bool? useHanafi,
+    String? intentLevel,
   }) async {
     final data = <String, dynamic>{'manual_offsets': manualOffsets};
     if (calculationMethod != null) {
@@ -100,6 +101,9 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     if (useHanafi != null) {
       data['use_hanafi'] = useHanafi;
+    }
+    if (intentLevel != null) {
+      data['intent_level'] = intentLevel;
     }
     await remoteDataSource.patchProfileOffsets(data);
   }
