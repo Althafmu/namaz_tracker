@@ -19,64 +19,30 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
-  bool _navigated = false;
-
   @override
   void initState() {
     super.initState();
-    context.read<AuthBloc>().add(InitAuthRequested());
-
-    // Safety fallback: if auth never resolves within 5 seconds,
-    // force navigation to login to avoid black screen forever.
-    Future.delayed(const Duration(seconds: 5), () {
-      _navigateIfNeeded();
+    // Delay initialization so the splash screen is visible for at least 1.5s
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        context.read<AuthBloc>().add(InitAuthRequested());
+      }
     });
-  }
-
-  void _navigateIfNeeded() async {
-    if (_navigated || !mounted) return;
-    _navigated = true;
-    final authState = context.read<AuthBloc>().state;
-    if (authState.status == AuthStatus.authenticated) {
-      try {
-        final config = await GetIt.I<AuthRepository>().getUserConfig();
-        if (config['intent_level'] != null && mounted) {
-          context.read<SettingsBloc>().add(LoadIntentFromBackend(config['intent_level']));
-        }
-      } catch (_) {}
-      
-      if (mounted) context.go('/');
-    } else if (authState.hasSeenOnboarding) {
-      if (mounted) context.go('/login');
-    } else {
-      if (mounted) context.go('/onboarding1');
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listenWhen: (prev, curr) =>
-          curr.status == AuthStatus.authenticated ||
-          curr.status == AuthStatus.unauthenticated,
-      listener: (context, state) {
-        // Wait a minimum 1.5s so the splash is visible, then navigate
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          _navigateIfNeeded();
-        });
-      },
-      child: Scaffold(
-        backgroundColor: AppColors.of(context).background,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.nightlight_round, size: 120, color: AppColors.of(context).primary),
-              const SizedBox(height: 24),
-              Text('NAMAZ', style: AppTextStyles.headlineLarge),
-              Text('TRACKER', style: AppTextStyles.headlineMedium),
-            ],
-          ),
+    return Scaffold(
+      backgroundColor: AppColors.of(context).background,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.nightlight_round, size: 120, color: AppColors.of(context).primary),
+            const SizedBox(height: 24),
+            Text('NAMAZ', style: AppTextStyles.headlineLarge),
+            Text('TRACKER', style: AppTextStyles.headlineMedium),
+          ],
         ),
       ),
     );

@@ -4,6 +4,9 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../../../core/network/token_provider.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
+import 'package:get_it/get_it.dart';
+import '../../prayer/presentation/bloc/settings/settings_bloc.dart';
+import '../../prayer/presentation/bloc/settings/settings_event.dart';
 
 class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
@@ -30,6 +33,15 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
+      
+      try {
+        final config = await authRepository.getUserConfig();
+        if (config['intent'] != null) {
+          GetIt.I<SettingsBloc>().add(LoadIntentFromBackend(config['intent']));
+          await Future.microtask(() {});
+        }
+      } catch (_) {}
+
       // Token is persisted in secure storage by the repository/tokenProvider
       emit(state.copyWith(
         status: AuthStatus.authenticated,
@@ -83,6 +95,13 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     // Token lives in secure storage, not in HydratedBloc state
     await tokenProvider.loadTokens();
     if (tokenProvider.token != null) {
+      try {
+        final config = await authRepository.getUserConfig();
+        if (config['intent'] != null) {
+          GetIt.I<SettingsBloc>().add(LoadIntentFromBackend(config['intent']));
+          await Future.microtask(() {});
+        }
+      } catch (_) {}
       emit(state.copyWith(status: AuthStatus.authenticated));
     } else {
       emit(state.copyWith(status: AuthStatus.unauthenticated));

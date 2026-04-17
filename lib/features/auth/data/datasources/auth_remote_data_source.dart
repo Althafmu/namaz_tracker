@@ -120,7 +120,7 @@ class AuthRemoteDataSource {
 
   Future<Map<String, dynamic>> getUserConfig() async {
     try {
-      final response = await dio.get('/api/profile/offsets/');
+      final response = await dio.get('/api/user/config/');
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

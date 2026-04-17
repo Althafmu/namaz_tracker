@@ -30,27 +30,31 @@ import '../../features/prayer/presentation/bloc/history/history_bloc.dart';
 import '../../features/prayer/presentation/bloc/history/history_event.dart';
 import '../../features/prayer/presentation/bloc/history/history_state.dart';
 
-/// A [Listenable] that notifies when the [AuthBloc] state changes.
-class AuthRefreshListenable extends ChangeNotifier {
-  late final StreamSubscription<AuthState> _subscription;
+/// A [Listenable] that notifies when the [AuthBloc] or [SettingsBloc] state changes.
+class AppRefreshListenable extends ChangeNotifier {
+  late final StreamSubscription<AuthState> _authSub;
+  late final StreamSubscription<SettingsState> _settingsSub;
 
-  AuthRefreshListenable(AuthBloc authBloc) {
-    _subscription = authBloc.stream.listen((state) {
+  AppRefreshListenable(AuthBloc authBloc, SettingsBloc settingsBloc) {
+    _authSub = authBloc.stream.listen((state) {
+      notifyListeners();
+    });
+    _settingsSub = settingsBloc.stream.listen((state) {
       notifyListeners();
     });
   }
 
   @override
   void dispose() {
-    _subscription.cancel();
+    _authSub.cancel();
+    _settingsSub.cancel();
     super.dispose();
   }
 }
 
-/// App router using go_router with ShellRoute for bottom navigation.
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
-  refreshListenable: AuthRefreshListenable(GetIt.I<AuthBloc>()),
+  refreshListenable: AppRefreshListenable(GetIt.I<AuthBloc>(), GetIt.I<SettingsBloc>()),
   redirect: (context, state) {
     final authState = GetIt.I<AuthBloc>().state;
     final status = authState.status;
@@ -81,9 +85,12 @@ final GoRouter appRouter = GoRouter(
       return null;
     }
 
-    // If unauthenticated, redirect to login unless on signup/onboarding/splash
+    // If unauthenticated, redirect to login unless on signup/onboarding
     if (status == AuthStatus.unauthenticated) {
-      if (loggingIn || signingUp || onboarding || splash) {
+      if (splash) {
+        return authState.hasSeenOnboarding ? '/login' : '/onboarding1';
+      }
+      if (loggingIn || signingUp || onboarding) {
         return null;
       }
       return '/login';

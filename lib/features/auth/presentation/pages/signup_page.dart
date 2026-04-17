@@ -91,30 +91,14 @@ class _SignupPageState extends State<SignupPage> {
         ),
       ),
       body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) async {
-          if (state.status == AuthStatus.authenticated) {
-            try {
-              final config = await GetIt.I<AuthRepository>().getUserConfig();
-              if (config['intent_level'] != null && mounted) {
-                context.read<SettingsBloc>().add(LoadIntentFromBackend(config['intent_level']));
-                if (config['intent_level'] != 'foundation') {
-                  context.go('/');
-                  return;
-                }
-              }
-            } catch (_) {}
-
-            final settingsState = context.read<SettingsBloc>().state;
-            if (settingsState.isIntentSet && mounted) {
-              context.go('/');
-            } else if (mounted) {
-              context.go('/intent-setup');
-            }
-          } else if (state.status == AuthStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage ?? 'Signup Failed'), backgroundColor: AppColors.of(context).primary),
-            );
-          }
+        listenWhen: (prev, curr) => curr.status == AuthStatus.error,
+        listener: (context, state) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.errorMessage ?? 'Signup Failed'),
+              backgroundColor: AppColors.of(context).primary,
+            ),
+          );
         },
         child: SafeArea(
           child: SingleChildScrollView(

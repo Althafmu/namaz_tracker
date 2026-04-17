@@ -76,17 +76,10 @@ class OfflineSyncService {
             dateKey: action['dateKey'] as String?,
           );
           await _queueRepository.dequeueAction(entry.key);
-          processedAny = true;
         } catch (e) {
           debugPrint('[OfflineSync] Sync failed for queued action: $e');
           break; // Network still down — stop this batch
         }
-      }
-      
-      if (processedAny) {
-        try {
-          GetIt.I<SettingsBloc>().add(const SyncSettingsToCloud());
-        } catch (_) {}
       }
     } finally {
       _isProcessing = false;
