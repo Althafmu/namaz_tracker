@@ -101,6 +101,24 @@ class AuthRemoteDataSource {
     }
   }
 
+  /// Logout and blacklist the refresh token.
+  Future<void> logout({required String refreshToken}) async {
+    try {
+      await dio.post(
+        '/api/auth/logout/',
+        data: {'refresh': refreshToken},
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      String message = 'Logout failed';
+      if (data is Map<String, dynamic>) {
+        message = data['detail']?.toString() ?? data.values.first.toString();
+      }
+      // Depending on requirements, we might just ignore token blacklist failures locally
+      throw Exception(message);
+    }
+  }
+
   /// PATCH /api/profile/offsets/ — sync manual offsets and calculation settings to cloud.
   Future<void> patchProfileOffsets(Map<String, dynamic> data) async {
     try {

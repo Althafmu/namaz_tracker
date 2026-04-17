@@ -74,7 +74,13 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogoutRequested(LogoutRequested event, Emitter<AuthState> emit) async {
+    // 1. Tell backend to blacklist the token
+    await authRepository.logout();
+    
+    // 2. Erase local tokens permanently
     await tokenProvider.clearAll();
+    
+    // 3. Emit unauthenticated state immediately so router reacts
     emit(const AuthState(
       status: AuthStatus.unauthenticated,
       user: null,

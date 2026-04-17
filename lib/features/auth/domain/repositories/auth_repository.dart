@@ -19,6 +19,8 @@ abstract class AuthRepository {
     required String password,
   });
 
+  Future<void> logout();
+
   Future<User> updateProfile({
     required String firstName,
     required String lastName,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get_it/get_it.dart';
 
+import '../../features/prayer/presentation/bloc/settings/settings_state.dart';
 import '../../features/prayer/presentation/pages/home/home_page.dart';
 import '../../features/prayer/presentation/pages/progress/progress_page.dart';
 import '../../features/prayer/presentation/pages/profile/settings_page.dart';
@@ -23,9 +24,6 @@ import '../../features/auth/presentation/bloc/auth_state.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../../features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
-import '../../features/prayer/presentation/bloc/prayer/prayer_event.dart';
-import '../../features/prayer/presentation/bloc/prayer/prayer_state.dart';
 import '../../features/prayer/presentation/bloc/history/history_bloc.dart';
 import '../../features/prayer/presentation/bloc/history/history_event.dart';
 import '../../features/prayer/presentation/bloc/history/history_state.dart';

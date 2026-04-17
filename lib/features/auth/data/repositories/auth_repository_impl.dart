@@ -61,6 +61,18 @@ class AuthRepositoryImpl implements AuthRepository {
     return AuthResponse(token: token, user: user);
   }
 
+  @override
+  Future<void> logout() async {
+    final currentRefresh = tokenProvider.refreshToken;
+    if (currentRefresh != null) {
+      try {
+        await remoteDataSource.logout(refreshToken: currentRefresh);
+      } catch (e) {
+        debugPrint('[AuthRepo] Server logout failed: $e');
+      }
+    }
+  }
+
   /// Attempt to refresh the access token using the stored refresh token.
   /// Returns the new access token, or null if refresh failed.
   Future<String?> refreshAccessToken() async {
