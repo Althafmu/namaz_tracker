@@ -189,6 +189,7 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     emit(state.copyWith(
       intentLevel: intent,
       isIntentSet: true,
+      isFallbackIntent: event.isFallback,
     ));
   }
 

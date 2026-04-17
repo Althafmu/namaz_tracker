@@ -133,11 +133,11 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
       if (intent != null) {
         settingsBloc.add(LoadIntentFromBackend(intent));
       } else if (!settingsBloc.state.isIntentSet) {
-        settingsBloc.add(const LoadIntentFromBackend('foundation'));
+        settingsBloc.add(const LoadIntentFromBackend('foundation', isFallback: true));
       }
     } catch (_) {
       if (!settingsBloc.state.isIntentSet) {
-        settingsBloc.add(const LoadIntentFromBackend('foundation'));
+        settingsBloc.add(const LoadIntentFromBackend('foundation', isFallback: true));
       }
     }
   }

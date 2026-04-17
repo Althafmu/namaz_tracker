@@ -137,11 +137,12 @@ class UpdateIntentLevel extends SettingsEvent {
 
 class LoadIntentFromBackend extends SettingsEvent {
   final String intentLevel;
+  final bool isFallback;
 
-  const LoadIntentFromBackend(this.intentLevel);
+  const LoadIntentFromBackend(this.intentLevel, {this.isFallback = false});
 
   @override
-  List<Object?> get props => [intentLevel];
+  List<Object?> get props => [intentLevel, isFallback];
 }
 
 /// Phase 3.1: Track streak history for soft landing and upgrade prompts

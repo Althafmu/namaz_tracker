@@ -140,6 +140,7 @@ class SettingsState extends Equatable {
   final MilestoneState milestones;
   final UpgradePromptState upgradePrompt;
   final bool isIntentSet;
+  final bool isFallbackIntent;
 
   const SettingsState({
     this.calculationMethod = 'MWL',
@@ -179,6 +180,7 @@ class SettingsState extends Equatable {
     this.milestones = const MilestoneState(),
     this.upgradePrompt = const UpgradePromptState(),
     this.isIntentSet = false,
+    this.isFallbackIntent = false,
   });
 
   SettingsState copyWith({
@@ -199,6 +201,7 @@ class SettingsState extends Equatable {
     MilestoneState? milestones,
     UpgradePromptState? upgradePrompt,
     bool? isIntentSet,
+    bool? isFallbackIntent,
   }) {
     return SettingsState(
       calculationMethod: calculationMethod ?? this.calculationMethod,
@@ -219,6 +222,7 @@ class SettingsState extends Equatable {
       milestones: milestones ?? this.milestones,
       upgradePrompt: upgradePrompt ?? this.upgradePrompt,
       isIntentSet: isIntentSet ?? this.isIntentSet,
+      isFallbackIntent: isFallbackIntent ?? this.isFallbackIntent,
     );
   }
 
@@ -243,6 +247,7 @@ class SettingsState extends Equatable {
       'milestones': milestones.toJson(),
       'upgradePrompt': upgradePrompt.toJson(),
       'isIntentSet': isIntentSet,
+      'isFallbackIntent': isFallbackIntent,
     };
   }
 
@@ -340,6 +345,7 @@ excusedDays: (json['excusedDays'] as List<dynamic>?)
           ? UpgradePromptState.fromJson(json['upgradePrompt'] as Map<String, dynamic>)
           : const UpgradePromptState(),
       isIntentSet: json['isIntentSet'] as bool? ?? false,
+      isFallbackIntent: json['isFallbackIntent'] as bool? ?? false,
     );
   }
 
@@ -362,5 +368,6 @@ excusedDays: (json['excusedDays'] as List<dynamic>?)
         milestones,
         upgradePrompt,
         isIntentSet,
+        isFallbackIntent,
       ];
 }
