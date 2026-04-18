@@ -2,6 +2,9 @@ import '../../domain/entities/streak.dart';
 
 /// Data model extending the Streak entity with server-side JSON mapping.
 /// Sprint 1 (Phase 3 PRD): Includes weekly token limits + anti-gaming cooldown.
+///
+/// Null/missing-field safeguards: all numeric fields default to safe values,
+/// all optional strings default to null. Unexpected types are coerced to int.
 class StreakModel extends Streak {
   const StreakModel({
     super.currentStreak,
@@ -18,20 +21,28 @@ class StreakModel extends Streak {
     super.antiGamingCooldownHours,
   });
 
+  /// Safely parse a numeric value that may come as int, double, or null.
+  static int _safeInt(dynamic value, int defaultValue) {
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
   factory StreakModel.fromApiResponse(Map<String, dynamic> json) {
     return StreakModel(
-      currentStreak: json['current_streak'] as int? ?? 0,
-      longestStreak: json['longest_streak'] as int? ?? 0,
+      currentStreak: _safeInt(json['current_streak'], 0),
+      longestStreak: _safeInt(json['longest_streak'], 0),
       lastCompletedDate: json['last_completed_date'] as String?,
-      displayStreak: json['display_streak'] as int? ?? 0,
-      protectorTokens: json['protector_tokens'] as int? ?? 3,
-      maxProtectorTokens: json['max_protector_tokens'] as int? ?? 3,
+      displayStreak: _safeInt(json['display_streak'], 0),
+      protectorTokens: _safeInt(json['protector_tokens'], 3),
+      maxProtectorTokens: _safeInt(json['max_protector_tokens'], 3),
       tokensResetDate: json['tokens_reset_date'] as String?,
-      weeklyTokensUsed: json['weekly_tokens_used'] as int? ?? 0,
-      weeklyTokenLimit: json['weekly_token_limit'] as int? ?? 3,
-      weeklyTokensRemaining: json['weekly_tokens_remaining'] as int? ?? 3,
+      weeklyTokensUsed: _safeInt(json['weekly_tokens_used'], 0),
+      weeklyTokenLimit: _safeInt(json['weekly_token_limit'], 3),
+      weeklyTokensRemaining: _safeInt(json['weekly_tokens_remaining'], 3),
       lastTokenUsedAt: json['last_token_used_at'] as String?,
-      antiGamingCooldownHours: json['anti_gaming_cooldown_hours'] as int? ?? 24,
+      antiGamingCooldownHours: _safeInt(json['anti_gaming_cooldown_hours'], 24),
     );
   }
 

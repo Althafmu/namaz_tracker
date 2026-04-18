@@ -3,6 +3,9 @@ import '../../../domain/entities/prayer.dart';
 
 enum SyncStatus { idle, syncing, synced, error }
 
+/// Status of the undo action.
+enum UndoStatus { idle, loading, success, error }
+
 /// State for the PrayerBloc — focused on today's prayers.
 /// Historical data is managed by HistoryBloc.
 /// Statistics are managed by StatsBloc.
@@ -24,6 +27,12 @@ class PrayerState extends Equatable {
   final double? cachedLat;
   final double? cachedLng;
 
+  /// Status of the last undo action
+  final UndoStatus undoStatus;
+
+  /// Message to display after an action (undo, etc.)
+  final String? lastActionMessage;
+
   const PrayerState({
     this.prayers = const [],
     this.isLoading = false,
@@ -31,6 +40,8 @@ class PrayerState extends Equatable {
     this.selectedLocation = 'home',
     this.cachedLat,
     this.cachedLng,
+    this.undoStatus = UndoStatus.idle,
+    this.lastActionMessage,
   });
 
   PrayerState copyWith({
@@ -40,6 +51,9 @@ class PrayerState extends Equatable {
     String? selectedLocation,
     double? cachedLat,
     double? cachedLng,
+    UndoStatus? undoStatus,
+    String? lastActionMessage,
+    bool clearActionMessage = false,
   }) {
     return PrayerState(
       prayers: prayers ?? this.prayers,
@@ -48,6 +62,8 @@ class PrayerState extends Equatable {
       selectedLocation: selectedLocation ?? this.selectedLocation,
       cachedLat: cachedLat ?? this.cachedLat,
       cachedLng: cachedLng ?? this.cachedLng,
+      undoStatus: undoStatus ?? this.undoStatus,
+      lastActionMessage: clearActionMessage ? null : (lastActionMessage ?? this.lastActionMessage),
     );
   }
 
@@ -87,5 +103,7 @@ class PrayerState extends Equatable {
         selectedLocation,
         cachedLat,
         cachedLng,
+        undoStatus,
+        lastActionMessage,
       ];
 }

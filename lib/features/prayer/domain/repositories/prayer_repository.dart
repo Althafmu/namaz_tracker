@@ -46,4 +46,18 @@ abstract class PrayerRepository {
     required String date,
     String? reason,
   });
+
+  // ── Phase 3: New Backend Features ──
+
+  /// Undo the last prayer log. Returns the updated prayer list.
+  Future<List<Prayer>> undoLastPrayerLog();
+
+  /// Get sync metadata (last sync, source, conflict info).
+  Future<Map<String, dynamic>> getSyncMetadata();
+
+  /// Pause notifications for today. Returns backend confirmation.
+  Future<Map<String, dynamic>> pauseNotificationsForToday();
+
+  /// Check if notifications are paused for today.
+  Future<Map<String, dynamic>> getNotificationsPauseStatus();
 }

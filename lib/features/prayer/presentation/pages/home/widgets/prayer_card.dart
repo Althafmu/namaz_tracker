@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/theme/app_text_styles.dart';
 import '../../../../../../core/widgets/neo_card.dart';
+import '../../../../../../core/services/status_helper.dart';
 import '../../../../../../../core/services/time_service.dart';
 import '../../../../domain/entities/prayer.dart';
 
@@ -10,6 +11,7 @@ Color _getPrayerColor(Prayer prayer, AppColorPalette c) {
   if (!prayer.isCompleted) return c.surface;
   if (prayer.status == 'missed') return c.statusMissed;
   if (prayer.status == 'late') return c.statusLate;
+  if (prayer.status == 'qada') return c.statusQada;
   if (prayer.status == 'excused') return c.surface; // Keep it surface color to distinct from actual completion
   if (prayer.inJamaat) return c.statusGroup;
   return c.statusAlone;
@@ -292,7 +294,7 @@ class ExpiredPrayerView extends StatelessWidget {
       onTap: onTap,
       showTime: showTime,
       cardColor: c.statusMissed,
-      warningMessage: 'You needed to complete this prayer before the day ended',
+      warningMessage: StatusHelper.description('missed'),
       warningColor: Colors.red.shade800,
       warningBackgroundColor: Colors.red.withValues(alpha: 0.1),
       customCheckIcon: Container(
@@ -328,7 +330,7 @@ class ExcusedPrayerView extends StatelessWidget {
       onTap: onTap,
       showTime: showTime,
       cardColor: c.surface, // keeping it flat surface
-      warningMessage: 'Marked as excused — not counted in your streak',
+      warningMessage: StatusHelper.tooltip('excused'),
       warningColor: c.textSecondary,
       warningBackgroundColor: c.border,
       customCheckIcon: Container(

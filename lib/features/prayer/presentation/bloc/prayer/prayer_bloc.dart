@@ -13,6 +13,7 @@ import '../../../../../core/services/time_service.dart';
 import '../../../domain/entities/prayer.dart';
 import '../../../domain/usecases/log_prayer_usecase.dart';
 import '../../../domain/usecases/get_daily_status_usecase.dart';
+import '../../../domain/usecases/undo_last_prayer_log_usecase.dart';
 import '../history/history_bloc.dart';
 import '../history/history_event.dart';
 import '../stats/stats_bloc.dart';
@@ -30,6 +31,7 @@ import 'prayer_state.dart';
 class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
   final LogPrayerUseCase logPrayerUseCase;
   final GetDailyStatusUseCase getDailyStatusUseCase;
+  final UndoLastPrayerLogUseCase? undoLastPrayerLogUseCase;
   final OfflineSyncService offlineSyncService;
   final PrayerSchedulerService prayerSchedulerService;
   final NotificationService notificationService;
@@ -42,6 +44,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
   PrayerBloc({
     required this.logPrayerUseCase,
     required this.getDailyStatusUseCase,
+    this.undoLastPrayerLogUseCase,
     required this.offlineSyncService,
     required this.prayerSchedulerService,
     required this.notificationService,
@@ -55,6 +58,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     on<SetPrayerLocation>(_onSetPrayerLocation);
     on<SyncWithServer>(_onSyncWithServer);
     on<RefreshPrayersAndAlarms>(_onRefreshPrayersAndAlarms);
+    on<UndoLastPrayerLog>(_onUndoLastPrayerLog);
 
     _settingsSubscription = settingsBloc.stream.listen((_) {
       add(const RefreshPrayersAndAlarms());
@@ -375,6 +379,50 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     emit(state.copyWith(prayers: updatedPrayers));
 
     await prayerSchedulerService.scheduleNotifications(settings);
+  }
+
+  Future<void> _onUndoLastPrayerLog(
+    UndoLastPrayerLog event,
+    Emitter<PrayerState> emit,
+  ) async {
+    if (undoLastPrayerLogUseCase == null) {
+      emit(state.copyWith(
+        undoStatus: UndoStatus.error,
+        lastActionMessage: 'Undo is not available.',
+      ));
+      return;
+    }
+
+    emit(state.copyWith(undoStatus: UndoStatus.loading));
+
+    try {
+      final updatedPrayers = await undoLastPrayerLogUseCase!();
+      final todayKey = DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+      historyBloc.add(UpdateDayLog(dateStr: todayKey, prayers: updatedPrayers));
+
+      emit(state.copyWith(
+        prayers: updatedPrayers,
+        undoStatus: UndoStatus.success,
+        lastActionMessage: 'Last prayer log undone successfully.',
+      ));
+    } on ServerException catch (e) {
+      emit(state.copyWith(
+        undoStatus: UndoStatus.error,
+        lastActionMessage: e.userMessage,
+      ));
+    } on NetworkException catch (e) {
+      emit(state.copyWith(
+        undoStatus: UndoStatus.error,
+        lastActionMessage: 'Network error. Please check your connection.',
+      ));
+      debugPrint('[PrayerBloc] Network error during undo: ${e.message}');
+    } catch (e) {
+      emit(state.copyWith(
+        undoStatus: UndoStatus.error,
+        lastActionMessage: 'Failed to undo. Please try again.',
+      ));
+      debugPrint('[PrayerBloc] Unexpected error during undo: $e');
+    }
   }
 
   // ── HydratedBloc overrides ──

@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import '../../../../core/errors/api_error.dart';
+import '../../../../core/errors/api_error_mapper.dart';
 import '../models/user_model.dart';
 
 class AuthRemoteDataSource {
@@ -7,11 +9,11 @@ class AuthRemoteDataSource {
 
   AuthRemoteDataSource({required this.dio});
 
-  /// Converts a [DioException] into a human-readable message.
+  /// Converts a [DioException] into a human-readable message using the
+  /// standardized `{code, detail, field_errors}` error contract.
   ///
   /// Network / timeout errors (no response body) return a friendly cold-start
-  /// message. 4xx responses with a body surface the backend validation text.
-  /// Any list values in the response body are joined so brackets are not shown.
+  /// message. Structured errors are mapped via [ApiErrorMapper].
   static String _parseDioError(DioException e, String fallback) {
     // Network-level failures — no HTTP response available
     if (e.type == DioExceptionType.connectionTimeout ||
@@ -22,20 +24,12 @@ class AuthRemoteDataSource {
     }
 
     final data = e.response?.data;
-    if (data is Map<String, dynamic>) {
-      // Prefer the standard DRF `detail` field
-      final detail = data['detail'];
-      if (detail != null) return detail.toString();
+    final statusCode = e.response?.statusCode;
 
-      // Otherwise take the first field's error message and flatten lists
-      if (data.isNotEmpty) {
-        final firstValue = data.values.first;
-        if (firstValue is List) {
-          return firstValue.join(' ');
-        }
-        return firstValue.toString();
-      }
-    }
+    // Parse using standardized contract
+    final apiError = ApiError.fromResponse(data, statusCode: statusCode);
+    final mapped = ApiErrorMapper.toUserMessage(apiError);
+    if (mapped.isNotEmpty) return mapped;
 
     return fallback;
   }
