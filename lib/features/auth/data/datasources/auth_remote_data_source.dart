@@ -7,7 +7,7 @@ class AuthRemoteDataSource {
 
   AuthRemoteDataSource({required this.dio});
 
-  Future<UserModel> register({
+  Future<Map<String, dynamic>> register({
     required String username,
     required String email,
     required String password,
@@ -25,7 +25,7 @@ class AuthRemoteDataSource {
           'last_name': lastName,
         },
       );
-      return UserModel.fromJson(response.data);
+      return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
       String message = 'Registration failed';

@@ -111,6 +111,8 @@ Future<void> initDependencies() async {
         final token = sl<TokenProvider>().token;
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
+        } else {
+          options.headers.remove('Authorization');
         }
         return handler.next(options);
       },

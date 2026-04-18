@@ -56,14 +56,18 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
   ) async {
     emit(state.copyWith(status: AuthStatus.loading, errorMessage: null));
     try {
-      final user = await authRepository.register(
+      final response = await authRepository.register(
         name: event.name,
         email: event.email,
         password: event.password,
       );
-      // Store user info and then log in
-      emit(state.copyWith(user: user));
-      add(LoginRequested(email: event.email, password: event.password));
+      // Auto-login since register now returns tokens
+      emit(state.copyWith(
+        status: AuthStatus.loadingConfig,
+        user: response.user,
+        errorMessage: null,
+        hasSeenOnboarding: true,
+      ));
     } catch (e) {
       emit(state.copyWith(
         status: AuthStatus.error,

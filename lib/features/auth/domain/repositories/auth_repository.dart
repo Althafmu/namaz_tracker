@@ -8,7 +8,7 @@ class AuthResponse {
 }
 
 abstract class AuthRepository {
-  Future<User> register({
+  Future<AuthResponse> register({
     required String name,
     required String email,
     required String password,

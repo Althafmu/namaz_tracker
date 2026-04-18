@@ -8,10 +8,6 @@ import '../../../../core/widgets/neo_text_field.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
-import 'package:get_it/get_it.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../../../prayer/presentation/bloc/settings/settings_bloc.dart';
-import '../../../prayer/presentation/bloc/settings/settings_event.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

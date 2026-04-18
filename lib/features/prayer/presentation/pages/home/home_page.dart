@@ -176,7 +176,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   ),
                                 ),
                               ),
-                            const WeeklyCalendar(),
+                            WeeklyCalendar(), 
                             const SizedBox(height: 24),
                           ],
                         );

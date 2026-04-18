@@ -15,26 +15,37 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<User> register({
+  Future<AuthResponse> register({
     required String name,
     required String email,
     required String password,
   }) async {
-    // Use the full email as username (server can generate its own if needed)
-    // Finding #7: removed predictable email.split('@').first derivation
     final username = email;
-    // Split name into first and last for Django user model
     final names = name.split(' ');
     final firstName = names.isNotEmpty ? names.first : '';
     final lastName = names.length > 1 ? names.sublist(1).join(' ') : '';
 
-    return await remoteDataSource.register(
+    final responseData = await remoteDataSource.register(
       username: username,
       email: email,
       password: password,
       firstName: firstName,
       lastName: lastName,
     );
+
+    final token = responseData['access'] as String;
+    final refreshToken = responseData['refresh'] as String?;
+
+    await tokenProvider.updateTokens(access: token, refresh: refreshToken);
+
+    User user;
+    if (responseData['user'] != null) {
+      user = UserModel.fromJson(responseData['user']);
+    } else {
+      user = UserModel.fromJson(responseData); // Fallback in case of raw user
+    }
+
+    return AuthResponse(token: token, user: user);
   }
 
   @override
@@ -64,12 +75,16 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> logout() async {
     final currentRefresh = tokenProvider.refreshToken;
-    if (currentRefresh != null) {
-      try {
+    try {
+      if (currentRefresh != null) {
         await remoteDataSource.logout(refreshToken: currentRefresh);
-      } catch (e) {
-        debugPrint('[AuthRepo] Server logout failed: $e');
       }
+    } catch (e) {
+      // Backend blacklist failure is non-fatal — local state must still be cleared.
+      debugPrint('[AuthRepo] Server logout failed (non-fatal): $e');
+    } finally {
+      // CRITICAL: always wipe local tokens, regardless of backend outcome.
+      await tokenProvider.clearAll();
     }
   }
 

@@ -1,20 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:get_it/get_it.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/neo_button.dart';
 import '../../../../core/widgets/neo_text_field.dart';
-import '../../../prayer/presentation/bloc/settings/settings_bloc.dart';
-import '../../../prayer/presentation/bloc/settings/settings_state.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
-import 'package:get_it/get_it.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../../../prayer/presentation/bloc/settings/settings_bloc.dart';
-import '../../../prayer/presentation/bloc/settings/settings_event.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
