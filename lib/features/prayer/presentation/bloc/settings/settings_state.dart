@@ -142,6 +142,7 @@ class SettingsState extends Equatable {
   final UpgradePromptState upgradePrompt;
   final bool isIntentSet;
   final bool isFallbackIntent;
+  final bool isInitialized;
 
   const SettingsState({
     this.calculationMethod = 'MWL',
@@ -182,6 +183,7 @@ class SettingsState extends Equatable {
     this.upgradePrompt = const UpgradePromptState(),
     this.isIntentSet = false,
     this.isFallbackIntent = false,
+    this.isInitialized = false,
   });
 
   SettingsState copyWith({
@@ -203,6 +205,7 @@ class SettingsState extends Equatable {
     UpgradePromptState? upgradePrompt,
     bool? isIntentSet,
     bool? isFallbackIntent,
+    bool? isInitialized,
   }) {
     return SettingsState(
       calculationMethod: calculationMethod ?? this.calculationMethod,
@@ -224,6 +227,7 @@ class SettingsState extends Equatable {
       upgradePrompt: upgradePrompt ?? this.upgradePrompt,
       isIntentSet: isIntentSet ?? this.isIntentSet,
       isFallbackIntent: isFallbackIntent ?? this.isFallbackIntent,
+      isInitialized: isInitialized ?? this.isInitialized,
     );
   }
 
@@ -255,6 +259,7 @@ class SettingsState extends Equatable {
       'upgradePrompt': upgradePrompt.toJson(),
       'isIntentSet': isIntentSet,
       'isFallbackIntent': isFallbackIntent,
+      'isInitialized': isInitialized,
     };
   }
 
@@ -353,6 +358,7 @@ excusedDays: (json['excusedDays'] as List<dynamic>?)
           : const UpgradePromptState(),
       isIntentSet: json['isIntentSet'] as bool? ?? false,
       isFallbackIntent: json['isFallbackIntent'] as bool? ?? false,
+      isInitialized: true,
     );
   }
 

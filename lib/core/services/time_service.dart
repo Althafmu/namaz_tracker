@@ -18,4 +18,13 @@ class TimeService {
     }
     return input;
   }
+
+  /// Checks if the current physical time is between midnight and the cutoff (e.g., 3:00 AM).
+  static bool isLateNight() {
+    final now = DateTime.now();
+    final effective = effectiveNow();
+    return effective.day != now.day ||
+           effective.month != now.month ||
+           effective.year != now.year;
+  }
 }

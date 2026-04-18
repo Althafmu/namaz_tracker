@@ -149,25 +149,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               const StreakHeader(),
                               const SizedBox(height: 16),
                             ],
-                            const WeeklyCalendar(),
-                            const SizedBox(height: 24),
-                          ],
-                        );
-                      },
-                    ),
-
-                    // ── Prayer List ──
-                    Expanded(
-                      child: ListView(
-                        padding: EdgeInsets.zero,
-                        children: () {
-                          final now = DateTime.now();
-                          final effectiveNow = TimeService.effectiveNow();
-                          final isLateNight = effectiveNow.day != now.day;
-                          final items = <Widget>[];
-
-                          if (isLateNight) {
-                            items.add(
+                            if (TimeService.isLateNight() && isToday)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
                                 child: Container(
@@ -183,7 +165,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
-                                          "Late night? Prayers are still counted towards yesterday's streak until 3:00 AM.",
+                                          "After midnight, prayers count toward yesterday until 3:00 AM",
                                           style: TextStyle(
                                             color: Theme.of(context).colorScheme.onSurface,
                                             fontSize: 13,
@@ -194,8 +176,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                   ),
                                 ),
                               ),
-                            );
-                          }
+                            const WeeklyCalendar(),
+                            const SizedBox(height: 24),
+                          ],
+                        );
+                      },
+                    ),
+
+                    // ── Prayer List ──
+                    Expanded(
+                      child: ListView(
+                        padding: EdgeInsets.zero,
+                        children: () {
+                          final items = <Widget>[];
 
                           for (int i = 0; i < displayPrayers.length; i++) {
                             final prayer = displayPrayers[i];

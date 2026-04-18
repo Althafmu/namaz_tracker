@@ -26,6 +26,7 @@ class SessionCoordinator {
     required this.authRepository,
     required this.prayerSchedulerService,
   }) {
+    _authSub?.cancel();
     _authSub = authBloc.stream.listen((state) async {
       if (state.status == AuthStatus.loadingConfig) {
         await _hydrateIntent();
@@ -33,7 +34,9 @@ class SessionCoordinator {
       }
     });
 
+    _settingsSub?.cancel();
     _settingsSub = settingsBloc.stream.listen((state) {
+      if (!state.isInitialized) return;
       if (_wasExcused != state.isExcused) {
         if (state.isExcused) {
           prayerSchedulerService.cancelAllNotifications();
