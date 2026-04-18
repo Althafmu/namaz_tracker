@@ -133,35 +133,44 @@ class NotificationsSettingsPage extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: NeoButton(
-                                text: '- 1 Min',
-                                color: c.surface,
-                                height: 44,
-                                onPressed: state.alarmDurationMinutes > 1
-                                    ? () => context.read<SettingsBloc>().add(
-                                        UpdateAlarmDuration(
-                                            state.alarmDurationMinutes - 1))
-                                    : null,
+                        Builder(builder: (context) {
+                          final canDecrease = state.alarmDurationMinutes > 1;
+                          final canIncrease = state.alarmDurationMinutes < 10;
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: NeoButton(
+                                  text: '- 1 Min',
+                                  color: c.surface,
+                                  textColor: c.textPrimary,
+                                  height: 44,
+                                  disabled: !canDecrease,
+                                  onPressed: canDecrease
+                                      ? () => context.read<SettingsBloc>().add(
+                                            UpdateAlarmDuration(
+                                                state.alarmDurationMinutes - 1),
+                                          )
+                                      : null,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: NeoButton(
-                                text: '+ 1 Min',
-                                color: c.primary,
-                                height: 44,
-                                onPressed: state.alarmDurationMinutes < 10
-                                    ? () => context.read<SettingsBloc>().add(
-                                        UpdateAlarmDuration(
-                                            state.alarmDurationMinutes + 1))
-                                    : null,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: NeoButton(
+                                  text: '+ 1 Min',
+                                  color: c.primary,
+                                  height: 44,
+                                  disabled: !canIncrease,
+                                  onPressed: canIncrease
+                                      ? () => context.read<SettingsBloc>().add(
+                                            UpdateAlarmDuration(
+                                                state.alarmDurationMinutes + 1),
+                                          )
+                                      : null,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          );
+                        }),
                       ],
                     ),
                   ),

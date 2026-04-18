@@ -42,20 +42,21 @@ class _NeoButtonState extends State<NeoButton> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final effectiveColor = widget.disabled
+    final isDisabled = widget.disabled || widget.onPressed == null;
+    final effectiveColor = isDisabled
         ? c.textSecondary
         : (widget.color ?? c.primary);
-    final effectiveTextColor = widget.disabled
+    final effectiveTextColor = isDisabled
         ? c.textPrimary.withValues(alpha: 0.5)
         : (widget.textColor ?? c.surface);
-    final effectiveBorderColor = widget.disabled ? c.textSecondary : c.border;
+    final effectiveBorderColor = isDisabled ? c.textSecondary : c.border;
 
     return GestureDetector(
-      onTapDown: widget.disabled ? null : (_) {
+      onTapDown: isDisabled ? null : (_) {
         HapticFeedback.lightImpact();
         setState(() => _isPressed = true);
       },
-      onTapUp: widget.disabled ? null : (_) {
+      onTapUp: isDisabled ? null : (_) {
         setState(() => _isPressed = false);
         widget.onPressed?.call();
       },
@@ -79,7 +80,7 @@ class _NeoButtonState extends State<NeoButton> {
             width: 2.0,
           ),
           boxShadow: [
-            if (!widget.disabled)
+            if (!isDisabled)
               BoxShadow(
                 color: c.border,
                 offset: Offset(
