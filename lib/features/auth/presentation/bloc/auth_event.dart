@@ -50,3 +50,7 @@ class UpdateProfileRequested extends AuthEvent {
 }
 
 class ConfigLoadComplete extends AuthEvent {}
+
+class OnboardingCompleted extends AuthEvent {
+  const OnboardingCompleted();
+}

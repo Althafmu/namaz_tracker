@@ -100,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 48),
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
-                    if (state.status == AuthStatus.loading) {
+                    if (state.status == AuthStatus.loading || state.status == AuthStatus.loadingConfig) {
                       return Center(child: CircularProgressIndicator(color: AppColors.of(context).primary));
                     }
                     return SizedBox(

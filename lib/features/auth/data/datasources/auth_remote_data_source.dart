@@ -7,6 +7,39 @@ class AuthRemoteDataSource {
 
   AuthRemoteDataSource({required this.dio});
 
+  /// Converts a [DioException] into a human-readable message.
+  ///
+  /// Network / timeout errors (no response body) return a friendly cold-start
+  /// message. 4xx responses with a body surface the backend validation text.
+  /// Any list values in the response body are joined so brackets are not shown.
+  static String _parseDioError(DioException e, String fallback) {
+    // Network-level failures — no HTTP response available
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError) {
+      return 'Server is starting up, please try again in a moment.';
+    }
+
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      // Prefer the standard DRF `detail` field
+      final detail = data['detail'];
+      if (detail != null) return detail.toString();
+
+      // Otherwise take the first field's error message and flatten lists
+      if (data.isNotEmpty) {
+        final firstValue = data.values.first;
+        if (firstValue is List) {
+          return firstValue.join(' ');
+        }
+        return firstValue.toString();
+      }
+    }
+
+    return fallback;
+  }
+
   Future<Map<String, dynamic>> register({
     required String username,
     required String email,
@@ -27,12 +60,7 @@ class AuthRemoteDataSource {
       );
       return response.data;
     } on DioException catch (e) {
-      final data = e.response?.data;
-      String message = 'Registration failed';
-      if (data is Map<String, dynamic>) {
-        message = data['detail']?.toString() ?? data.values.first.toString();
-      }
-      throw Exception(message);
+      throw Exception(_parseDioError(e, 'Registration failed'));
     }
   }
 
@@ -51,12 +79,7 @@ class AuthRemoteDataSource {
       // Response now contains 'access', 'refresh', and 'user' info
       return response.data;
     } on DioException catch (e) {
-      final data = e.response?.data;
-      String message = 'Login failed';
-      if (data is Map<String, dynamic>) {
-        message = data['detail']?.toString() ?? data.values.first.toString();
-      }
-      throw Exception(message);
+      throw Exception(_parseDioError(e, 'Login failed'));
     }
   }
 

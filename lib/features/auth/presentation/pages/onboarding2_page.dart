@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/neo_button.dart';
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
 
 class Onboarding2Page extends StatelessWidget {
   const Onboarding2Page({super.key});
@@ -56,7 +59,10 @@ class Onboarding2Page extends StatelessWidget {
                 child: NeoButton(
                   text: 'Let\'s Go',
                   color: AppColors.of(context).primary,
-                  onPressed: () => context.go('/signup'),
+                  onPressed: () {
+                    context.read<AuthBloc>().add(const OnboardingCompleted());
+                    context.go('/signup');
+                  },
                 ),
               ),
             ],
