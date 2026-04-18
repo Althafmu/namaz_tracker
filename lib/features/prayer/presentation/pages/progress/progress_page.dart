@@ -34,6 +34,12 @@ class ProgressPage extends StatelessWidget {
               builder: (context, statsState) {
                 return BlocBuilder<StreakBloc, StreakState>(
                   builder: (context, streakState) {
+                    final todayCount = prayerState.prayers
+                        .where((p) => p.isCompleted && !p.isExcused)
+                        .length;
+                    final weeklyCount = historyState.weeklyPrayerCount;
+                    final weeklyPercent = ((weeklyCount / 35) * 100).round();
+
                     return SafeArea(
                       child: SingleChildScrollView(
                         child: Column(
@@ -127,6 +133,49 @@ class ProgressPage extends StatelessWidget {
 
                             const SizedBox(height: 32),
 
+                            // ── Quick Stats ──
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildQuickStat(
+                                      context,
+                                      label: 'Today',
+                                      value: '$todayCount/5',
+                                      icon: Icons.today,
+                                      iconColor: c.jamaat,
+                                      iconBg: c.jamaatLight,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildQuickStat(
+                                      context,
+                                      label: '7 Days',
+                                      value: '$weeklyCount/35',
+                                      icon: Icons.calendar_view_week,
+                                      iconColor: c.primary,
+                                      iconBg: c.primaryLight,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildQuickStat(
+                                      context,
+                                      label: 'Rate',
+                                      value: '$weeklyPercent%',
+                                      icon: Icons.insights,
+                                      iconColor: c.streak,
+                                      iconBg: c.streakLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
                             // ── Monthly Calendar Heatmap ──
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -208,5 +257,52 @@ class ProgressPage extends StatelessWidget {
     message.writeln('Keep up the consistency! 💪');
 
     SharePlus.instance.share(ShareParams(text: message.toString()));
+  }
+
+  Widget _buildQuickStat(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+  }) {
+    final c = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.border, width: 2),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+            child: Icon(icon, size: 16, color: iconColor),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: c.textPrimary,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: c.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

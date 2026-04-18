@@ -43,90 +43,96 @@ class StreakHeader extends StatelessWidget {
 
         return NeoCard(
           color: c.streak,
-          child: SizedBox(
-            height: 80,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // ── Streak Counter ──
-                Icon(
-                  Icons.local_fire_department,
-                  color: c.primary,
-                  size: 36,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  showSoftLanding
-                      ? 'Start again today. Stay consistent.'
-                      : '$streak Day Streak!',
-                  style: AppTextStyles.headlineMedium.copyWith(
-                    letterSpacing: 1.5,
-                    color: const Color(0xFF2B2D42), // Always dark on yellow banner
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.local_fire_department,
+                    color: c.primary,
+                    size: 32,
                   ),
-                ),
-
-                // ── Protector Tokens (Phase 2) ──
-                if (tokens > 0) ...[
-                  const SizedBox(width: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: c.primary.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.shield,
-                          color: const Color(0xFF2B2D42),
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$tokens/$maxTokens',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: const Color(0xFF2B2D42),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      showSoftLanding
+                          ? 'Start again today. Stay consistent.'
+                          : '$streak Day Streak!',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.headlineMedium.copyWith(
+                        letterSpacing: 1.0,
+                        color: const Color(0xFF2B2D42), // Always dark on yellow banner
+                      ),
                     ),
                   ),
                 ],
-
-                // ── Weekly Recovery Tokens (Sprint 1) ──
-                if (weeklyUsed > 0) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: weeklyLimitReached
-                          ? Colors.red.withValues(alpha: 0.3)
-                          : c.primary.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          weeklyLimitReached ? Icons.lock : Icons.refresh,
-                          color: const Color(0xFF2B2D42),
-                          size: 12,
+              ),
+              if (tokens > 0 || weeklyUsed > 0) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (tokens > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: c.primary.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const SizedBox(width: 3),
-                        Text(
-                          '$weeklyRemaining/$weeklyLimit',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: const Color(0xFF2B2D42),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.shield,
+                              color: const Color(0xFF2B2D42),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$tokens/$maxTokens',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: const Color(0xFF2B2D42),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                    if (weeklyUsed > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: weeklyLimitReached
+                              ? Colors.red.withValues(alpha: 0.3)
+                              : c.primary.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              weeklyLimitReached ? Icons.lock : Icons.refresh,
+                              color: const Color(0xFF2B2D42),
+                              size: 12,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '$weeklyRemaining/$weeklyLimit',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: const Color(0xFF2B2D42),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),

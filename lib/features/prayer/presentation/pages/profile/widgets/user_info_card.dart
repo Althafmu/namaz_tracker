@@ -11,11 +11,13 @@ import '../../../../../auth/presentation/bloc/auth_state.dart';
 class UserInfoCard extends StatelessWidget {
   final int displayStreak;
   final VoidCallback onEditTap;
+  final VoidCallback? onStreakTap;
 
   const UserInfoCard({
     super.key,
     required this.displayStreak,
     required this.onEditTap,
+    this.onStreakTap,
   });
 
   @override
@@ -83,45 +85,52 @@ class UserInfoCard extends StatelessWidget {
                         Text(name,
                             style: AppTextStyles.headlineMedium.copyWith(
                               color: onGoldText,
-                            )),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
                         Text(
                           email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: onGoldText.withValues(alpha: 0.7),
                           ),
                         ),
                         const SizedBox(height: 8),
                         // Streak badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: c.surface,
-                            borderRadius:
-                                BorderRadius.circular(9999),
-                            border: Border.all(
-                                color: c.border, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: c.border,
-                                offset: const Offset(2, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                  Icons.local_fire_department,
-                                  color: c.primary,
-                                  size: 16),
-                              const SizedBox(width: 4),
-                              Text(
-                                  '$displayStreak Day Streak!',
-                                  style: AppTextStyles.badge.copyWith(
-                                    color: c.textPrimary,
-                                  )),
-                            ],
+                        GestureDetector(
+                          onTap: onStreakTap,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: c.surface,
+                              borderRadius:
+                                  BorderRadius.circular(9999),
+                              border: Border.all(
+                                  color: c.border, width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: c.border,
+                                  offset: const Offset(2, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                    Icons.local_fire_department,
+                                    color: c.primary,
+                                    size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                    '$displayStreak Day Streak!',
+                                    style: AppTextStyles.badge.copyWith(
+                                      color: c.textPrimary,
+                                    )),
+                              ],
+                            ),
                           ),
                         ),
                       ],
