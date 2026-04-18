@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/neo_card.dart';
+import '../../../../core/services/time_service.dart';
 
 /// A GitHub-style contribution/streak heatmap showing prayer completion
 /// over the past ~3 months (13 weeks). Each cell represents one day;
@@ -31,7 +32,7 @@ class ContributionMap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final now = DateTime.now();
+    final now = TimeService.effectiveNow();
     // We start from the beginning of the week containing (_weeksToShow - 1)
     // weeks ago, so the grid is a neat rectangle.
     // weekday: Mon=1 … Sun=7.
@@ -220,7 +221,7 @@ class ContributionMap extends StatelessWidget {
   }
 
   Widget _buildSummaryRow(AppColorPalette c) {
-    final now = DateTime.now();
+    final now = TimeService.effectiveNow();
     final thirtyDaysAgo = now.subtract(const Duration(days: 30));
     int totalPrayers = 0;
     int activeDays = 0;

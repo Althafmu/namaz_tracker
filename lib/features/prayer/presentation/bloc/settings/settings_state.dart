@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../../core/services/time_service.dart';
 import '../../../domain/entities/prayer_notification_config.dart';
 
 enum IntentLevel {
@@ -76,11 +77,11 @@ class UpgradePromptState extends Equatable {
   bool get canShow {
     if (!dismissed) return true;
     if (lastShownAt == null) return true;
-    return DateTime.now().difference(lastShownAt!).inDays >= 3;
+    return TimeService.effectiveNow().difference(lastShownAt!).inDays >= 3;
   }
 
   UpgradePromptState markShown() {
-    return UpgradePromptState(lastShownAt: DateTime.now(), dismissed: false);
+    return UpgradePromptState(lastShownAt: TimeService.effectiveNow(), dismissed: false);
   }
 
   UpgradePromptState markDismissed() {
@@ -224,6 +225,12 @@ class SettingsState extends Equatable {
       isIntentSet: isIntentSet ?? this.isIntentSet,
       isFallbackIntent: isFallbackIntent ?? this.isFallbackIntent,
     );
+  }
+
+  bool get isExcused {
+    final today = TimeService.effectiveNow();
+    final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    return excusedDays.contains(todayStr);
   }
 
   Map<String, dynamic> toJson() {

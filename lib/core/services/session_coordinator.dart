@@ -9,22 +9,32 @@ import '../../features/auth/presentation/bloc/auth_event.dart';
 import '../../features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import '../../features/prayer/presentation/bloc/settings/settings_event.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
+import 'notification_service_interface.dart';
 
 class SessionCoordinator {
   final AuthBloc authBloc;
   final SettingsBloc settingsBloc;
   final AuthRepository authRepository;
+  final NotificationServiceInterface notificationService;
   StreamSubscription? _authSub;
+  StreamSubscription? _settingsSub;
 
   SessionCoordinator({
     required this.authBloc,
     required this.settingsBloc,
     required this.authRepository,
+    required this.notificationService,
   }) {
     _authSub = authBloc.stream.listen((state) async {
       if (state.status == AuthStatus.loadingConfig) {
         await _hydrateIntent();
         authBloc.add(ConfigLoadComplete());
+      }
+    });
+
+    _settingsSub = settingsBloc.stream.listen((state) {
+      if (state.isExcused) {
+        notificationService.cancelAllNotifications();
       }
     });
   }
@@ -80,5 +90,6 @@ class SessionCoordinator {
 
   void dispose() {
     _authSub?.cancel();
+    _settingsSub?.cancel();
   }
 }

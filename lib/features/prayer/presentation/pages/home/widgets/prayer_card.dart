@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/theme/app_text_styles.dart';
 import '../../../../../../core/widgets/neo_card.dart';
+import '../../../../../../../core/services/time_service.dart';
 import '../../../../domain/entities/prayer.dart';
 
 Color _getPrayerColor(Prayer prayer, AppColorPalette c) {
@@ -249,7 +250,7 @@ class RecoveryPrayerView extends StatelessWidget {
     final recovery = prayer.recoveryState;
     if (recovery == null || recovery.expiresAt == null) return '';
 
-    final remaining = recovery.expiresAt!.difference(DateTime.now());
+    final remaining = recovery.expiresAt!.difference(TimeService.effectiveNow());
     final hoursRemaining = remaining.inHours;
 
     if (hoursRemaining < 4) {
@@ -327,6 +328,9 @@ class ExcusedPrayerView extends StatelessWidget {
       onTap: onTap,
       showTime: showTime,
       cardColor: c.surface, // keeping it flat surface
+      warningMessage: 'This prayer is excused for today',
+      warningColor: c.textSecondary,
+      warningBackgroundColor: c.border,
       customCheckIcon: Container(
         width: 48,
         height: 48,

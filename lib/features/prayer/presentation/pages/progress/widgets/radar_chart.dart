@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../../core/theme/app_colors.dart';
+import '../../../../../../core/services/time_service.dart';
 import '../../../../../prayer/domain/entities/prayer.dart';
 
 /// Radar chart showing prayer completion distribution over the last 7 days.
@@ -74,7 +75,7 @@ class PrayerRadarChart extends StatelessWidget {
   }
 
   Map<String, int> _computeCounts() {
-    final effectiveNow = DateTime.now();
+    final effectiveNow = TimeService.effectiveNow();
     final counts = {'fajr': 0, 'dhuhr': 0, 'asr': 0, 'maghrib': 0, 'isha': 0};
 
     for (int i = 0; i < 7; i++) {

@@ -159,14 +159,45 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     Expanded(
                       child: ListView.builder(
                         padding: EdgeInsets.zero,
-                        itemCount: displayPrayers.length + 1, // +1 for quote
+                        itemCount: displayPrayers.length + 2, // +1 for quote, +1 for late night message
                         itemBuilder: (context, index) {
-                          // Insert motivational quote after Maghrib (index 3)
-                          if (index == 4) {
+                          if (index == 0) {
+                             if (isToday && DateTime.now().hour < 3) {
+                               return Padding(
+                                 padding: const EdgeInsets.only(bottom: 16),
+                                 child: Container(
+                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                   decoration: BoxDecoration(
+                                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                     borderRadius: BorderRadius.circular(12),
+                                     border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+                                   ),
+                                   child: Row(
+                                     children: [
+                                       Icon(Icons.bedtime_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                                       const SizedBox(width: 12),
+                                       Expanded(
+                                         child: Text(
+                                           "Late night? Prayers are still counted towards yesterday's streak until 3:00 AM.",
+                                           style: TextStyle(
+                                             color: Theme.of(context).colorScheme.onSurface,
+                                             fontSize: 13,
+                                           ),
+                                         ),
+                                       ),
+                                     ],
+                                   ),
+                                 ),
+                               );
+                             }
+                             return const SizedBox.shrink();
+                          }
+                          // Insert motivational quote after Maghrib (index 4 taking into account index 0 offset)
+                          if (index == 5) {
                             return const MotivationalBanner();
                           }
-                          final prayerIndex = index > 4 ? index - 1 : index;
-                          if (prayerIndex >= displayPrayers.length) return null;
+                          final prayerIndex = index > 5 ? index - 2 : index - 1;
+                          if (prayerIndex >= displayPrayers.length) return const SizedBox.shrink();
                           final prayer = displayPrayers[prayerIndex];
 
                           return Padding(

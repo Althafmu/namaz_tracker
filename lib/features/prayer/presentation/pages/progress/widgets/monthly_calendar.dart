@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/theme/app_text_styles.dart';
 import '../../../../../../core/widgets/neo_card.dart';
+import '../../../../../../core/services/time_service.dart';
 import '../../../../domain/entities/prayer.dart';
 import '../../../bloc/history/history_bloc.dart';
 import '../../../bloc/history/history_event.dart';
@@ -34,7 +35,7 @@ class MonthlyCalendar extends StatelessWidget {
   }
 
   void _goToNextMonth() {
-    final now = DateTime.now();
+    final now = TimeService.effectiveNow();
     int newMonth = month + 1;
     int newYear = year;
     if (newMonth > 12) {
@@ -54,7 +55,7 @@ class MonthlyCalendar extends StatelessWidget {
     final firstDayOfMonth = DateTime(year, month, 1);
     final daysInMonth = DateUtils.getDaysInMonth(year, month);
     final startWeekday = firstDayOfMonth.weekday; // 1=Monday, 7=Sunday
-    final now = DateTime.now();
+    final now = TimeService.effectiveNow();
     final isCurrentMonth = year == now.year && month == now.month;
     final isFutureBlocked = isCurrentMonth; // Can't go forward past current month
 
