@@ -6,6 +6,7 @@ import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/theme/app_text_styles.dart';
 import '../../../../../../core/widgets/neo_settings_tile.dart';
 import '../../../bloc/settings/settings_bloc.dart';
+import '../../../bloc/settings/settings_event.dart';
 import '../../../bloc/settings/settings_state.dart';
 import 'theme_selection_sheet.dart';
 
@@ -20,7 +21,10 @@ class SettingsList extends StatelessWidget {
     final c = AppColors.of(context);
 
     return BlocBuilder<SettingsBloc, SettingsState>(
-      buildWhen: (prev, curr) => prev.themeMode != curr.themeMode,
+      buildWhen: (prev, curr) =>
+          prev.themeMode != curr.themeMode ||
+          prev.notificationsPausedToday != curr.notificationsPausedToday ||
+          prev.pauseActionStatus != curr.pauseActionStatus,
       builder: (context, settingsState) {
         
         // Determine Theme Title/Subtitle/Icon based on themeMode
@@ -50,6 +54,34 @@ class SettingsList extends StatelessWidget {
               onTap: () {
                 context.go('/settings/notifications');
               },
+            ),
+            const SizedBox(height: 16),
+            NeoSettingsTile(
+              title: 'Pause Notifications Today',
+              subtitle: settingsState.notificationsPausedToday
+                  ? 'Paused for today'
+                  : 'Pause all alerts for the rest of today',
+              icon: settingsState.notificationsPausedToday
+                  ? Icons.notifications_paused
+                  : Icons.notifications_off_outlined,
+              iconColor: settingsState.notificationsPausedToday
+                  ? c.textSecondary
+                  : c.primary,
+              iconBg: settingsState.notificationsPausedToday
+                  ? c.border
+                  : c.primaryLight,
+              isToggle: true,
+              toggleValue: settingsState.notificationsPausedToday,
+              onToggleChanged: settingsState.pauseActionStatus ==
+                      PauseActionStatus.loading
+                  ? null
+                  : (val) {
+                      if (val) {
+                        context
+                            .read<SettingsBloc>()
+                            .add(const PauseNotificationsForToday());
+                      }
+                    },
             ),
             const SizedBox(height: 16),
             NeoSettingsTile(

@@ -73,6 +73,35 @@ void main() {
         );
       });
 
+      test('throws ServerException with apiError on structured error response', () async {
+        final requestOptions = RequestOptions(path: '/api/prayers/today/');
+        final dioError = DioException(
+          type: DioExceptionType.badResponse,
+          requestOptions: requestOptions,
+          response: Response(
+            statusCode: 400,
+            data: {
+              'code': 'PRAYER_ALREADY_LOGGED',
+              'detail': 'This prayer has already been logged.',
+              'field_errors': {},
+            },
+            requestOptions: requestOptions,
+          ),
+        );
+        when(() => mockDataSource.getTodayLog())
+            .thenThrow(dioError);
+
+        try {
+          await repository.getDailyStatus();
+          fail('Expected ServerException');
+        } on ServerException catch (e) {
+          expect(e.apiError, isNotNull);
+          expect(e.apiError!.code, 'PRAYER_ALREADY_LOGGED');
+          expect(e.errorCode, 'PRAYER_ALREADY_LOGGED');
+          expect(e.userMessage, 'This prayer has already been logged.');
+        }
+      });
+
       test('throws NoDataException on 404 error', () async {
         final requestOptions = RequestOptions(path: '/api/prayers/today/');
         final dioError = DioException(

@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_text_styles.dart';
+import '../../../../../core/widgets/neo_card.dart';
 import '../../bloc/prayer/prayer_bloc.dart';
 import '../../bloc/prayer/prayer_state.dart';
 import '../../bloc/history/history_bloc.dart';
@@ -17,6 +18,7 @@ import 'widgets/monthly_calendar.dart';
 import 'widgets/top_reasons.dart';
 import 'widgets/badges_grid.dart';
 import 'widgets/radar_chart.dart';
+import 'widgets/sync_metadata_card.dart';
 
 /// Progress Room — functional version with live data and share.
 class ProgressPage extends StatelessWidget {
@@ -171,6 +173,16 @@ class ProgressPage extends StatelessWidget {
                                     ),
                                   ),
                                 ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // ── Sync Metadata ──
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: SyncMetadataCard(
+                                syncStatus: prayerState.syncStatus,
                               ),
                             ),
 
