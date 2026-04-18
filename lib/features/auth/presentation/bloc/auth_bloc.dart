@@ -21,6 +21,7 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     on<InitAuthRequested>(_onInitAuthRequested);
     on<UpdateProfileRequested>(_onUpdateProfileRequested);
     on<ConfigLoadComplete>(_onConfigLoadComplete);
+    on<OnboardingCompleted>(_onOnboardingCompleted);
   }
 
   Future<void> _onLoginRequested(
@@ -94,6 +95,11 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onInitAuthRequested(InitAuthRequested event, Emitter<AuthState> emit) async {
+    // Do nothing if config hydration is already in progress (e.g. splash page
+    // 1.5 s delay fires a second InitAuthRequested while SessionCoordinator is
+    // still fetching user config — prevents the splash/config loop).
+    if (state.status == AuthStatus.loadingConfig) return;
+
     // Token lives in secure storage, not in HydratedBloc state
     await tokenProvider.loadTokens();
     if (tokenProvider.token != null) {
@@ -134,6 +140,10 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
 
   void _onConfigLoadComplete(ConfigLoadComplete event, Emitter<AuthState> emit) {
     emit(state.copyWith(status: AuthStatus.authenticated));
+  }
+
+  void _onOnboardingCompleted(OnboardingCompleted event, Emitter<AuthState> emit) {
+    emit(state.copyWith(hasSeenOnboarding: true));
   }
 
   @override

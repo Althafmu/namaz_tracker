@@ -64,8 +64,19 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
     final intentSetup = state.uri.path == '/intent-setup';
 
     // While loading or unknown, ensure we stay on splash
-    if (status == AuthStatus.unknown || status == AuthStatus.loading || status == AuthStatus.loadingConfig) {
+    if (status == AuthStatus.unknown || status == AuthStatus.loading) {
       return splash ? null : '/splash';
+    }
+
+    // While config is being hydrated after a successful login/register:
+    // - Stay on splash if coming from a fresh app start (already on splash).
+    // - Stay in place on auth screens so the loading spinner remains visible.
+    // - Redirect to splash if somehow on a protected route (e.g. expired-session).
+    if (status == AuthStatus.loadingConfig) {
+      if (splash || loggingIn || signingUp || onboarding || intentSetup) {
+        return null;
+      }
+      return '/splash';
     }
 
     // If authenticated, don't allow login/signup/onboarding/splash/intent-setup
