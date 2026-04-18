@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -31,7 +33,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late String _lastKnownTodayKey;
-  bool _isListeningForActions = false;
+  StreamSubscription<PrayerState>? _actionMessageSubscription;
 
   @override
   void initState() {
@@ -43,12 +45,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         context.read<PrayerBloc>().add(const LoadDailyStatus());
         _checkMilestones();
         _checkUpgradePrompt();
+        _listenForActionMessages();
+      }
+    });
+  }
+
+  void _listenForActionMessages() {
+    _actionMessageSubscription = context.read<PrayerBloc>().stream.listen((state) {
+      if (state.lastActionMessage != null && mounted) {
+        final isError = state.undoStatus == UndoStatus.error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(state.lastActionMessage!),
+            backgroundColor: isError
+                ? Colors.red.shade700
+                : Colors.green.shade700,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     });
   }
 
   @override
   void dispose() {
+    _actionMessageSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -126,25 +147,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     return BlocBuilder<PrayerBloc, PrayerState>(
       builder: (context, prayerState) {
-        // Listen for action messages (undo success/error)
-        if (!_isListeningForActions) {
-          _isListeningForActions = true;
-          context.read<PrayerBloc>().stream.listen((state) {
-            if (state.lastActionMessage != null && mounted) {
-              final isError = state.undoStatus == UndoStatus.error;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.lastActionMessage!),
-                  backgroundColor: isError
-                      ? Colors.red.shade700
-                      : Colors.green.shade700,
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            }
-          });
-        }
-
         return BlocBuilder<HistoryBloc, HistoryState>(
           builder: (context, historyState) {
             // Determine which prayers to display

@@ -224,7 +224,7 @@ class SettingsState extends Equatable {
     bool? notificationsPausedToday,
     PauseActionStatus? pauseActionStatus,
     String? lastSettingsActionMessage,
-    bool clearSettingsActionMessage = false,
+    bool clearActionMessage = false,
   }) {
     return SettingsState(
       calculationMethod: calculationMethod ?? this.calculationMethod,
@@ -250,7 +250,7 @@ class SettingsState extends Equatable {
       notificationsPausedToday:
           notificationsPausedToday ?? this.notificationsPausedToday,
       pauseActionStatus: pauseActionStatus ?? this.pauseActionStatus,
-      lastSettingsActionMessage: clearSettingsActionMessage
+      lastSettingsActionMessage: clearActionMessage
           ? null
           : (lastSettingsActionMessage ?? this.lastSettingsActionMessage),
     );
