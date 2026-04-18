@@ -9,21 +9,22 @@ import '../../features/auth/presentation/bloc/auth_event.dart';
 import '../../features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import '../../features/prayer/presentation/bloc/settings/settings_event.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
-import 'notification_service_interface.dart';
+import 'prayer_scheduler_service.dart';
 
 class SessionCoordinator {
   final AuthBloc authBloc;
   final SettingsBloc settingsBloc;
   final AuthRepository authRepository;
-  final NotificationServiceInterface notificationService;
+  final PrayerSchedulerService prayerSchedulerService;
   StreamSubscription? _authSub;
   StreamSubscription? _settingsSub;
+  bool? _wasExcused;
 
   SessionCoordinator({
     required this.authBloc,
     required this.settingsBloc,
     required this.authRepository,
-    required this.notificationService,
+    required this.prayerSchedulerService,
   }) {
     _authSub = authBloc.stream.listen((state) async {
       if (state.status == AuthStatus.loadingConfig) {
@@ -33,8 +34,13 @@ class SessionCoordinator {
     });
 
     _settingsSub = settingsBloc.stream.listen((state) {
-      if (state.isExcused) {
-        notificationService.cancelAllNotifications();
+      if (_wasExcused != state.isExcused) {
+        if (state.isExcused) {
+          prayerSchedulerService.cancelAllNotifications();
+        } else {
+          prayerSchedulerService.scheduleNotifications(state);
+        }
+        _wasExcused = state.isExcused;
       }
     });
   }

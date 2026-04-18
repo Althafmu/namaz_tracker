@@ -227,7 +227,7 @@ Future<void> initDependencies() async {
       authBloc: sl(),
       settingsBloc: sl(),
       authRepository: sl(),
-      notificationService: sl(),
+      prayerSchedulerService: sl(),
     ),
   );
 }

@@ -328,7 +328,7 @@ class ExcusedPrayerView extends StatelessWidget {
       onTap: onTap,
       showTime: showTime,
       cardColor: c.surface, // keeping it flat surface
-      warningMessage: 'This prayer is excused for today',
+      warningMessage: 'Marked as excused — not counted in your streak',
       warningColor: c.textSecondary,
       warningBackgroundColor: c.border,
       customCheckIcon: Container(

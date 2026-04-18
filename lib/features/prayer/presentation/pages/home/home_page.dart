@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 
 import '../../../../../core/services/milestone_service.dart';
+import '../../../../../core/services/time_service.dart';
 import '../../bloc/prayer/prayer_bloc.dart';
 import '../../bloc/prayer/prayer_event.dart';
 import '../../bloc/prayer/prayer_state.dart';
@@ -157,58 +158,70 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
                     // ── Prayer List ──
                     Expanded(
-                      child: ListView.builder(
+                      child: ListView(
                         padding: EdgeInsets.zero,
-                        itemCount: displayPrayers.length + 2, // +1 for quote, +1 for late night message
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                             if (isToday && DateTime.now().hour < 3) {
-                               return Padding(
-                                 padding: const EdgeInsets.only(bottom: 16),
-                                 child: Container(
-                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                   decoration: BoxDecoration(
-                                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                     borderRadius: BorderRadius.circular(12),
-                                     border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
-                                   ),
-                                   child: Row(
-                                     children: [
-                                       Icon(Icons.bedtime_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
-                                       const SizedBox(width: 12),
-                                       Expanded(
-                                         child: Text(
-                                           "Late night? Prayers are still counted towards yesterday's streak until 3:00 AM.",
-                                           style: TextStyle(
-                                             color: Theme.of(context).colorScheme.onSurface,
-                                             fontSize: 13,
-                                           ),
-                                         ),
-                                       ),
-                                     ],
-                                   ),
-                                 ),
-                               );
-                             }
-                             return const SizedBox.shrink();
-                          }
-                          // Insert motivational quote after Maghrib (index 4 taking into account index 0 offset)
-                          if (index == 5) {
-                            return const MotivationalBanner();
-                          }
-                          final prayerIndex = index > 5 ? index - 2 : index - 1;
-                          if (prayerIndex >= displayPrayers.length) return const SizedBox.shrink();
-                          final prayer = displayPrayers[prayerIndex];
+                        children: () {
+                          final now = DateTime.now();
+                          final effectiveNow = TimeService.effectiveNow();
+                          final isLateNight = effectiveNow.day != now.day;
+                          final items = <Widget>[];
 
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16, right: 6),
-                            child: PrayerCard(
-                              prayer: prayer,
-                              showTime: !isHistorical,
-                              onTap: () => _showPrayerLogger(context, prayer),
-                            ),
-                          );
-                        },
+                          if (isLateNight) {
+                            items.add(
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.bedtime_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          "Late night? Prayers are still counted towards yesterday's streak until 3:00 AM.",
+                                          style: TextStyle(
+                                            color: Theme.of(context).colorScheme.onSurface,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          for (int i = 0; i < displayPrayers.length; i++) {
+                            final prayer = displayPrayers[i];
+                            items.add(
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16, right: 6),
+                                child: PrayerCard(
+                                  prayer: prayer,
+                                  showTime: !isHistorical,
+                                  onTap: () => _showPrayerLogger(context, prayer),
+                                ),
+                              ),
+                            );
+
+                            if (i == 3) {
+                              // Insert motivational quote after Maghrib
+                              items.add(
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 16, right: 6),
+                                  child: MotivationalBanner(),
+                                ),
+                              );
+                            }
+                          }
+                          return items;
+                        }(),
                       ),
                     ),
                   ],
