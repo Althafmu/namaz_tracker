@@ -352,7 +352,6 @@ class CalculationSettingsPage extends StatelessWidget {
     // Capture blocs BEFORE opening the bottom sheet
     final settingsBloc = context.read<SettingsBloc>();
     final prayerBloc = context.read<PrayerBloc>();
-    final c = AppColors.of(context);
 
     showModalBottomSheet(
       context: context,

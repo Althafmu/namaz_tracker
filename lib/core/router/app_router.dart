@@ -63,9 +63,9 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
     final onboarding = state.uri.path.startsWith('/onboarding');
     final intentSetup = state.uri.path == '/intent-setup';
 
-    // While loading or unknown, stay on splash (or current page)
+    // While loading or unknown, ensure we stay on splash
     if (status == AuthStatus.unknown || status == AuthStatus.loading || status == AuthStatus.loadingConfig) {
-      return null;
+      return splash ? null : '/splash';
     }
 
     // If authenticated, don't allow login/signup/onboarding/splash/intent-setup

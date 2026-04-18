@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
+import '../../../../../core/services/time_service.dart';
 import '../../../domain/entities/prayer.dart';
 
 /// State for the HistoryBloc — manages historical prayer data and calendar navigation.
@@ -23,12 +24,12 @@ class HistoryState extends Equatable {
     int? calendarMonth,
     this.fetchedMonths = const {},
     this.selectedDateStr,
-  })  : calendarYear = calendarYear ?? DateTime.now().year,
-        calendarMonth = calendarMonth ?? DateTime.now().month;
+  })  : calendarYear = calendarYear ?? TimeService.effectiveNow().year,
+        calendarMonth = calendarMonth ?? TimeService.effectiveNow().month;
 
   /// Today's date key for comparisons
   static String get todayKey {
-    final effectiveNow = DateTime.now();
+    final effectiveNow = TimeService.effectiveNow();
     return DateFormat('yyyy-MM-dd').format(effectiveNow);
   }
 
@@ -52,7 +53,7 @@ class HistoryState extends Equatable {
   /// Get the last 7 days' completion percentages for the weekly chart.
   /// Excused prayers are excluded from the count (they don't inflate completion %).
   List<double> get weeklyPercentages {
-    final effectiveNow = DateTime.now();
+    final effectiveNow = TimeService.effectiveNow();
     return List.generate(7, (i) {
       final date = effectiveNow.subtract(Duration(days: 6 - i));
       final key = DateFormat('yyyy-MM-dd').format(date);
@@ -64,7 +65,7 @@ class HistoryState extends Equatable {
 
   /// Total valid prayers completed in the last 7 days (excused excluded).
   int get weeklyPrayerCount {
-    final effectiveNow = DateTime.now();
+    final effectiveNow = TimeService.effectiveNow();
     int total = 0;
     for (int i = 0; i < 7; i++) {
       final date = effectiveNow.subtract(Duration(days: i));
@@ -77,7 +78,7 @@ class HistoryState extends Equatable {
 
   /// Day labels for the last 7 days.
   List<String> get weeklyDayLabels {
-    final effectiveNow = DateTime.now();
+    final effectiveNow = TimeService.effectiveNow();
     return List.generate(7, (i) {
       final date = effectiveNow.subtract(Duration(days: 6 - i));
       return DateFormat('E').format(date).substring(0, 1);

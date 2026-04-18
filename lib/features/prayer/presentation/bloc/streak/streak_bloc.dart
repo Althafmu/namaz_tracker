@@ -6,7 +6,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/errors/exceptions.dart';
-import '../../../../../core/services/prayer_scheduler_service.dart';
+import '../../../../../core/services/time_service.dart';
 import '../../../domain/entities/prayer.dart';
 import '../../../domain/usecases/consume_protector_token_usecase.dart';
 import '../../../domain/usecases/get_streak_usecase.dart';
@@ -120,7 +120,7 @@ class StreakBloc extends HydratedBloc<StreakEvent, StreakState> {
   _LocalStreakCalculation? _calculateLocalStreak(
     Map<String, List<Prayer>> historicalLog,
   ) {
-    final now = DateTime.now();
+    final now = TimeService.effectiveNow();
     final fmt = DateFormat('yyyy-MM-dd');
     final todayKey = fmt.format(now);
     final yesterdayKey = fmt.format(now.subtract(const Duration(days: 1)));
@@ -229,16 +229,12 @@ class StreakBloc extends HydratedBloc<StreakEvent, StreakState> {
       await setExcusedDayUseCase(date: event.date, reason: event.reason);
       final updatedStreak = await getStreakUseCase();
 
-      // Add the excused date to SettingsBloc and suppress notifications
+      // Add the excused date to SettingsBloc to sync state
       try {
         final settingsBloc = GetIt.instance<SettingsBloc>();
         settingsBloc.add(AddExcusedDay(event.date));
-
-        final scheduler = GetIt.instance<PrayerSchedulerService>();
-        await scheduler.cancelAllNotifications();
-        await scheduler.scheduleNotifications(settingsBloc.state);
       } catch (e) {
-        debugPrint('[StreakBloc] Failed to update notification schedule: $e');
+        debugPrint('[StreakBloc] Failed to update settings bloc with excused day: $e');
       }
 
       emit(

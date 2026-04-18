@@ -66,8 +66,8 @@ void main() {
         expect(prayers[0].status, 'on_time');
         expect(prayers[1].status, 'late');
         expect(prayers[2].status, 'missed');
-        expect(prayers[3].status, 'on_time'); // default
-        expect(prayers[4].status, 'on_time'); // default
+        expect(prayers[3].status, 'pending'); // default
+        expect(prayers[4].status, 'pending'); // default
       });
 
       test('parses reason for each prayer', () {
@@ -94,7 +94,7 @@ void main() {
           expect(prayer.isCompleted, false);
           expect(prayer.inJamaat, false);
           expect(prayer.location, 'home');
-          expect(prayer.status, 'on_time');
+          expect(prayer.status, 'pending');
           expect(prayer.reason, null);
         }
       });

@@ -142,15 +142,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     // ── Optional Advanced Modules ──
                     BlocBuilder<SettingsBloc, SettingsState>(
                       builder: (context, settingsState) {
-                        if (settingsState.intentLevel == IntentLevel.foundation) {
-                          return const SizedBox.shrink();
-                        }
                         return Column(
-                          children: const [
-                            StreakHeader(),
-                            SizedBox(height: 16),
-                            WeeklyCalendar(),
-                            SizedBox(height: 24),
+                          children: [
+                            if (settingsState.intentLevel != IntentLevel.foundation) ...[
+                              const StreakHeader(),
+                              const SizedBox(height: 16),
+                            ],
+                            const WeeklyCalendar(),
+                            const SizedBox(height: 24),
                           ],
                         );
                       },

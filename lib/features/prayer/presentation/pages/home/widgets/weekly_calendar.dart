@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../../core/services/time_service.dart';
+
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/widgets/neo_card.dart';
 import '../../../bloc/history/history_bloc.dart';
@@ -43,7 +45,7 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
 
     return BlocBuilder<HistoryBloc, HistoryState>(
       builder: (context, state) {
-        final effectiveNow = DateTime.now();
+        final effectiveNow = TimeService.effectiveNow();
         final todayKey = HistoryState.todayKey;
         final selectedKey = state.selectedDateStr ?? todayKey;
 

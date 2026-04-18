@@ -9,6 +9,7 @@ import '../../../../../core/services/notification_service.dart';
 import '../../../../../core/services/offline_sync_service.dart';
 import '../../../../../core/services/prayer_scheduler_service.dart';
 import '../../../../../core/services/prayer_time_service.dart';
+import '../../../../../core/services/time_service.dart';
 import '../../../domain/entities/prayer.dart';
 import '../../../domain/usecases/log_prayer_usecase.dart';
 import '../../../domain/usecases/get_daily_status_usecase.dart';
@@ -153,7 +154,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       }).toList();
 
       // Update today in HistoryBloc
-      final todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final todayKey = DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
       historyBloc.add(UpdateDayLog(dateStr: todayKey, prayers: merged));
 
       emit(state.copyWith(prayers: merged));
@@ -172,7 +173,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     }
 
     // 3. Trigger history and stats loading in their respective BLoCs
-    final effectiveNow = DateTime.now();
+    final effectiveNow = TimeService.effectiveNow();
     historyBloc.add(LoadMonthHistory(
       year: effectiveNow.year,
       month: effectiveNow.month,
@@ -183,8 +184,8 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
   Future<void> _onLogPrayer(LogPrayer event, Emitter<PrayerState> emit) async {
     // Get the selected date from HistoryBloc
     final effectiveDateKey = historyBloc.state.selectedDateStr ??
-        DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final isToday = effectiveDateKey == DateFormat('yyyy-MM-dd').format(DateTime.now());
+        DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+    final isToday = effectiveDateKey == DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
 
     // 1. Optimistic local update
     final updatedPrayers = state.prayers.map((prayer) {
@@ -288,8 +289,8 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
 
   void _onToggleJamaat(ToggleJamaat event, Emitter<PrayerState> emit) {
     final effectiveDateKey = historyBloc.state.selectedDateStr ??
-        DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final isToday = effectiveDateKey == DateFormat('yyyy-MM-dd').format(DateTime.now());
+        DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+    final isToday = effectiveDateKey == DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
 
     final updatedPrayers = state.prayers.map((prayer) {
       if (prayer.name.toLowerCase() == event.prayerName.toLowerCase()) {

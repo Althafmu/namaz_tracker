@@ -33,6 +33,21 @@ class AppTheme {
           unselectedItemColor: AppColors.light.textSecondary,
           type: BottomNavigationBarType.fixed,
         ),
+        timePickerTheme: TimePickerThemeData(
+          backgroundColor: AppColors.light.surface,
+          hourMinuteTextColor: WidgetStateColor.resolveWith((states) =>
+              states.contains(WidgetState.selected) ? AppColors.light.background : AppColors.light.textPrimary),
+          hourMinuteColor: WidgetStateColor.resolveWith((states) =>
+              states.contains(WidgetState.selected) ? AppColors.light.primary : AppColors.light.background),
+          dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
+              states.contains(WidgetState.selected) ? AppColors.light.background : AppColors.light.textPrimary),
+          dayPeriodColor: WidgetStateColor.resolveWith((states) =>
+              states.contains(WidgetState.selected) ? AppColors.light.primary : AppColors.light.background),
+          dialBackgroundColor: AppColors.light.background,
+          dialHandColor: AppColors.light.primary,
+          dialTextColor: AppColors.light.textPrimary,
+          entryModeIconColor: AppColors.light.primary,
+        ),
       );
 
   static ThemeData get darkTheme => ThemeData(
@@ -65,5 +80,20 @@ class AppTheme {
           type: BottomNavigationBarType.fixed,
         ),
         dividerColor: AppColors.dark.border.withValues(alpha: 0.2),
+        timePickerTheme: TimePickerThemeData(
+          backgroundColor: AppColors.dark.surface,
+          hourMinuteTextColor: WidgetStateColor.resolveWith((states) =>
+              states.contains(WidgetState.selected) ? AppColors.dark.background : AppColors.dark.textPrimary),
+          hourMinuteColor: WidgetStateColor.resolveWith((states) =>
+              states.contains(WidgetState.selected) ? AppColors.dark.primary : AppColors.dark.background),
+          dayPeriodTextColor: WidgetStateColor.resolveWith((states) =>
+              states.contains(WidgetState.selected) ? AppColors.dark.background : AppColors.dark.textPrimary),
+          dayPeriodColor: WidgetStateColor.resolveWith((states) =>
+              states.contains(WidgetState.selected) ? AppColors.dark.primary : AppColors.dark.background),
+          dialBackgroundColor: AppColors.dark.background,
+          dialHandColor: AppColors.dark.primary,
+          dialTextColor: AppColors.dark.textPrimary,
+          entryModeIconColor: AppColors.dark.primary,
+        ),
       );
 }

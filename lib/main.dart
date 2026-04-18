@@ -20,6 +20,8 @@ import 'features/prayer/presentation/bloc/history/history_bloc.dart';
 import 'features/prayer/presentation/bloc/stats/stats_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_state.dart';
+import 'features/prayer/presentation/bloc/streak/streak_bloc.dart';
+import 'features/prayer/presentation/bloc/streak/streak_event.dart';
 import 'injection_container.dart';
 
 /// Flag set when storage corruption is detected and wiped.
@@ -210,6 +212,7 @@ class FalahApp extends StatelessWidget {
         BlocProvider.value(value: sl<SettingsBloc>()),
         BlocProvider.value(value: sl<HistoryBloc>()),
         BlocProvider.value(value: sl<StatsBloc>()),
+        BlocProvider(create: (_) => sl<StreakBloc>()..add(const LoadStreak())),
         BlocProvider(create: (_) => sl<PrayerBloc>()..add(const LoadDailyStatus())),
       ],
       child: BlocBuilder<SettingsBloc, SettingsState>(

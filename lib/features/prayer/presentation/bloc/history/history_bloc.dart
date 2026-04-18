@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 
 import '../../../../../core/errors/exceptions.dart';
+import '../../../../../core/services/time_service.dart';
 import '../../../domain/entities/prayer.dart';
 import '../../../domain/usecases/get_detailed_month_history_usecase.dart';
 import 'history_event.dart';
@@ -29,7 +30,7 @@ class HistoryBloc extends HydratedBloc<HistoryEvent, HistoryState> {
   ) async {
     final monthKey =
         '${event.year}-${event.month.toString().padLeft(2, '0')}';
-    final now = DateTime.now();
+    final now = TimeService.effectiveNow();
     final isCurrentMonth =
         event.year == now.year && event.month == now.month;
 
