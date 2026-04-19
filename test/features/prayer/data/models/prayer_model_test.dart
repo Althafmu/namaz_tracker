@@ -70,6 +70,30 @@ void main() {
         expect(prayers[4].status, 'pending'); // default
       });
 
+      test('normalizes unknown status to pending', () {
+        final response = {
+          'fajr_status': 'unknown_status',
+          'dhuhr_status': 'LATE', // wrong case
+          'asr_status': 'qada',
+        };
+
+        final prayers = PrayerModel.fromApiResponse(response);
+
+        expect(prayers[0].status, 'pending'); // unknown → fallback
+        expect(prayers[1].status, 'pending'); // wrong case → fallback
+        expect(prayers[2].status, 'qada'); // known → kept
+      });
+
+      test('normalizes null status to pending', () {
+        final response = {
+          'fajr_status': null,
+        };
+
+        final prayers = PrayerModel.fromApiResponse(response);
+
+        expect(prayers[0].status, 'pending');
+      });
+
       test('parses reason for each prayer', () {
         final response = {
           'fajr_reason': 'Slept in',
@@ -96,6 +120,42 @@ void main() {
           expect(prayer.location, 'home');
           expect(prayer.status, 'pending');
           expect(prayer.reason, null);
+        }
+      });
+
+      test('handles null location gracefully', () {
+        final response = {
+          'location': null,
+        };
+
+        final prayers = PrayerModel.fromApiResponse(response);
+
+        for (final prayer in prayers) {
+          expect(prayer.location, 'home');
+        }
+      });
+
+      test('handles empty string location gracefully', () {
+        final response = {
+          'location': '',
+        };
+
+        final prayers = PrayerModel.fromApiResponse(response);
+
+        for (final prayer in prayers) {
+          expect(prayer.location, 'home');
+        }
+      });
+
+      test('handles numeric location type gracefully', () {
+        final response = {
+          'location': 123,
+        };
+
+        final prayers = PrayerModel.fromApiResponse(response);
+
+        for (final prayer in prayers) {
+          expect(prayer.location, 'home');
         }
       });
 

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../../core/errors/api_error.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../domain/entities/prayer.dart';
 import '../../domain/entities/streak.dart';
@@ -14,7 +15,7 @@ import '../models/streak_model.dart';
 ///
 /// Error Handling Strategy:
 /// - Network failures (connection refused, timeout) → NetworkException
-/// - Server errors (4xx, 5xx) → ServerException
+/// - Server errors (4xx, 5xx) → ServerException (with structured ApiError)
 /// - BLoCs decide how to handle: use cached data, show error, or retry
 class PrayerRepositoryImpl implements PrayerRepository {
   final PrayerRemoteDataSource remoteDataSource;
@@ -22,6 +23,9 @@ class PrayerRepositoryImpl implements PrayerRepository {
   PrayerRepositoryImpl({required this.remoteDataSource});
 
   /// Converts Dio errors to appropriate AppException types.
+  ///
+  /// Parses the standardized `{code, detail, field_errors}` error contract
+  /// from the backend and attaches it to the [ServerException].
   Never _handleDioError(DioException e, String operation) {
     switch (e.type) {
       case DioExceptionType.connectionError:
@@ -35,10 +39,16 @@ class PrayerRepositoryImpl implements PrayerRepository {
         );
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
+        final apiError = ApiError.fromResponse(
+          e.response?.data,
+          statusCode: statusCode,
+        );
+
         if (statusCode != null && statusCode >= 500) {
           throw ServerException(
             'Server error during $operation ($statusCode)',
             statusCode: statusCode,
+            apiError: apiError,
             originalError: e,
           );
         } else if (statusCode == 404) {
@@ -50,6 +60,7 @@ class PrayerRepositoryImpl implements PrayerRepository {
           throw ServerException(
             'Request failed during $operation ($statusCode)',
             statusCode: statusCode,
+            apiError: apiError,
             originalError: e,
           );
         }
@@ -221,6 +232,53 @@ class PrayerRepositoryImpl implements PrayerRepository {
       _handleDioError(e, 'setExcusedDay');
     } catch (e) {
       throw NetworkException('Unexpected error during setExcusedDay', originalError: e);
+    }
+  }
+
+  // ── Phase 3: New Backend Features ──
+
+  @override
+  Future<List<Prayer>> undoLastPrayerLog() async {
+    try {
+      final data = await remoteDataSource.undoLastPrayerLog();
+      return PrayerModel.fromApiResponse(data);
+    } on DioException catch (e) {
+      _handleDioError(e, 'undoLastPrayerLog');
+    } catch (e) {
+      throw NetworkException('Unexpected error during undoLastPrayerLog', originalError: e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getSyncMetadata() async {
+    try {
+      return await remoteDataSource.getSyncMetadata();
+    } on DioException catch (e) {
+      _handleDioError(e, 'getSyncMetadata');
+    } catch (e) {
+      throw NetworkException('Unexpected error during getSyncMetadata', originalError: e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> pauseNotificationsForToday() async {
+    try {
+      return await remoteDataSource.pauseNotificationsForToday();
+    } on DioException catch (e) {
+      _handleDioError(e, 'pauseNotificationsForToday');
+    } catch (e) {
+      throw NetworkException('Unexpected error during pauseNotificationsForToday', originalError: e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getNotificationsPauseStatus() async {
+    try {
+      return await remoteDataSource.getNotificationsPauseStatus();
+    } on DioException catch (e) {
+      _handleDioError(e, 'getNotificationsPauseStatus');
+    } catch (e) {
+      throw NetworkException('Unexpected error during getNotificationsPauseStatus', originalError: e);
     }
   }
 }

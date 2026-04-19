@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_text_styles.dart';
 import '../../../../../core/widgets/neo_button.dart';
+import '../../../../../core/services/status_helper.dart';
 import '../../../domain/entities/prayer.dart';
 import '../../bloc/prayer/prayer_bloc.dart';
 import '../../bloc/prayer/prayer_event.dart';
@@ -177,7 +178,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                       children: [
                         StatusButton(
                           icon: Icons.schedule,
-                          label: 'On Time',
+                          label: StatusHelper.label('on_time'),
                           color: c.streak,
                           isSelected: _status == 'on_time',
                           onTap: () => setState(() {
@@ -186,7 +187,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                         ),
                         StatusButton(
                           icon: Icons.history,
-                          label: 'Late',
+                          label: StatusHelper.label('late'),
                           color: c.statusLate,
                           isSelected: _status == 'late',
                           onTap: () => setState(() {
@@ -195,7 +196,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                         ),
                         StatusButton(
                           icon: Icons.cancel,
-                          label: 'Missed',
+                          label: StatusHelper.label('missed'),
                           color: c.statusMissed,
                           isSelected: _status == 'missed',
                           onTap: () => setState(() {
@@ -206,7 +207,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                         // Phase 2: Qada status option
                         StatusButton(
                           icon: Icons.autorenew,
-                          label: 'Qada',
+                          label: StatusHelper.label('qada'),
                           color: c.statusQada,
                           isSelected: _status == 'qada',
                           onTap: () => setState(() {

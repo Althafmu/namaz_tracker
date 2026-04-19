@@ -13,8 +13,32 @@ class PrayerModel extends Prayer {
     super.recoveryState,
   });
 
+  /// Validates and normalizes a prayer status string from the backend.
+  ///
+  /// Known values: on_time, late, qada, missed, excused, pending.
+  /// Unknown values fall back to 'pending' to prevent rendering issues.
+  static String _normalizeStatus(dynamic rawStatus) {
+    if (rawStatus == null) return 'pending';
+    final status = rawStatus.toString();
+    const knownStatuses = {
+      'on_time',
+      'late',
+      'qada',
+      'missed',
+      'excused',
+      'pending',
+    };
+    return knownStatuses.contains(status) ? status : 'pending';
+  }
+
   /// Map Django DailyPrayerLog response into a list of PrayerModels.
   /// Parses all per-prayer fields: completed, inJamaat, status, reason, recovery.
+  ///
+  /// Null/missing-field safeguards:
+  /// - All boolean fields default to `false`
+  /// - Status fields are normalized via [_normalizeStatus]
+  /// - Location defaults to `'home'`
+  /// - Recovery data is only parsed if present and valid
   static List<PrayerModel> fromApiResponse(Map<String, dynamic> json) {
     final defaults = Prayer.defaultPrayers();
     final prayerNames = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -25,19 +49,26 @@ class PrayerModel extends Prayer {
 
     return List.generate(5, (i) {
       final key = prayerNames[i];
-      final recoveryData = recoveryMap?[key] as Map<String, dynamic>?;
+      final recoveryData = recoveryMap?[key];
+      final recoveryState = (recoveryData is Map<String, dynamic>)
+          ? RecoveryState.fromJson(recoveryData)
+          : null;
+
+      // Safely cast location — could be null or unexpected type
+      final rawLocation = json['location'];
+      final location = (rawLocation is String && rawLocation.isNotEmpty)
+          ? rawLocation
+          : 'home';
 
       return PrayerModel(
         name: displayNames[i],
         timeRange: defaults[i].timeRange,
         isCompleted: json[key] as bool? ?? false,
         inJamaat: json['${key}_in_jamaat'] as bool? ?? false,
-        location: json['location'] as String? ?? 'home',
-        status: json['${key}_status'] as String? ?? 'pending',
+        location: location,
+        status: _normalizeStatus(json['${key}_status']),
         reason: json['${key}_reason'] as String?,
-        recoveryState: recoveryData != null
-            ? RecoveryState.fromJson(recoveryData)
-            : null,
+        recoveryState: recoveryState,
       );
     });
   }

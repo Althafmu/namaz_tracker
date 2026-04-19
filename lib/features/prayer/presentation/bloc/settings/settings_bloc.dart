@@ -1,18 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import '../../../../../core/errors/exceptions.dart';
 import '../../../../../core/services/notification_service.dart';
 import '../../../../auth/domain/repositories/auth_repository.dart';
 import '../../../domain/entities/prayer_notification_config.dart';
+import '../../../domain/usecases/pause_notifications_for_today_usecase.dart';
+import '../../../domain/usecases/get_notifications_pause_status_usecase.dart';
 import 'settings_event.dart';
 import 'settings_state.dart';
 
 class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
   final NotificationService notificationService;
   final AuthRepository? authRepository;
+  final PauseNotificationsForTodayUseCase? pauseNotificationsForTodayUseCase;
+  final GetNotificationsPauseStatusUseCase? getNotificationsPauseStatusUseCase;
 
   SettingsBloc({
     required this.notificationService,
     this.authRepository,
+    this.pauseNotificationsForTodayUseCase,
+    this.getNotificationsPauseStatusUseCase,
   }) : super(const SettingsState()) {
     on<UpdateCalculationSettings>(_onUpdateCalculationSettings);
     on<UpdatePrayerNotificationConfig>(_onUpdatePrayerNotificationConfig);
@@ -32,6 +39,8 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     on<UpdateStreakHistory>(_onUpdateStreakHistory);
     on<MarkMilestoneShown>(_onMarkMilestoneShown);
     on<DismissUpgradePrompt>(_onDismissUpgradePrompt);
+    on<PauseNotificationsForToday>(_onPauseNotificationsForToday);
+    on<LoadNotificationsPauseStatus>(_onLoadNotificationsPauseStatus);
   }
 
   void _onUpdateCalculationSettings(
@@ -228,6 +237,62 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     emit(state.copyWith(upgradePrompt: state.upgradePrompt.markDismissed()));
+  }
+
+  Future<void> _onPauseNotificationsForToday(
+    PauseNotificationsForToday event,
+    Emitter<SettingsState> emit,
+  ) async {
+    if (pauseNotificationsForTodayUseCase == null) {
+      emit(state.copyWith(
+        pauseActionStatus: PauseActionStatus.error,
+        lastSettingsActionMessage: 'Pause notifications is not available.',
+      ));
+      return;
+    }
+
+    emit(state.copyWith(pauseActionStatus: PauseActionStatus.loading));
+
+    try {
+      await pauseNotificationsForTodayUseCase!();
+      emit(state.copyWith(
+        notificationsPausedToday: true,
+        pauseActionStatus: PauseActionStatus.success,
+        lastSettingsActionMessage: 'Notifications paused for today.',
+      ));
+    } on ServerException catch (e) {
+      emit(state.copyWith(
+        pauseActionStatus: PauseActionStatus.error,
+        lastSettingsActionMessage: e.userMessage,
+      ));
+    } on NetworkException catch (e) {
+      emit(state.copyWith(
+        pauseActionStatus: PauseActionStatus.error,
+        lastSettingsActionMessage: 'Network error. Please check your connection.',
+      ));
+      debugPrint('[SettingsBloc] Network error pausing notifications: ${e.message}');
+    } catch (e) {
+      emit(state.copyWith(
+        pauseActionStatus: PauseActionStatus.error,
+        lastSettingsActionMessage: 'Failed to pause notifications.',
+      ));
+      debugPrint('[SettingsBloc] Unexpected error pausing notifications: $e');
+    }
+  }
+
+  Future<void> _onLoadNotificationsPauseStatus(
+    LoadNotificationsPauseStatus event,
+    Emitter<SettingsState> emit,
+  ) async {
+    if (getNotificationsPauseStatusUseCase == null) return;
+
+    try {
+      final result = await getNotificationsPauseStatusUseCase!();
+      final isPaused = result['is_paused'] as bool? ?? false;
+      emit(state.copyWith(notificationsPausedToday: isPaused));
+    } catch (e) {
+      debugPrint('[SettingsBloc] Error loading pause status: $e');
+    }
   }
 
   @override

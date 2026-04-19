@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -31,6 +33,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late String _lastKnownTodayKey;
+  StreamSubscription<PrayerState>? _actionMessageSubscription;
 
   @override
   void initState() {
@@ -42,12 +45,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         context.read<PrayerBloc>().add(const LoadDailyStatus());
         _checkMilestones();
         _checkUpgradePrompt();
+        _listenForActionMessages();
+      }
+    });
+  }
+
+  void _listenForActionMessages() {
+    _actionMessageSubscription = context.read<PrayerBloc>().stream.listen((state) {
+      if (state.lastActionMessage != null && mounted) {
+        final isError = state.undoStatus == UndoStatus.error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(state.lastActionMessage!),
+            backgroundColor: isError
+                ? Colors.red.shade700
+                : Colors.green.shade700,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     });
   }
 
   @override
   void dispose() {
+    _actionMessageSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -213,6 +235,49 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               );
                             }
                           }
+
+                          // Undo button (only for today, when there are completed prayers)
+                          if (isToday &&
+                              displayPrayers.any((p) => p.isCompleted)) {
+                            items.add(
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    bottom: 16, right: 6),
+                                child: Center(
+                                  child: TextButton.icon(
+                                    onPressed: prayerState.undoStatus ==
+                                            UndoStatus.loading
+                                        ? null
+                                        : () {
+                                            context.read<PrayerBloc>().add(
+                                                const UndoLastPrayerLog());
+                                          },
+                                    icon: prayerState.undoStatus ==
+                                            UndoStatus.loading
+                                        ? SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child:
+                                                CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                            ),
+                                          )
+                                        : const Icon(Icons.undo, size: 18),
+                                    label: Text(
+                                      prayerState.undoStatus ==
+                                              UndoStatus.loading
+                                          ? 'Undoing...'
+                                          : 'Undo Last Log',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
                           return items;
                         }(),
                       ),

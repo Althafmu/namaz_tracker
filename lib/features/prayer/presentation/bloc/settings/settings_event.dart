@@ -169,3 +169,13 @@ class MarkMilestoneShown extends SettingsEvent {
 class DismissUpgradePrompt extends SettingsEvent {
   const DismissUpgradePrompt();
 }
+
+/// Pause all notifications for the remainder of today.
+class PauseNotificationsForToday extends SettingsEvent {
+  const PauseNotificationsForToday();
+}
+
+/// Load the current pause-notifications-for-today status from the backend.
+class LoadNotificationsPauseStatus extends SettingsEvent {
+  const LoadNotificationsPauseStatus();
+}

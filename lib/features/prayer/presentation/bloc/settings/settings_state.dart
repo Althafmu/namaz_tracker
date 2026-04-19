@@ -108,6 +108,9 @@ class UpgradePromptState extends Equatable {
   List<Object?> get props => [lastShownAt, dismissed];
 }
 
+/// Status of the pause-notifications action.
+enum PauseActionStatus { idle, loading, success, error }
+
 class SettingsState extends Equatable {
   final String calculationMethod;
   final bool useHanafi;
@@ -143,6 +146,15 @@ class SettingsState extends Equatable {
   final bool isIntentSet;
   final bool isFallbackIntent;
   final bool isInitialized;
+
+  /// Whether notifications are paused for today (backend-synced).
+  final bool notificationsPausedToday;
+
+  /// Status of the pause-notifications-for-today action.
+  final PauseActionStatus pauseActionStatus;
+
+  /// Message to display after a settings action.
+  final String? lastSettingsActionMessage;
 
   const SettingsState({
     this.calculationMethod = 'MWL',
@@ -184,6 +196,9 @@ class SettingsState extends Equatable {
     this.isIntentSet = false,
     this.isFallbackIntent = false,
     this.isInitialized = false,
+    this.notificationsPausedToday = false,
+    this.pauseActionStatus = PauseActionStatus.idle,
+    this.lastSettingsActionMessage,
   });
 
   SettingsState copyWith({
@@ -206,6 +221,10 @@ class SettingsState extends Equatable {
     bool? isIntentSet,
     bool? isFallbackIntent,
     bool? isInitialized,
+    bool? notificationsPausedToday,
+    PauseActionStatus? pauseActionStatus,
+    String? lastSettingsActionMessage,
+    bool clearActionMessage = false,
   }) {
     return SettingsState(
       calculationMethod: calculationMethod ?? this.calculationMethod,
@@ -228,6 +247,12 @@ class SettingsState extends Equatable {
       isIntentSet: isIntentSet ?? this.isIntentSet,
       isFallbackIntent: isFallbackIntent ?? this.isFallbackIntent,
       isInitialized: isInitialized ?? this.isInitialized,
+      notificationsPausedToday:
+          notificationsPausedToday ?? this.notificationsPausedToday,
+      pauseActionStatus: pauseActionStatus ?? this.pauseActionStatus,
+      lastSettingsActionMessage: clearActionMessage
+          ? null
+          : (lastSettingsActionMessage ?? this.lastSettingsActionMessage),
     );
   }
 
@@ -260,6 +285,7 @@ class SettingsState extends Equatable {
       'isIntentSet': isIntentSet,
       'isFallbackIntent': isFallbackIntent,
       'isInitialized': isInitialized,
+      'notificationsPausedToday': notificationsPausedToday,
     };
   }
 
@@ -359,6 +385,7 @@ excusedDays: (json['excusedDays'] as List<dynamic>?)
       isIntentSet: json['isIntentSet'] as bool? ?? false,
       isFallbackIntent: json['isFallbackIntent'] as bool? ?? false,
       isInitialized: true,
+      notificationsPausedToday: json['notificationsPausedToday'] as bool? ?? false,
     );
   }
 
@@ -382,5 +409,8 @@ excusedDays: (json['excusedDays'] as List<dynamic>?)
         upgradePrompt,
         isIntentSet,
         isFallbackIntent,
+        notificationsPausedToday,
+        pauseActionStatus,
+        lastSettingsActionMessage,
       ];
 }

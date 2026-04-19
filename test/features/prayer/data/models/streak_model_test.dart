@@ -63,6 +63,44 @@ void main() {
         expect(streak.lastCompletedDate, null);
         expect(streak.displayStreak, 0);
       });
+
+      test('handles double values for numeric fields', () {
+        final response = {
+          'current_streak': 7.0,
+          'longest_streak': 14.0,
+          'display_streak': 7.0,
+        };
+
+        final streak = StreakModel.fromApiResponse(response);
+
+        expect(streak.currentStreak, 7);
+        expect(streak.longestStreak, 14);
+        expect(streak.displayStreak, 7);
+      });
+
+      test('handles string values for numeric fields', () {
+        final response = {
+          'current_streak': '5',
+          'longest_streak': '10',
+        };
+
+        final streak = StreakModel.fromApiResponse(response);
+
+        expect(streak.currentStreak, 5);
+        expect(streak.longestStreak, 10);
+      });
+
+      test('handles invalid string values with defaults', () {
+        final response = {
+          'current_streak': 'abc',
+          'longest_streak': null,
+        };
+
+        final streak = StreakModel.fromApiResponse(response);
+
+        expect(streak.currentStreak, 0);
+        expect(streak.longestStreak, 0);
+      });
     });
 
     group('constructor', () {

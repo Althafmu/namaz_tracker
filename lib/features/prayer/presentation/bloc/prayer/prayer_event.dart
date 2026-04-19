@@ -73,3 +73,8 @@ class SyncWithServer extends PrayerEvent {
 class RefreshPrayersAndAlarms extends PrayerEvent {
   const RefreshPrayersAndAlarms();
 }
+
+/// Undo the last prayer log action.
+class UndoLastPrayerLog extends PrayerEvent {
+  const UndoLastPrayerLog();
+}

@@ -20,6 +20,10 @@ import 'features/prayer/domain/usecases/get_reason_summary_usecase.dart';
 import 'features/prayer/domain/usecases/log_prayer_usecase.dart';
 import 'features/prayer/domain/usecases/consume_protector_token_usecase.dart';
 import 'features/prayer/domain/usecases/set_excused_day_usecase.dart';
+import 'features/prayer/domain/usecases/undo_last_prayer_log_usecase.dart';
+import 'features/prayer/domain/usecases/get_sync_metadata_usecase.dart';
+import 'features/prayer/domain/usecases/pause_notifications_for_today_usecase.dart';
+import 'features/prayer/domain/usecases/get_notifications_pause_status_usecase.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'features/prayer/presentation/bloc/history/history_bloc.dart';
@@ -170,6 +174,11 @@ Future<void> initDependencies() async {
   // Phase 2: Streak Freeze System
   sl.registerLazySingleton(() => ConsumeProtectorTokenUseCase(sl()));
   sl.registerLazySingleton(() => SetExcusedDayUseCase(sl()));
+  // Phase 3: New Backend Features
+  sl.registerLazySingleton(() => UndoLastPrayerLogUseCase(sl()));
+  sl.registerLazySingleton(() => GetSyncMetadataUseCase(sl()));
+  sl.registerLazySingleton(() => PauseNotificationsForTodayUseCase(sl()));
+  sl.registerLazySingleton(() => GetNotificationsPauseStatusUseCase(sl()));
 
   // ── Domain Services ──
   sl.registerLazySingleton(
@@ -184,6 +193,8 @@ Future<void> initDependencies() async {
     () => SettingsBloc(
       notificationService: sl(),
       authRepository: sl(),
+      pauseNotificationsForTodayUseCase: sl(),
+      getNotificationsPauseStatusUseCase: sl(),
     ),
   );
 
@@ -208,6 +219,7 @@ Future<void> initDependencies() async {
     () => PrayerBloc(
       logPrayerUseCase: sl(),
       getDailyStatusUseCase: sl(),
+      undoLastPrayerLogUseCase: sl(),
       offlineSyncService: sl(),
       prayerSchedulerService: sl(),
       notificationService: sl(),

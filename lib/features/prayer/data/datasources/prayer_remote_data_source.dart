@@ -103,4 +103,34 @@ class PrayerRemoteDataSource {
     );
     return response.data as Map<String, dynamic>;
   }
+
+  // ── Phase 3: New Backend Features ──
+
+  /// POST /api/prayers/undo/
+  /// Undo the last prayer log. Returns the updated daily prayer log.
+  Future<Map<String, dynamic>> undoLastPrayerLog() async {
+    final response = await dio.post('/api/prayers/undo/');
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// GET /api/sync/metadata/
+  /// Retrieve sync metadata (last sync time, source, conflict info).
+  Future<Map<String, dynamic>> getSyncMetadata() async {
+    final response = await dio.get('/api/sync/metadata/');
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// POST /api/notifications/pause-today/
+  /// Pause all notifications for the remainder of today.
+  Future<Map<String, dynamic>> pauseNotificationsForToday() async {
+    final response = await dio.post('/api/notifications/pause-today/');
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// GET /api/notifications/pause-today/
+  /// Check if notifications are paused for today.
+  Future<Map<String, dynamic>> getNotificationsPauseStatus() async {
+    final response = await dio.get('/api/notifications/pause-today/');
+    return response.data as Map<String, dynamic>;
+  }
 }
