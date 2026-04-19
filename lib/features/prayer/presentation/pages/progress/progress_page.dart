@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../../core/services/time_service.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_text_styles.dart';
 import '../../../../../core/widgets/neo_card.dart';
@@ -13,12 +15,12 @@ import '../../bloc/stats/stats_bloc.dart';
 import '../../bloc/stats/stats_state.dart';
 import '../../bloc/streak/streak_bloc.dart';
 import '../../bloc/streak/streak_state.dart';
-import 'widgets/streak_ring_painter.dart';
 import 'widgets/monthly_calendar.dart';
 import 'widgets/top_reasons.dart';
 import 'widgets/badges_grid.dart';
 import 'widgets/radar_chart.dart';
 import 'widgets/sync_metadata_card.dart';
+import 'widgets/weekly_chart.dart';
 
 /// Progress Room — functional version with live data and share.
 class ProgressPage extends StatelessWidget {
@@ -42,6 +44,17 @@ class ProgressPage extends StatelessWidget {
                     final weeklyCount = historyState.weeklyPrayerCount;
                     final weeklyPercent = ((weeklyCount / 35) * 100).round();
 
+                    // Total lifetime prayers logged
+                    final totalLogged = historyState.historicalLog.values.fold<int>(
+                      0,
+                      (sum, prayers) =>
+                          sum + prayers.where((p) => p.isCompleted && !p.isExcused).length,
+                    );
+                    // Total days with at least one prayer
+                    final totalDays = historyState.historicalLog.entries
+                        .where((e) => e.value.any((p) => p.isCompleted && !p.isExcused))
+                        .length;
+
                     return SafeArea(
                       child: SingleChildScrollView(
                         child: Column(
@@ -54,7 +67,7 @@ class ProgressPage extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Progress Room',
+                                    'Your Progress',
                                     style: AppTextStyles.headlineMedium.copyWith(
                                       color: c.textPrimary,
                                     ),
@@ -89,53 +102,9 @@ class ProgressPage extends StatelessWidget {
                               ),
                             ),
 
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 20),
 
-                            // ── Hero Streak Ring ──
-                            Center(
-                              child: SizedBox(
-                                width: 200,
-                                height: 200,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    CustomPaint(
-                                      size: const Size(200, 200),
-                                      painter: StreakRingPainter(
-                                        prayers: prayerState.prayers,
-                                        colors: c,
-                                      ),
-                                    ),
-                                    Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.local_fire_department,
-                                          color: c.streak,
-                                          size: 36,
-                                        ),
-                                        Text(
-                                          '${streakState.streak.displayStreak}',
-                                          style: AppTextStyles.streakNumber.copyWith(
-                                            color: c.textPrimary,
-                                          ),
-                                        ),
-                                        Text(
-                                          'DAY STREAK',
-                                          style: AppTextStyles.sectionHeader.copyWith(
-                                            color: c.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 32),
-
-                            // ── Quick Stats ──
+                            // ── Summary Stats Row ──
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 24),
                               child: Row(
@@ -176,7 +145,59 @@ class ProgressPage extends StatelessWidget {
                               ),
                             ),
 
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 12),
+
+                            // ── Lifetime stats row ──
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildQuickStat(
+                                      context,
+                                      label: 'Total Logged',
+                                      value: '$totalLogged',
+                                      icon: Icons.check_circle_outline,
+                                      iconColor: c.success,
+                                      iconBg: c.jamaatLight,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _buildQuickStat(
+                                      context,
+                                      label: 'Days Tracked',
+                                      value: '$totalDays',
+                                      icon: Icons.calendar_today,
+                                      iconColor: c.primary,
+                                      iconBg: c.primaryLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // ── Streak Cards ──
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: _buildStreakCards(context, c, streakState, historyState),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // ── Weekly Bar Chart ──
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              child: WeeklyChart(
+                                percentages: historyState.weeklyPercentages,
+                                dayLabels: historyState.weeklyDayLabels,
+                                totalPrayers: weeklyCount,
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
 
                             // ── Sync Metadata ──
                             Padding(
@@ -186,7 +207,7 @@ class ProgressPage extends StatelessWidget {
                               ),
                             ),
 
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 20),
 
                             // ── Monthly Calendar Heatmap ──
                             Padding(
@@ -199,7 +220,7 @@ class ProgressPage extends StatelessWidget {
                               ),
                             ),
 
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 20),
 
                             // ── Radar Chart ──
                             Padding(
@@ -210,7 +231,7 @@ class ProgressPage extends StatelessWidget {
                               ),
                             ),
 
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 20),
 
                             // ── Top Reasons ──
                             Padding(
@@ -218,7 +239,7 @@ class ProgressPage extends StatelessWidget {
                               child: TopReasons(reasonCounts: statsState.reasonCounts),
                             ),
 
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 28),
 
                             // ── Badges ──
                             Padding(
@@ -251,6 +272,143 @@ class ProgressPage extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  /// Streak cards: Daily Streak (orange) + Best Streak (green) with weekly dots.
+  Widget _buildStreakCards(
+    BuildContext context,
+    AppColorPalette c,
+    StreakState streakState,
+    HistoryState historyState,
+  ) {
+    final streak = streakState.streak.displayStreak;
+    final best = streakState.streak.longestStreak;
+
+    // Weekly dots: last 7 days (Mon-Sun or similar)
+    final effectiveNow = TimeService.effectiveNow();
+    final weekDots = List.generate(7, (i) {
+      final date = effectiveNow.subtract(Duration(days: 6 - i));
+      final key = DateFormat('yyyy-MM-dd').format(date);
+      final prayers = historyState.historicalLog[key] ?? [];
+      final completed = prayers.where((p) => p.isCompleted && !p.isExcused).length;
+      return completed >= 5; // full day = all 5 prayers done
+    });
+    final weekLabels = List.generate(7, (i) {
+      final date = effectiveNow.subtract(Duration(days: 6 - i));
+      return DateFormat('E').format(date).substring(0, 1);
+    });
+
+    return Row(
+      children: [
+        // Daily streak card
+        Expanded(
+          child: NeoCard(
+            color: c.streakLight,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.local_fire_department, color: c.streak, size: 20),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Daily Streak',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: c.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$streak',
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    color: c.textPrimary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Weekly dots
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(7, (i) {
+                    return Column(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: weekDots[i] ? c.streak : c.border.withValues(alpha: 0.2),
+                            border: Border.all(
+                              color: weekDots[i] ? c.streak : c.border.withValues(alpha: 0.4),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          weekLabels[i],
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontSize: 9,
+                            color: c.textSecondary,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        // Best streak card
+        Expanded(
+          child: NeoCard(
+            color: c.jamaatLight,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.emoji_events, color: c.jamaat, size: 20),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Best Streak',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: c.textSecondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$best',
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    color: c.textPrimary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  best > 0 ? 'Personal best achieved 🏆' : 'Start your streak today!',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: c.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

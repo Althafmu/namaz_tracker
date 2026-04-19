@@ -7,6 +7,7 @@ import '../../features/prayer/presentation/bloc/settings/settings_state.dart';
 import '../../features/prayer/presentation/pages/home/home_page.dart';
 import '../../features/prayer/presentation/pages/progress/progress_page.dart';
 import '../../features/prayer/presentation/pages/profile/settings_page.dart';
+import '../../features/prayer/presentation/pages/streak/streak_page.dart';
 import '../../features/prayer/presentation/pages/settings/notifications_settings_page.dart';
 import '../../features/prayer/presentation/pages/settings/calculation_settings_page.dart';
 import '../../features/prayer/presentation/pages/settings/reasons_settings_page.dart';
@@ -136,6 +137,10 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
     GoRoute(
       path: '/signup',
       builder: (context, state) => const SignupPage(),
+    ),
+    GoRoute(
+      path: '/streak',
+      builder: (context, state) => const StreakPage(),
     ),
     ShellRoute(
       builder: (context, state, child) => _AppShell(child: child),
