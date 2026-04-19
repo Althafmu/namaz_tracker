@@ -399,7 +399,7 @@ class ProgressPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  best > 0 ? 'Personal best\nachieved 🏆' : 'Start your\nstreak today!',
+                  best > 0 ? 'Personal best achieved 🏆' : 'Start your streak today!',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: c.textSecondary,
                   ),
