@@ -24,12 +24,7 @@ class _ExcusedDayDialogState extends State<ExcusedDayDialog> {
   String? _selectedReason;
   bool _isLoading = false;
 
-  final List<String> _reasons = [
-    'Travel',
-    'Sickness',
-    'Period',
-    'Other',
-  ];
+  final List<String> _reasons = ['Travel', 'Sickness', 'Period', 'Other'];
 
   @override
   Widget build(BuildContext context) {
@@ -44,12 +39,7 @@ class _ExcusedDayDialogState extends State<ExcusedDayDialog> {
           color: c.background,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: c.border, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: c.border,
-              offset: const Offset(4, 4),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: c.border, offset: const Offset(4, 4))],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -61,11 +51,7 @@ class _ExcusedDayDialogState extends State<ExcusedDayDialog> {
                 color: c.statusAlone.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.event_busy,
-                size: 48,
-                color: c.statusAlone,
-              ),
+              child: Icon(Icons.event_busy, size: 48, color: c.statusAlone),
             ),
 
             const SizedBox(height: 20),
@@ -84,9 +70,7 @@ class _ExcusedDayDialogState extends State<ExcusedDayDialog> {
             // ── Date ──
             Text(
               widget.date,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: c.textSecondary,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
             ),
 
             const SizedBox(height: 16),
@@ -94,9 +78,7 @@ class _ExcusedDayDialogState extends State<ExcusedDayDialog> {
             // ── Description ──
             Text(
               'Your streak will be frozen for this day. Excused days are excluded from analytics.',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: c.textSecondary,
-              ),
+              style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
               textAlign: TextAlign.center,
             ),
 
@@ -120,7 +102,10 @@ class _ExcusedDayDialogState extends State<ExcusedDayDialog> {
                     _selectedReason = reason.toLowerCase();
                   }),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected ? c.primary : c.surface,
                       borderRadius: BorderRadius.circular(9999),
@@ -128,7 +113,10 @@ class _ExcusedDayDialogState extends State<ExcusedDayDialog> {
                       boxShadow: isSelected
                           ? []
                           : [
-                              BoxShadow(color: c.border, offset: const Offset(2, 2)),
+                              BoxShadow(
+                                color: c.border,
+                                offset: const Offset(2, 2),
+                              ),
                             ],
                     ),
                     child: Text(
@@ -185,10 +173,7 @@ class _ExcusedDayDialogState extends State<ExcusedDayDialog> {
     final streakBloc = context.read<StreakBloc>();
     final navigator = Navigator.of(context);
 
-    streakBloc.add(SetExcusedDay(
-      date: widget.date,
-      reason: _selectedReason,
-    ));
+    streakBloc.add(SetExcusedDay(date: widget.date, reason: _selectedReason));
 
     // Wait for the state to update
     await Future.delayed(const Duration(milliseconds: 500));
@@ -196,14 +181,5 @@ class _ExcusedDayDialogState extends State<ExcusedDayDialog> {
     if (mounted) {
       navigator.pop(true);
     }
-  }
-
-  /// Shows the excused day dialog and returns true if confirmed.
-  static Future<bool?> show(BuildContext context, {required String date}) {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => ExcusedDayDialog(date: date),
-    );
   }
 }

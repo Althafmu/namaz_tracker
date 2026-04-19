@@ -1,5 +1,3 @@
-import 'package:intl/intl.dart';
-
 class TimeService {
   /// Returns the current effective time.
   /// If the actual time is before 3:00 AM, it's considered part of the previous logic day.
@@ -24,7 +22,7 @@ class TimeService {
     final now = DateTime.now();
     final effective = effectiveNow();
     return effective.day != now.day ||
-           effective.month != now.month ||
-           effective.year != now.year;
+        effective.month != now.month ||
+        effective.year != now.year;
   }
 }

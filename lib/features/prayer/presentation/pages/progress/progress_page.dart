@@ -3,14 +3,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../../core/services/status_helper.dart';
 import '../../../../../core/services/time_service.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_text_styles.dart';
 import '../../../../../core/widgets/neo_card.dart';
+import '../../../domain/entities/prayer.dart';
 import '../../bloc/prayer/prayer_bloc.dart';
 import '../../bloc/prayer/prayer_state.dart';
 import '../../bloc/history/history_bloc.dart';
 import '../../bloc/history/history_state.dart';
+import '../../bloc/settings/settings_bloc.dart';
 import '../../bloc/stats/stats_bloc.dart';
 import '../../bloc/stats/stats_state.dart';
 import '../../bloc/streak/streak_bloc.dart';
@@ -29,6 +32,7 @@ class ProgressPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final settingsState = context.watch<SettingsBloc>().state;
 
     return BlocBuilder<PrayerBloc, PrayerState>(
       builder: (context, prayerState) {
@@ -38,21 +42,58 @@ class ProgressPage extends StatelessWidget {
               builder: (context, statsState) {
                 return BlocBuilder<StreakBloc, StreakState>(
                   builder: (context, streakState) {
+                    // Show loading state while prayers are being fetched
+                    if (prayerState.isLoading && prayerState.prayers.isEmpty) {
+                      return SafeArea(
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(color: c.primary),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Loading your progress...',
+                                style: TextStyle(
+                                  color: c.textSecondary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
                     final todayCount = prayerState.prayers
                         .where((p) => p.isCompleted && !p.isExcused)
                         .length;
                     final weeklyCount = historyState.weeklyPrayerCount;
                     final weeklyPercent = ((weeklyCount / 35) * 100).round();
+                    final mergedHistoricalLog = _mergeTodayIntoHistory(
+                      historyState.historicalLog,
+                      prayerState.prayers,
+                    );
+                    final qadaAnalytics = _buildQadaAnalytics(
+                      mergedHistoricalLog,
+                      prayerState.prayers,
+                    );
 
                     // Total lifetime prayers logged
-                    final totalLogged = historyState.historicalLog.values.fold<int>(
-                      0,
-                      (sum, prayers) =>
-                          sum + prayers.where((p) => p.isCompleted && !p.isExcused).length,
-                    );
+                    final totalLogged = mergedHistoricalLog.values
+                        .fold<int>(
+                          0,
+                          (sum, prayers) =>
+                              sum +
+                              prayers
+                                  .where((p) => p.isCompleted && !p.isExcused)
+                                  .length,
+                        );
                     // Total days with at least one prayer
-                    final totalDays = historyState.historicalLog.entries
-                        .where((e) => e.value.any((p) => p.isCompleted && !p.isExcused))
+                      final totalDays = mergedHistoricalLog.entries
+                        .where(
+                          (e) =>
+                              e.value.any((p) => p.isCompleted && !p.isExcused),
+                        )
                         .length;
 
                     return SafeArea(
@@ -64,16 +105,21 @@ class ProgressPage extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'Your Progress',
-                                    style: AppTextStyles.headlineMedium.copyWith(
-                                      color: c.textPrimary,
-                                    ),
+                                    style: AppTextStyles.headlineMedium
+                                        .copyWith(color: c.textPrimary),
                                   ),
                                   GestureDetector(
-                                    onTap: () => _shareProgress(context, streakState, historyState, prayerState),
+                                    onTap: () => _shareProgress(
+                                      context,
+                                      streakState,
+                                      historyState,
+                                      prayerState,
+                                    ),
                                     child: Container(
                                       width: 40,
                                       height: 40,
@@ -106,7 +152,9 @@ class ProgressPage extends StatelessWidget {
 
                             // ── Summary Stats Row ──
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -149,7 +197,9 @@ class ProgressPage extends StatelessWidget {
 
                             // ── Lifetime stats row ──
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -179,17 +229,39 @@ class ProgressPage extends StatelessWidget {
 
                             const SizedBox(height: 20),
 
+                            if (settingsState.qadaTrackingEnabled) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                ),
+                                child: _buildQadaAnalyticsCard(
+                                  context,
+                                  qadaAnalytics,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+
                             // ── Streak Cards ──
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: _buildStreakCards(context, c, streakState, historyState),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: _buildStreakCards(
+                                context,
+                                c,
+                                streakState,
+                                historyState,
+                              ),
                             ),
 
                             const SizedBox(height: 20),
 
                             // ── Weekly Bar Chart ──
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
                               child: WeeklyChart(
                                 percentages: historyState.weeklyPercentages,
                                 dayLabels: historyState.weeklyDayLabels,
@@ -201,7 +273,9 @@ class ProgressPage extends StatelessWidget {
 
                             // ── Sync Metadata ──
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
                               child: SyncMetadataCard(
                                 syncStatus: prayerState.syncStatus,
                               ),
@@ -211,51 +285,113 @@ class ProgressPage extends StatelessWidget {
 
                             // ── Monthly Calendar Heatmap ──
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: MonthlyCalendar(
-                                historicalLog: historyState.historicalLog,
-                                year: historyState.calendarYear,
-                                month: historyState.calendarMonth,
-                                bloc: context.read<HistoryBloc>(),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
                               ),
+                              child: historyState.historicalLog.isEmpty
+                                  ? NeoCard(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_month_outlined,
+                                            size: 40,
+                                            color: c.textSecondary.withValues(
+                                              alpha: 0.4,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Your monthly heatmap will show up once you start tracking prayers.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: c.textSecondary,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : MonthlyCalendar(
+                                      historicalLog: historyState.historicalLog,
+                                      year: historyState.calendarYear,
+                                      month: historyState.calendarMonth,
+                                      bloc: context.read<HistoryBloc>(),
+                                    ),
                             ),
 
                             const SizedBox(height: 20),
 
                             // ── Radar Chart ──
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: PrayerRadarChart(
-                                historicalLog: historyState.historicalLog,
-                                colors: c,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
                               ),
+                              child: historyState.historicalLog.isEmpty
+                                  ? NeoCard(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.radar_outlined,
+                                            size: 40,
+                                            color: c.textSecondary.withValues(
+                                              alpha: 0.4,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Prayer distribution will appear here after you log a few days.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: c.textSecondary,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : PrayerRadarChart(
+                                      historicalLog: historyState.historicalLog,
+                                      colors: c,
+                                    ),
                             ),
 
                             const SizedBox(height: 20),
 
                             // ── Top Reasons ──
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: TopReasons(reasonCounts: statsState.reasonCounts),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: TopReasons(
+                                reasonCounts: statsState.reasonCounts,
+                              ),
                             ),
 
                             const SizedBox(height: 28),
 
                             // ── Badges ──
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     'Badges',
-                                    style: AppTextStyles.headlineMedium.copyWith(
-                                      fontSize: 20,
-                                      color: c.textPrimary,
-                                    ),
+                                    style: AppTextStyles.headlineMedium
+                                        .copyWith(
+                                          fontSize: 20,
+                                          color: c.textPrimary,
+                                        ),
                                   ),
                                   const SizedBox(height: 16),
-                                  BadgesGrid(prayers: prayerState.prayers, streakState: streakState),
+                                  BadgesGrid(
+                                    prayers: prayerState.prayers,
+                                    streakState: streakState,
+                                  ),
                                 ],
                               ),
                             ),
@@ -291,7 +427,9 @@ class ProgressPage extends StatelessWidget {
       final date = effectiveNow.subtract(Duration(days: 6 - i));
       final key = DateFormat('yyyy-MM-dd').format(date);
       final prayers = historyState.historicalLog[key] ?? [];
-      final completed = prayers.where((p) => p.isCompleted && !p.isExcused).length;
+      final completed = prayers
+          .where((p) => p.isCompleted && !p.isExcused)
+          .length;
       return completed >= 5; // full day = all 5 prayers done
     });
     final weekLabels = List.generate(7, (i) {
@@ -311,7 +449,11 @@ class ProgressPage extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.local_fire_department, color: c.streak, size: 20),
+                    Icon(
+                      Icons.local_fire_department,
+                      color: c.streak,
+                      size: 20,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'Daily Streak',
@@ -343,9 +485,13 @@ class ProgressPage extends StatelessWidget {
                           height: 10,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: weekDots[i] ? c.streak : c.border.withValues(alpha: 0.2),
+                            color: weekDots[i]
+                                ? c.streak
+                                : c.border.withValues(alpha: 0.2),
                             border: Border.all(
-                              color: weekDots[i] ? c.streak : c.border.withValues(alpha: 0.4),
+                              color: weekDots[i]
+                                  ? c.streak
+                                  : c.border.withValues(alpha: 0.4),
                               width: 1.5,
                             ),
                           ),
@@ -399,7 +545,9 @@ class ProgressPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  best > 0 ? 'Personal best achieved 🏆' : 'Start your streak today!',
+                  best > 0
+                      ? 'Personal best achieved 🏆'
+                      : 'Start your streak today!',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: c.textSecondary,
                   ),
@@ -412,10 +560,215 @@ class ProgressPage extends StatelessWidget {
     );
   }
 
-  void _shareProgress(BuildContext context, StreakState streakState, HistoryState historyState, PrayerState prayerState) {
+  Widget _buildQadaAnalyticsCard(
+    BuildContext context,
+    _QadaAnalytics analytics,
+  ) {
+    final c = AppColors.of(context);
+
+    return NeoCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: c.statusQada.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.assignment_late_outlined,
+                  color: c.statusQada,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Qada Recovery',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: c.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      analytics.lifetimeCount > 0
+                          ? 'Make-up prayers are counted separately so recovery stays visible.'
+                          : 'This section will start filling in once you log your first Qada prayer.',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickStat(
+                  context,
+                  label: 'Today',
+                  value: '${analytics.todayCount}',
+                  icon: Icons.today,
+                  iconColor: c.statusQada,
+                  iconBg: c.statusQada.withValues(alpha: 0.14),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickStat(
+                  context,
+                  label: '7 Days',
+                  value: '${analytics.weeklyCount}',
+                  icon: Icons.calendar_view_week,
+                  iconColor: c.statusQada,
+                  iconBg: c.statusQada.withValues(alpha: 0.14),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickStat(
+                  context,
+                  label: 'Lifetime',
+                  value: '${analytics.lifetimeCount}',
+                  icon: Icons.analytics_outlined,
+                  iconColor: c.statusQada,
+                  iconBg: c.statusQada.withValues(alpha: 0.14),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickStat(
+                  context,
+                  label: 'Open Recovery',
+                  value: '${analytics.openRecoveryCount}',
+                  icon: Icons.refresh,
+                  iconColor: c.streak,
+                  iconBg: c.streakLight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            analytics.topPrayerName != null
+                ? 'Most common Qada prayer: ${analytics.topPrayerName}'
+                : 'Most common Qada prayer: none yet',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: c.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            StatusHelper.description('qada'),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: c.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, List<Prayer>> _mergeTodayIntoHistory(
+    Map<String, List<Prayer>> historicalLog,
+    List<Prayer> todayPrayers,
+  ) {
+    final merged = Map<String, List<Prayer>>.from(historicalLog);
+    if (todayPrayers.isEmpty) {
+      return merged;
+    }
+
+    final todayKey = DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+    merged[todayKey] = todayPrayers;
+    return merged;
+  }
+
+  _QadaAnalytics _buildQadaAnalytics(
+    Map<String, List<Prayer>> historicalLog,
+    List<Prayer> todayPrayers,
+  ) {
+    final todayKey = DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+    final todayCount = (historicalLog[todayKey] ?? todayPrayers)
+        .where((p) => p.isQada)
+        .length;
+
+    int weeklyCount = 0;
+    int lifetimeCount = 0;
+    final prayerCounts = <String, int>{};
+
+    for (final entry in historicalLog.entries) {
+      final date = DateTime.tryParse(entry.key);
+      final qadaForDay = entry.value.where((p) => p.isQada).toList();
+
+      lifetimeCount += qadaForDay.length;
+      for (final prayer in qadaForDay) {
+        prayerCounts.update(prayer.name, (count) => count + 1, ifAbsent: () => 1);
+      }
+
+      if (date == null) {
+        continue;
+      }
+
+      final dayDifference = TimeService.effectiveNow().difference(date).inDays;
+      if (dayDifference >= 0 && dayDifference < 7) {
+        weeklyCount += qadaForDay.length;
+      }
+    }
+
+    final openRecoveryCount = todayPrayers.where((p) {
+      final recovery = p.recoveryState;
+      return recovery != null &&
+          recovery.requiresQada &&
+          !recovery.isExpired &&
+          !p.isQada &&
+          !p.isExcused;
+    }).length;
+
+    String? topPrayerName;
+    int topPrayerCount = 0;
+    for (final entry in prayerCounts.entries) {
+      if (entry.value > topPrayerCount) {
+        topPrayerCount = entry.value;
+        topPrayerName = entry.key;
+      }
+    }
+
+    return _QadaAnalytics(
+      todayCount: todayCount,
+      weeklyCount: weeklyCount,
+      lifetimeCount: lifetimeCount,
+      openRecoveryCount: openRecoveryCount,
+      topPrayerName: topPrayerName,
+    );
+  }
+
+  void _shareProgress(
+    BuildContext context,
+    StreakState streakState,
+    HistoryState historyState,
+    PrayerState prayerState,
+  ) {
     final streak = streakState.streak.displayStreak;
     final weeklyCount = historyState.weeklyPrayerCount;
-    final todayCount = prayerState.prayers.where((p) => p.isCompleted && !p.isExcused).length;
+    final todayCount = prayerState.prayers
+        .where((p) => p.isCompleted && !p.isExcused)
+        .length;
 
     final message = StringBuffer();
     message.writeln('🕌 Falah Prayer Tracker Progress');
@@ -467,12 +820,26 @@ class ProgressPage extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: c.textSecondary,
-            ),
+            style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
           ),
         ],
       ),
     );
   }
+}
+
+class _QadaAnalytics {
+  final int todayCount;
+  final int weeklyCount;
+  final int lifetimeCount;
+  final int openRecoveryCount;
+  final String? topPrayerName;
+
+  const _QadaAnalytics({
+    required this.todayCount,
+    required this.weeklyCount,
+    required this.lifetimeCount,
+    required this.openRecoveryCount,
+    required this.topPrayerName,
+  });
 }

@@ -14,12 +14,11 @@ abstract class AuthRepository {
     required String password,
   });
 
-  Future<AuthResponse> login({
-    required String email,
-    required String password,
-  });
+  Future<AuthResponse> login({required String email, required String password});
 
   Future<void> logout();
+
+  Future<void> deleteAccount();
 
   Future<User> updateProfile({
     required String firstName,
@@ -31,6 +30,7 @@ abstract class AuthRepository {
     String? calculationMethod,
     bool? useHanafi,
     String? intentLevel,
+    bool? sunnahEnabled,
   });
 
   Future<Map<String, dynamic>> getUserConfig();

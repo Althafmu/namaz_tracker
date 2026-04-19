@@ -8,6 +8,7 @@ import '../../../../core/widgets/neo_text_field.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import '../utils/auth_input_validation.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,37 +21,24 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // Finding #5: Email format regex
-  static final _emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$');
-
   void _onLogin() {
-    final email = _emailController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
-      );
-      return;
-    }
-
-    if (email.length > 254 || !_emailRegex.hasMatch(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid email address')),
-      );
-      return;
-    }
-
-    if (password.length < 8 || password.length > 128) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be 8-128 characters')),
-      );
+    final validationError = AuthInputValidation.validateLogin(
+      email: email,
+      password: password,
+    );
+    if (validationError != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(validationError)));
       return;
     }
 
     context.read<AuthBloc>().add(
-          LoginRequested(email: email, password: password),
-        );
+      LoginRequested(email: email, password: password),
+    );
   }
 
   @override
@@ -70,7 +58,8 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.errorMessage ?? 'Login Failed'),
-              backgroundColor: AppColors.of(context).primary,
+              backgroundColor: Colors.red.shade700,
+              duration: const Duration(seconds: 5),
             ),
           );
         },
@@ -83,7 +72,12 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 48),
                 Text('Welcome Back!', style: AppTextStyles.headlineLarge),
                 const SizedBox(height: 8),
-                Text('Log in to continue your prayer streak.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.of(context).textSecondary)),
+                Text(
+                  'Log in to continue your prayer streak.',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.of(context).textSecondary,
+                  ),
+                ),
                 const SizedBox(height: 48),
                 NeoTextField(
                   label: 'Email',
@@ -100,8 +94,13 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 48),
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
-                    if (state.status == AuthStatus.loading || state.status == AuthStatus.loadingConfig) {
-                      return Center(child: CircularProgressIndicator(color: AppColors.of(context).primary));
+                    if (state.status == AuthStatus.loading ||
+                        state.status == AuthStatus.loadingConfig) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.of(context).primary,
+                        ),
+                      );
                     }
                     return SizedBox(
                       height: 56,

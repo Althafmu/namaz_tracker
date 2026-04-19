@@ -76,5 +76,11 @@ class RefreshPrayersAndAlarms extends PrayerEvent {
 
 /// Undo the last prayer log action.
 class UndoLastPrayerLog extends PrayerEvent {
-  const UndoLastPrayerLog();
+  final String? prayerName;
+  final String? dateKey;
+
+  const UndoLastPrayerLog({this.prayerName, this.dateKey});
+
+  @override
+  List<Object?> get props => [prayerName, dateKey];
 }

@@ -8,6 +8,7 @@ import '../../../../core/widgets/neo_text_field.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import '../utils/auth_input_validation.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -21,45 +22,26 @@ class _SignupPageState extends State<SignupPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // Finding #5: Email format regex
-  static final _emailRegex = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$');
-
   void _onSignup() {
     final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
-      );
-      return;
-    }
-
-    if (name.length > 100) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name must be under 100 characters')),
-      );
-      return;
-    }
-
-    if (email.length > 254 || !_emailRegex.hasMatch(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid email address')),
-      );
-      return;
-    }
-
-    if (password.length < 8 || password.length > 128) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be 8-128 characters')),
-      );
+    final validationError = AuthInputValidation.validateSignup(
+      name: name,
+      email: email,
+      password: password,
+    );
+    if (validationError != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(validationError)));
       return;
     }
 
     context.read<AuthBloc>().add(
-          RegisterRequested(name: name, email: email, password: password),
-        );
+      RegisterRequested(name: name, email: email, password: password),
+    );
   }
 
   @override
@@ -89,7 +71,8 @@ class _SignupPageState extends State<SignupPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.errorMessage ?? 'Signup Failed'),
-              backgroundColor: AppColors.of(context).primary,
+              backgroundColor: Colors.red.shade700,
+              duration: const Duration(seconds: 5),
             ),
           );
         },
@@ -102,7 +85,12 @@ class _SignupPageState extends State<SignupPage> {
                 const SizedBox(height: 16),
                 Text('Join Namaz Tracker', style: AppTextStyles.headlineLarge),
                 const SizedBox(height: 8),
-                 Text('Create an account to track your prayers across devices.', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.of(context).textSecondary)),
+                Text(
+                  'Create an account to track your prayers across devices.',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.of(context).textSecondary,
+                  ),
+                ),
                 const SizedBox(height: 48),
                 NeoTextField(
                   label: 'Full Name',
@@ -125,8 +113,13 @@ class _SignupPageState extends State<SignupPage> {
                 const SizedBox(height: 48),
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
-                    if (state.status == AuthStatus.loading || state.status == AuthStatus.loadingConfig) {
-                       return Center(child: CircularProgressIndicator(color: AppColors.of(context).primary));
+                    if (state.status == AuthStatus.loading ||
+                        state.status == AuthStatus.loadingConfig) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.of(context).primary,
+                        ),
+                      );
                     }
                     return SizedBox(
                       height: 56,

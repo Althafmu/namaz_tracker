@@ -396,14 +396,23 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     emit(state.copyWith(undoStatus: UndoStatus.loading));
 
     try {
-      final updatedPrayers = await undoLastPrayerLogUseCase!();
+      final targetDateKey =
+          event.dateKey ??
+          DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
       final todayKey = DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
-      historyBloc.add(UpdateDayLog(dateStr: todayKey, prayers: updatedPrayers));
+      final isToday = targetDateKey == todayKey;
+      final updatedPrayers = await undoLastPrayerLogUseCase!(
+        prayerName: event.prayerName,
+        dateKey: targetDateKey,
+      );
+      historyBloc.add(UpdateDayLog(dateStr: targetDateKey, prayers: updatedPrayers));
 
       emit(state.copyWith(
-        prayers: updatedPrayers,
+        prayers: isToday ? updatedPrayers : state.prayers,
         undoStatus: UndoStatus.success,
-        lastActionMessage: 'Last prayer log undone successfully.',
+        lastActionMessage: event.prayerName != null
+            ? '${event.prayerName} log removed.'
+            : 'Last prayer log undone successfully.',
       ));
     } on ServerException catch (e) {
       emit(state.copyWith(

@@ -36,22 +36,35 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     on<ClearExcusedDay>(_onClearExcusedDay);
     on<UpdateIntentLevel>(_onUpdateIntentLevel);
     on<LoadIntentFromBackend>(_onLoadIntentFromBackend);
+    on<UpdateSunnahEnabled>(_onUpdateSunnahEnabled);
+    on<LoadSunnahEnabledFromBackend>(_onLoadSunnahEnabledFromBackend);
+    on<UpdateQadaTrackingEnabled>(_onUpdateQadaTrackingEnabled);
     on<UpdateStreakHistory>(_onUpdateStreakHistory);
     on<MarkMilestoneShown>(_onMarkMilestoneShown);
     on<DismissUpgradePrompt>(_onDismissUpgradePrompt);
+    on<MarkHomeWelcomeSeen>(_onMarkHomeWelcomeSeen);
     on<PauseNotificationsForToday>(_onPauseNotificationsForToday);
     on<LoadNotificationsPauseStatus>(_onLoadNotificationsPauseStatus);
+    on<ResetSessionScopedSettings>(_onResetSessionScopedSettings);
+  }
+
+  void _emitInitialized(Emitter<SettingsState> emit, SettingsState nextState) {
+    emit(nextState.copyWith(isInitialized: true));
   }
 
   void _onUpdateCalculationSettings(
     UpdateCalculationSettings event,
     Emitter<SettingsState> emit,
   ) {
-    emit(state.copyWith(
-      calculationMethod: event.calculationMethod ?? state.calculationMethod,
-      useHanafi: event.useHanafi ?? state.useHanafi,
-      methodAutoDetected: true,
-    ));
+    _emitInitialized(
+      emit,
+      state.copyWith(
+        calculationMethod: event.calculationMethod ?? state.calculationMethod,
+        useHanafi: event.useHanafi ?? state.useHanafi,
+        methodAutoDetected:
+            event.methodAutoDetected ?? state.methodAutoDetected,
+      ),
+    );
     add(const SyncSettingsToCloud());
   }
 
@@ -59,31 +72,42 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     UpdatePrayerNotificationConfig event,
     Emitter<SettingsState> emit,
   ) async {
-    final newConfigs = Map<String, PrayerNotificationConfig>.from(state.prayerConfigs);
+    final newConfigs = Map<String, PrayerNotificationConfig>.from(
+      state.prayerConfigs,
+    );
     newConfigs[event.prayerName] = event.config;
 
-    final isEnablingAlerts = event.config.adhanAlerts || event.config.reminderAlerts || event.config.streakProtection;
+    final isEnablingAlerts =
+        event.config.adhanAlerts ||
+        event.config.reminderAlerts ||
+        event.config.streakProtection;
 
     if (isEnablingAlerts && !state.notificationsPermitted) {
       final granted = await notificationService.requestPermissions();
-      emit(state.copyWith(notificationsPermitted: granted));
+      _emitInitialized(emit, state.copyWith(notificationsPermitted: granted));
       if (!granted) {
-        debugPrint('[SettingsBloc] Notification permissions denied - aborting alert enablement');
+        debugPrint(
+          '[SettingsBloc] Notification permissions denied - aborting alert enablement',
+        );
         return;
       }
     }
 
-    emit(state.copyWith(prayerConfigs: newConfigs));
+    _emitInitialized(emit, state.copyWith(prayerConfigs: newConfigs));
   }
 
   void _onUpdateGlobalNotificationSettings(
     UpdateGlobalNotificationSettings event,
     Emitter<SettingsState> emit,
   ) {
-    emit(state.copyWith(
-      alarmSound: event.alarmSound ?? state.alarmSound,
-      notificationsPermitted: event.notificationsPermitted ?? state.notificationsPermitted,
-    ));
+    _emitInitialized(
+      emit,
+      state.copyWith(
+        alarmSound: event.alarmSound ?? state.alarmSound,
+        notificationsPermitted:
+            event.notificationsPermitted ?? state.notificationsPermitted,
+      ),
+    );
   }
 
   Future<void> _onRequestNotificationPermissions(
@@ -91,14 +115,14 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) async {
     final granted = await notificationService.requestPermissions();
-    emit(state.copyWith(notificationsPermitted: granted));
+    _emitInitialized(emit, state.copyWith(notificationsPermitted: granted));
   }
 
   void _onUpdateManualOffsets(
     UpdateManualOffsets event,
     Emitter<SettingsState> emit,
   ) {
-    emit(state.copyWith(manualOffsets: event.manualOffsets));
+    _emitInitialized(emit, state.copyWith(manualOffsets: event.manualOffsets));
     // Kick off cloud sync without blocking the UI
     add(const SyncSettingsToCloud());
   }
@@ -107,13 +131,10 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     UpdateMissedReasons event,
     Emitter<SettingsState> emit,
   ) {
-    emit(state.copyWith(missedReasons: event.missedReasons));
+    _emitInitialized(emit, state.copyWith(missedReasons: event.missedReasons));
   }
 
-  void _onCycleThemeMode(
-    CycleThemeMode event,
-    Emitter<SettingsState> emit,
-  ) {
+  void _onCycleThemeMode(CycleThemeMode event, Emitter<SettingsState> emit) {
     String nextMode;
     if (state.themeMode == 'system') {
       nextMode = 'light';
@@ -122,22 +143,22 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     } else {
       nextMode = 'system';
     }
-    
-    emit(state.copyWith(themeMode: nextMode));
+
+    _emitInitialized(emit, state.copyWith(themeMode: nextMode));
   }
 
-  void _onUpdateThemeMode(
-    UpdateThemeMode event,
-    Emitter<SettingsState> emit,
-  ) {
-    emit(state.copyWith(themeMode: event.themeMode));
+  void _onUpdateThemeMode(UpdateThemeMode event, Emitter<SettingsState> emit) {
+    _emitInitialized(emit, state.copyWith(themeMode: event.themeMode));
   }
 
   void _onUpdateAlarmDuration(
     UpdateAlarmDuration event,
     Emitter<SettingsState> emit,
   ) {
-    emit(state.copyWith(alarmDurationMinutes: event.duration));
+    _emitInitialized(
+      emit,
+      state.copyWith(alarmDurationMinutes: event.duration),
+    );
   }
 
   Future<void> _onSyncSettingsToCloud(
@@ -151,6 +172,7 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
         calculationMethod: state.calculationMethod,
         useHanafi: state.useHanafi,
         intentLevel: state.intentLevel.name,
+        sunnahEnabled: state.sunnahEnabled,
       );
     } catch (e) {
       debugPrint('[SettingsBloc] Cloud sync failed: $e');
@@ -165,20 +187,14 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     // post-login cloud load if needed in the future.
   }
 
-  void _onAddExcusedDay(
-    AddExcusedDay event,
-    Emitter<SettingsState> emit,
-  ) {
+  void _onAddExcusedDay(AddExcusedDay event, Emitter<SettingsState> emit) {
     final newExcused = Set<String>.from(state.excusedDays)..add(event.date);
-    emit(state.copyWith(excusedDays: newExcused));
+    _emitInitialized(emit, state.copyWith(excusedDays: newExcused));
   }
 
-  void _onClearExcusedDay(
-    ClearExcusedDay event,
-    Emitter<SettingsState> emit,
-  ) {
+  void _onClearExcusedDay(ClearExcusedDay event, Emitter<SettingsState> emit) {
     final newExcused = Set<String>.from(state.excusedDays)..remove(event.date);
-    emit(state.copyWith(excusedDays: newExcused));
+    _emitInitialized(emit, state.copyWith(excusedDays: newExcused));
   }
 
   void _onUpdateIntentLevel(
@@ -186,7 +202,14 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     final intent = IntentLevel.fromString(event.intentLevel);
-    emit(state.copyWith(intentLevel: intent, isIntentSet: true));
+    _emitInitialized(
+      emit,
+      state.copyWith(
+        intentLevel: intent,
+        isIntentSet: true,
+        isFallbackIntent: false,
+      ),
+    );
     add(const SyncSettingsToCloud());
   }
 
@@ -195,11 +218,45 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     final intent = IntentLevel.fromString(event.intentLevel);
-    emit(state.copyWith(
-      intentLevel: intent,
-      isIntentSet: true,
-      isFallbackIntent: event.isFallback,
-    ));
+    _emitInitialized(
+      emit,
+      state.copyWith(
+        intentLevel: intent,
+        isIntentSet: !event.isFallback,
+        isFallbackIntent: event.isFallback,
+        sunnahEnabled: intent == IntentLevel.growth
+            ? state.sunnahEnabled
+            : false,
+      ),
+    );
+  }
+
+  void _onUpdateSunnahEnabled(
+    UpdateSunnahEnabled event,
+    Emitter<SettingsState> emit,
+  ) {
+    final isGrowth = state.intentLevel == IntentLevel.growth;
+    final nextValue = isGrowth ? event.enabled : false;
+    _emitInitialized(emit, state.copyWith(sunnahEnabled: nextValue));
+    add(const SyncSettingsToCloud());
+  }
+
+  void _onLoadSunnahEnabledFromBackend(
+    LoadSunnahEnabledFromBackend event,
+    Emitter<SettingsState> emit,
+  ) {
+    final isGrowth = state.intentLevel == IntentLevel.growth;
+    _emitInitialized(
+      emit,
+      state.copyWith(sunnahEnabled: isGrowth ? event.enabled : false),
+    );
+  }
+
+  void _onUpdateQadaTrackingEnabled(
+    UpdateQadaTrackingEnabled event,
+    Emitter<SettingsState> emit,
+  ) {
+    _emitInitialized(emit, state.copyWith(qadaTrackingEnabled: event.enabled));
   }
 
   void _onUpdateStreakHistory(
@@ -219,24 +276,38 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
       newLast = event.currentStreak;
     }
 
-    emit(state.copyWith(
-      bestStreak: newBest,
-      lastStreak: newLast,
-    ));
+    _emitInitialized(
+      emit,
+      state.copyWith(bestStreak: newBest, lastStreak: newLast),
+    );
   }
 
   void _onMarkMilestoneShown(
     MarkMilestoneShown event,
     Emitter<SettingsState> emit,
   ) {
-    emit(state.copyWith(milestones: state.milestones.markShown(event.milestone)));
+    _emitInitialized(
+      emit,
+      state.copyWith(milestones: state.milestones.markShown(event.milestone)),
+    );
   }
 
   void _onDismissUpgradePrompt(
     DismissUpgradePrompt event,
     Emitter<SettingsState> emit,
   ) {
-    emit(state.copyWith(upgradePrompt: state.upgradePrompt.markDismissed()));
+    _emitInitialized(
+      emit,
+      state.copyWith(upgradePrompt: state.upgradePrompt.markDismissed()),
+    );
+  }
+
+  void _onMarkHomeWelcomeSeen(
+    MarkHomeWelcomeSeen event,
+    Emitter<SettingsState> emit,
+  ) {
+    if (state.hasSeenHomeWelcomeBanner) return;
+    _emitInitialized(emit, state.copyWith(hasSeenHomeWelcomeBanner: true));
   }
 
   Future<void> _onPauseNotificationsForToday(
@@ -244,38 +315,59 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) async {
     if (pauseNotificationsForTodayUseCase == null) {
-      emit(state.copyWith(
-        pauseActionStatus: PauseActionStatus.error,
-        lastSettingsActionMessage: 'Pause notifications is not available.',
-      ));
+      _emitInitialized(
+        emit,
+        state.copyWith(
+          pauseActionStatus: PauseActionStatus.error,
+          lastSettingsActionMessage: 'Pause notifications is not available.',
+        ),
+      );
       return;
     }
 
-    emit(state.copyWith(pauseActionStatus: PauseActionStatus.loading));
+    _emitInitialized(
+      emit,
+      state.copyWith(pauseActionStatus: PauseActionStatus.loading),
+    );
 
     try {
       await pauseNotificationsForTodayUseCase!();
-      emit(state.copyWith(
-        notificationsPausedToday: true,
-        pauseActionStatus: PauseActionStatus.success,
-        lastSettingsActionMessage: 'Notifications paused for today.',
-      ));
+      _emitInitialized(
+        emit,
+        state.copyWith(
+          notificationsPausedToday: true,
+          pauseActionStatus: PauseActionStatus.success,
+          lastSettingsActionMessage: 'Notifications paused for today.',
+        ),
+      );
     } on ServerException catch (e) {
-      emit(state.copyWith(
-        pauseActionStatus: PauseActionStatus.error,
-        lastSettingsActionMessage: e.userMessage,
-      ));
+      _emitInitialized(
+        emit,
+        state.copyWith(
+          pauseActionStatus: PauseActionStatus.error,
+          lastSettingsActionMessage: e.userMessage,
+        ),
+      );
     } on NetworkException catch (e) {
-      emit(state.copyWith(
-        pauseActionStatus: PauseActionStatus.error,
-        lastSettingsActionMessage: 'Network error. Please check your connection.',
-      ));
-      debugPrint('[SettingsBloc] Network error pausing notifications: ${e.message}');
+      _emitInitialized(
+        emit,
+        state.copyWith(
+          pauseActionStatus: PauseActionStatus.error,
+          lastSettingsActionMessage:
+              'Network error. Please check your connection.',
+        ),
+      );
+      debugPrint(
+        '[SettingsBloc] Network error pausing notifications: ${e.message}',
+      );
     } catch (e) {
-      emit(state.copyWith(
-        pauseActionStatus: PauseActionStatus.error,
-        lastSettingsActionMessage: 'Failed to pause notifications.',
-      ));
+      _emitInitialized(
+        emit,
+        state.copyWith(
+          pauseActionStatus: PauseActionStatus.error,
+          lastSettingsActionMessage: 'Failed to pause notifications.',
+        ),
+      );
       debugPrint('[SettingsBloc] Unexpected error pausing notifications: $e');
     }
   }
@@ -289,10 +381,32 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     try {
       final result = await getNotificationsPauseStatusUseCase!();
       final isPaused = result['is_paused'] as bool? ?? false;
-      emit(state.copyWith(notificationsPausedToday: isPaused));
+      _emitInitialized(
+        emit,
+        state.copyWith(notificationsPausedToday: isPaused),
+      );
     } catch (e) {
       debugPrint('[SettingsBloc] Error loading pause status: $e');
     }
+  }
+
+  void _onResetSessionScopedSettings(
+    ResetSessionScopedSettings event,
+    Emitter<SettingsState> emit,
+  ) {
+    _emitInitialized(
+      emit,
+      state.copyWith(
+        intentLevel: IntentLevel.foundation,
+        isIntentSet: false,
+        isFallbackIntent: false,
+        sunnahEnabled: false,
+        notificationsPausedToday: false,
+        pauseActionStatus: PauseActionStatus.idle,
+        excusedDays: <String>{},
+        clearActionMessage: true,
+      ),
+    );
   }
 
   @override

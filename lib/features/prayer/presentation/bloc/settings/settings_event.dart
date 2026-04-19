@@ -52,9 +52,7 @@ class UpdateGlobalNotificationSettings extends SettingsEvent {
 class UpdateManualOffsets extends SettingsEvent {
   final Map<String, int> manualOffsets;
 
-  const UpdateManualOffsets({
-    required this.manualOffsets,
-  });
+  const UpdateManualOffsets({required this.manualOffsets});
 
   @override
   List<Object?> get props => [manualOffsets];
@@ -65,9 +63,7 @@ class RequestNotificationPermissions extends SettingsEvent {}
 class UpdateMissedReasons extends SettingsEvent {
   final List<String> missedReasons;
 
-  const UpdateMissedReasons({
-    required this.missedReasons,
-  });
+  const UpdateMissedReasons({required this.missedReasons});
 
   @override
   List<Object?> get props => [missedReasons];
@@ -139,10 +135,43 @@ class LoadIntentFromBackend extends SettingsEvent {
   final String intentLevel;
   final bool isFallback;
 
-  const LoadIntentFromBackend(this.intentLevel, {this.isFallback = false});
+  const LoadIntentFromBackend(
+    this.intentLevel, {
+    this.isFallback = false,
+  });
 
   @override
   List<Object?> get props => [intentLevel, isFallback];
+}
+
+/// Toggle optional Sunna tracking.
+class UpdateSunnahEnabled extends SettingsEvent {
+  final bool enabled;
+
+  const UpdateSunnahEnabled(this.enabled);
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
+/// Hydrates Sunna toggle from backend without re-syncing.
+class LoadSunnahEnabledFromBackend extends SettingsEvent {
+  final bool enabled;
+
+  const LoadSunnahEnabledFromBackend(this.enabled);
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
+/// Toggle Qada tracking analytics visibility across the app.
+class UpdateQadaTrackingEnabled extends SettingsEvent {
+  final bool enabled;
+
+  const UpdateQadaTrackingEnabled(this.enabled);
+
+  @override
+  List<Object?> get props => [enabled];
 }
 
 /// Phase 3.1: Track streak history for soft landing and upgrade prompts
@@ -170,6 +199,11 @@ class DismissUpgradePrompt extends SettingsEvent {
   const DismissUpgradePrompt();
 }
 
+/// Marks the one-time home welcome banner as seen.
+class MarkHomeWelcomeSeen extends SettingsEvent {
+  const MarkHomeWelcomeSeen();
+}
+
 /// Pause all notifications for the remainder of today.
 class PauseNotificationsForToday extends SettingsEvent {
   const PauseNotificationsForToday();
@@ -178,4 +212,9 @@ class PauseNotificationsForToday extends SettingsEvent {
 /// Load the current pause-notifications-for-today status from the backend.
 class LoadNotificationsPauseStatus extends SettingsEvent {
   const LoadNotificationsPauseStatus();
+}
+
+/// Clears auth-scoped local settings when the active user session ends.
+class ResetSessionScopedSettings extends SettingsEvent {
+  const ResetSessionScopedSettings();
 }

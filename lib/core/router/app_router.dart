@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:get_it/get_it.dart';
@@ -16,7 +17,6 @@ import '../../features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/onboarding1_page.dart';
 import '../../features/auth/presentation/pages/onboarding_psych_page.dart';
-import '../../features/auth/presentation/pages/onboarding2_page.dart';
 import '../../features/auth/presentation/pages/intent_onboarding_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
@@ -58,144 +58,173 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
     redirect: (context, state) {
       final authState = authBloc.state;
       final status = authState.status;
-    final loggingIn = state.uri.path == '/login';
-    final signingUp = state.uri.path == '/signup';
-    final splash = state.uri.path == '/splash';
-    final onboarding = state.uri.path.startsWith('/onboarding');
-    final intentSetup = state.uri.path == '/intent-setup';
+      final loggingIn = state.uri.path == '/login';
+      final signingUp = state.uri.path == '/signup';
+      final splash = state.uri.path == '/splash';
+      final onboarding = state.uri.path.startsWith('/onboarding');
+      final intentSetup = state.uri.path == '/intent-setup';
 
-    // While loading or unknown, ensure we stay on splash
-    if (status == AuthStatus.unknown || status == AuthStatus.loading) {
-      return splash ? null : '/splash';
-    }
+      // While bootstrapping from storage, ensure we stay on splash.
+      if (status == AuthStatus.unknown) {
+        return splash ? null : '/splash';
+      }
 
-    // While config is being hydrated after a successful login/register:
-    // - Stay on splash if coming from a fresh app start (already on splash).
-    // - Stay in place on auth screens so the loading spinner remains visible.
-    // - Redirect to splash if somehow on a protected route (e.g. expired-session).
-    if (status == AuthStatus.loadingConfig) {
-      if (splash || loggingIn || signingUp || onboarding || intentSetup) {
+      // During login/register, keep the user on the auth screen spinner instead
+      // of bouncing through splash again.
+      if (status == AuthStatus.loading) {
+        if (splash || loggingIn || signingUp) {
+          return null;
+        }
+        return '/splash';
+      }
+
+      // While config is being hydrated after a successful login/register:
+      // - Stay on splash if coming from a fresh app start (already on splash).
+      // - Stay in place on auth screens so the loading spinner remains visible.
+      // - Redirect to splash if somehow on a protected route (e.g. expired-session).
+      if (status == AuthStatus.loadingConfig) {
+        if (splash || loggingIn || signingUp || onboarding || intentSetup) {
+          return null;
+        }
+        return '/splash';
+      }
+
+      // If authenticated, don't allow login/signup/onboarding/splash/intent-setup
+      if (status == AuthStatus.authenticated) {
+        final isIntentSet = settingsBloc.state.isIntentSet;
+
+        if (!isIntentSet && !intentSetup) {
+          return '/intent-setup';
+        } else if (isIntentSet && intentSetup) {
+          return '/';
+        }
+
+        if (loggingIn || signingUp || onboarding || splash) {
+          return '/';
+        }
         return null;
       }
-      return '/splash';
-    }
 
-    // If authenticated, don't allow login/signup/onboarding/splash/intent-setup
-    if (status == AuthStatus.authenticated) {
-      final isIntentSet = settingsBloc.state.isIntentSet;
-      
-      if (!isIntentSet && !intentSetup) {
-        return '/intent-setup';
-      } else if (isIntentSet && intentSetup) {
-        return '/';
+      // If unauthenticated, redirect to login unless on signup/onboarding
+      if (status == AuthStatus.unauthenticated) {
+        if (splash) {
+          return authState.hasSeenOnboarding ? '/login' : '/onboarding1';
+        }
+        if (loggingIn || signingUp || onboarding) {
+          return null;
+        }
+        return '/login';
       }
 
-      if (loggingIn || signingUp || onboarding || splash) {
-        return '/';
-      }
       return null;
-    }
-
-    // If unauthenticated, redirect to login unless on signup/onboarding
-    if (status == AuthStatus.unauthenticated) {
-      if (splash) {
-        return authState.hasSeenOnboarding ? '/login' : '/onboarding1';
-      }
-      if (loggingIn || signingUp || onboarding) {
-        return null;
-      }
-      return '/login';
-    }
-
-    return null;
-  },
-  routes: [
-    GoRoute(
-      path: '/splash',
-      builder: (context, state) => const SplashPage(),
-    ),
-    GoRoute(
-      path: '/onboarding1',
-      builder: (context, state) => const Onboarding1Page(),
-    ),
-    GoRoute(
-      path: '/onboarding-psych',
-      builder: (context, state) => const OnboardingPsychPage(),
-    ),
-    GoRoute(
-      path: '/onboarding2',
-      builder: (context, state) => const Onboarding2Page(),
-    ),
-    GoRoute(
-      path: '/intent-setup',
-      builder: (context, state) => const IntentOnboardingPage(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginPage(),
-    ),
-    GoRoute(
-      path: '/signup',
-      builder: (context, state) => const SignupPage(),
-    ),
-    GoRoute(
-      path: '/streak',
-      builder: (context, state) => const StreakPage(),
-    ),
-    ShellRoute(
-      builder: (context, state, child) => _AppShell(child: child),
-      routes: [
-        GoRoute(
-          path: '/',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: HomePage(),
+    },
+    routes: [
+      GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
+      GoRoute(
+        path: '/onboarding1',
+        builder: (context, state) => const Onboarding1Page(),
+      ),
+      GoRoute(
+        path: '/onboarding-psych',
+        builder: (context, state) => const OnboardingPsychPage(),
+      ),
+      GoRoute(
+        path: '/onboarding2',
+        redirect: (context, state) => '/onboarding-psych',
+      ),
+      GoRoute(
+        path: '/intent-setup',
+        builder: (context, state) => const IntentOnboardingPage(),
+      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(path: '/signup', builder: (context, state) => const SignupPage()),
+      GoRoute(path: '/streak', builder: (context, state) => const StreakPage()),
+      ShellRoute(
+        builder: (context, state, child) => _AppShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: HomePage()),
           ),
-        ),
-        GoRoute(
-          path: '/progress',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: ProgressPage(),
+          GoRoute(
+            path: '/progress',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: ProgressPage()),
           ),
-        ),
-        GoRoute(
-          path: '/profile',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: SettingsPage(),
+          GoRoute(
+            path: '/profile',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: SettingsPage()),
           ),
-        ),
-        GoRoute(
-          path: '/settings/notifications',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: NotificationsSettingsPage(),
+          GoRoute(
+            path: '/settings/notifications',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: NotificationsSettingsPage()),
           ),
-        ),
-        GoRoute(
-          path: '/settings/calculation',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: CalculationSettingsPage(),
+          GoRoute(
+            path: '/settings/calculation',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: CalculationSettingsPage()),
           ),
-        ),
-        GoRoute(
-          path: '/settings/reasons',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: ReasonsSettingsPage(),
+          GoRoute(
+            path: '/settings/reasons',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: ReasonsSettingsPage()),
           ),
-        ),
-      ],
-    ),
-  ],
-);
+        ],
+      ),
+    ],
+  );
 }
 
 /// App shell with Neo-brutalist bottom navigation bar.
-class _AppShell extends StatelessWidget {
+class _AppShell extends StatefulWidget {
   final Widget child;
   const _AppShell({required this.child});
 
+  @override
+  State<_AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<_AppShell> {
+  bool _isOffline = false;
+  late final StreamSubscription<List<ConnectivityResult>> _connectivitySub;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      final offline = results.every((r) => r == ConnectivityResult.none);
+      if (offline != _isOffline) {
+        setState(() => _isOffline = offline);
+      }
+    });
+    // Check initial status
+    Connectivity().checkConnectivity().then((results) {
+      if (mounted) {
+        final offline = results.every((r) => r == ConnectivityResult.none);
+        if (offline != _isOffline) {
+          setState(() => _isOffline = offline);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySub.cancel();
+    super.dispose();
+  }
+
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/progress')) return 1;
-    if (location.startsWith('/profile') || location.startsWith('/settings')) return 2;
+    if (location.startsWith('/progress')) {
+      return 1;
+    }
+    if (location.startsWith('/profile') || location.startsWith('/settings')) {
+      return 2;
+    }
     return 0;
   }
 
@@ -206,13 +235,46 @@ class _AppShell extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: c.background,
-      body: child,
+      body: Column(
+        children: [
+          // ── Offline Banner ──
+          if (_isOffline)
+            Material(
+              color: Colors.orange.shade800,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.cloud_off,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'You are offline. Changes will sync when reconnected.',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          Expanded(child: widget.child),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: c.surface,
-          border: Border(
-            top: BorderSide(color: c.border, width: 2),
-          ),
+          border: Border(top: BorderSide(color: c.border, width: 2)),
           boxShadow: [
             BoxShadow(
               color: c.border,
@@ -232,7 +294,9 @@ class _AppShell extends StatelessWidget {
                   label: 'HOME',
                   isActive: index == 0,
                   onTap: () {
-                    GetIt.I<HistoryBloc>().add(SelectDate(HistoryState.todayKey));
+                    GetIt.I<HistoryBloc>().add(
+                      SelectDate(HistoryState.todayKey),
+                    );
                     context.go('/');
                   },
                 ),
@@ -283,11 +347,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 28,
-              color: isActive ? c.primary : c.textSecondary,
-            ),
+            Icon(icon, size: 28, color: isActive ? c.primary : c.textSecondary),
             const SizedBox(height: 4),
             Text(
               label,

@@ -22,10 +22,7 @@ class IntentOnboardingPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
-              Text(
-                'Choose Your Path',
-                style: AppTextStyles.headlineLarge,
-              ),
+              Text('Choose Your Path', style: AppTextStyles.headlineLarge),
               const SizedBox(height: 8),
               Text(
                 'Select the approach that fits where you are right now.',
@@ -48,7 +45,8 @@ class IntentOnboardingPage extends StatelessWidget {
                   intent: IntentLevel.strengthening,
                   color: const Color(0xFFFF9800),
                   icon: Icons.trending_up,
-                  onTap: () => _selectIntent(context, IntentLevel.strengthening),
+                  onTap: () =>
+                      _selectIntent(context, IntentLevel.strengthening),
                 ),
               ),
               const SizedBox(height: 16),
@@ -64,7 +62,9 @@ class IntentOnboardingPage extends StatelessWidget {
               Center(
                 child: TextButton(
                   onPressed: () {
-                    GetIt.I<SettingsBloc>().add(const UpdateIntentLevel('foundation'));
+                    GetIt.I<SettingsBloc>().add(
+                      const UpdateIntentLevel('foundation'),
+                    );
                     context.go('/');
                   },
                   child: Text(
@@ -127,7 +127,7 @@ class _IntentCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 32),

@@ -4,17 +4,19 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../../../core/network/token_provider.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
-import '../../../prayer/presentation/bloc/settings/settings_bloc.dart';
-import '../../../prayer/presentation/bloc/settings/settings_event.dart';
 
 class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
   final TokenProvider tokenProvider;
 
-  AuthBloc({
-    required this.authRepository,
-    required this.tokenProvider,
-  }) : super(AuthState.initial()) {
+  /// Strip the 'Exception: ' prefix from error messages for cleaner display.
+  static String _cleanError(Object e) {
+    final msg = e.toString();
+    return msg.startsWith('Exception: ') ? msg.substring(11) : msg;
+  }
+
+  AuthBloc({required this.authRepository, required this.tokenProvider})
+    : super(AuthState.initial()) {
     on<LoginRequested>(_onLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
@@ -36,18 +38,21 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
       );
 
       // Token is persisted in secure storage by the repository/tokenProvider
-      emit(state.copyWith(
-        status: AuthStatus.loadingConfig,
-        user: response.user,
-        errorMessage: null,
-        hasSeenOnboarding: true,
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.loadingConfig,
+          user: response.user,
+          errorMessage: null,
+          hasSeenOnboarding: true,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.toString(),
-      ));
-      emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null));
+      emit(
+        state.copyWith(status: AuthStatus.error, errorMessage: _cleanError(e)),
+      );
+      emit(
+        state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null),
+      );
     }
   }
 
@@ -63,42 +68,55 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
         password: event.password,
       );
       // Auto-login since register now returns tokens
-      emit(state.copyWith(
-        status: AuthStatus.loadingConfig,
-        user: response.user,
-        errorMessage: null,
-        hasSeenOnboarding: true,
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.loadingConfig,
+          user: response.user,
+          errorMessage: null,
+          hasSeenOnboarding: true,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(status: AuthStatus.error, errorMessage: _cleanError(e)),
+      );
       emit(state.copyWith(status: AuthStatus.unauthenticated));
     }
   }
 
-  Future<void> _onLogoutRequested(LogoutRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onLogoutRequested(
+    LogoutRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     // 1. Tell backend to blacklist the token
     await authRepository.logout();
-    
+
     // 2. Erase local tokens permanently
     await tokenProvider.clearAll();
-    
+
     // 3. Emit unauthenticated state immediately so router reacts
-    emit(const AuthState(
-      status: AuthStatus.unauthenticated,
-      user: null,
-      errorMessage: null,
-      hasSeenOnboarding: true, // preserve onboarding seen status
-    ));
+    emit(
+      const AuthState(
+        status: AuthStatus.unauthenticated,
+        user: null,
+        errorMessage: null,
+        hasSeenOnboarding: true, // preserve onboarding seen status
+      ),
+    );
   }
 
-  Future<void> _onInitAuthRequested(InitAuthRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onInitAuthRequested(
+    InitAuthRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     // Do nothing if config hydration is already in progress (e.g. splash page
     // 1.5 s delay fires a second InitAuthRequested while SessionCoordinator is
     // still fetching user config — prevents the splash/config loop).
-    if (state.status == AuthStatus.loadingConfig) return;
+    if (state.status == AuthStatus.loading ||
+        state.status == AuthStatus.loadingConfig ||
+        state.status == AuthStatus.authenticated) {
+      return;
+    }
 
     // Token lives in secure storage, not in HydratedBloc state
     await tokenProvider.loadTokens();
@@ -138,11 +156,17 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     }
   }
 
-  void _onConfigLoadComplete(ConfigLoadComplete event, Emitter<AuthState> emit) {
+  void _onConfigLoadComplete(
+    ConfigLoadComplete event,
+    Emitter<AuthState> emit,
+  ) {
     emit(state.copyWith(status: AuthStatus.authenticated));
   }
 
-  void _onOnboardingCompleted(OnboardingCompleted event, Emitter<AuthState> emit) {
+  void _onOnboardingCompleted(
+    OnboardingCompleted event,
+    Emitter<AuthState> emit,
+  ) {
     emit(state.copyWith(hasSeenOnboarding: true));
   }
 

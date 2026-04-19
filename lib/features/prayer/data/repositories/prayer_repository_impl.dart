@@ -238,9 +238,15 @@ class PrayerRepositoryImpl implements PrayerRepository {
   // ── Phase 3: New Backend Features ──
 
   @override
-  Future<List<Prayer>> undoLastPrayerLog() async {
+  Future<List<Prayer>> undoLastPrayerLog({
+    String? prayerName,
+    String? dateKey,
+  }) async {
     try {
-      final data = await remoteDataSource.undoLastPrayerLog();
+      final data = await remoteDataSource.undoLastPrayerLog(
+        prayerName: prayerName,
+        dateKey: dateKey,
+      );
       return PrayerModel.fromApiResponse(data);
     } on DioException catch (e) {
       _handleDioError(e, 'undoLastPrayerLog');

@@ -22,18 +22,16 @@ class PrayerRemoteDataSource {
     String? reason,
     String? dateKey,
   }) async {
-    final response = await dio.post(
-      '/api/prayers/log/',
-      data: {
-        'prayer': prayerName.toLowerCase(),
-        'completed': completed,
-        'in_jamaat': inJamaat,
-        'location': location,
-        if (status case final status?) 'status': status,
-        if (reason case final reason?) 'reason': reason,
-        if (dateKey case final dateKey?) 'date': dateKey,
-      },
-    );
+    final Map<String, dynamic> data = {
+      'prayer': prayerName.toLowerCase(),
+      'completed': completed,
+      'in_jamaat': inJamaat,
+      'location': location,
+    };
+    if (status != null) data['status'] = status;
+    if (reason != null) data['reason'] = reason;
+    if (dateKey != null) data['date'] = dateKey;
+    final response = await dio.post('/api/prayers/log/', data: data);
     return response.data as Map<String, dynamic>;
   }
 
@@ -83,10 +81,9 @@ class PrayerRemoteDataSource {
   /// Consume a protector token to save streak after Qada prayer.
   /// Body: { "date": "2026-04-15" } (optional, defaults to yesterday)
   Future<Map<String, dynamic>> consumeProtectorToken({String? date}) async {
-    final response = await dio.post(
-      '/api/streak/consume-token/',
-      data: {if (date case final date?) 'date': date},
-    );
+    final Map<String, dynamic> data = {};
+    if (date != null) data['date'] = date;
+    final response = await dio.post('/api/streak/consume-token/', data: data);
     return response.data as Map<String, dynamic>;
   }
 
@@ -97,10 +94,9 @@ class PrayerRemoteDataSource {
     required String date,
     String? reason,
   }) async {
-    final response = await dio.post(
-      '/api/prayers/excused/',
-      data: {'date': date, if (reason case final reason?) 'reason': reason},
-    );
+    final Map<String, dynamic> data = {'date': date};
+    if (reason != null) data['reason'] = reason;
+    final response = await dio.post('/api/prayers/excused/', data: data);
     return response.data as Map<String, dynamic>;
   }
 
@@ -108,8 +104,18 @@ class PrayerRemoteDataSource {
 
   /// POST /api/prayers/undo/
   /// Undo the last prayer log. Returns the updated daily prayer log.
-  Future<Map<String, dynamic>> undoLastPrayerLog() async {
-    final response = await dio.post('/api/prayers/undo/');
+  Future<Map<String, dynamic>> undoLastPrayerLog({
+    String? prayerName,
+    String? dateKey,
+  }) async {
+    final data = <String, dynamic>{};
+    if (prayerName != null) {
+      data['prayer'] = prayerName.toLowerCase();
+    }
+    if (dateKey != null) {
+      data['date'] = dateKey;
+    }
+    final response = await dio.post('/api/prayers/undo/', data: data);
     return response.data as Map<String, dynamic>;
   }
 

@@ -23,12 +23,18 @@ void showDeleteAccountDialog(BuildContext context) {
         ),
         title: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded,
-                color: Colors.redAccent, size: 28),
+            const Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.redAccent,
+              size: 28,
+            ),
             const SizedBox(width: 8),
-            Text('Delete Account',
-                style: AppTextStyles.headlineMedium
-                    .copyWith(color: Colors.redAccent)),
+            Text(
+              'Delete Account',
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: Colors.redAccent,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -36,14 +42,16 @@ void showDeleteAccountDialog(BuildContext context) {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'This will log you out locally. Your account and prayer data will remain on our server until server-side deletion is available. To fully delete your data, please contact support.',
+              'This action permanently deletes your account and all related prayer data. This cannot be undone.',
               style: AppTextStyles.bodyMedium.copyWith(color: c.textPrimary),
             ),
             const SizedBox(height: 16),
             Text(
               'Type DELETE to confirm:',
-              style: AppTextStyles.bodySmall
-                  .copyWith(fontWeight: FontWeight.bold, color: c.textPrimary),
+              style: AppTextStyles.bodySmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: c.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -52,25 +60,28 @@ void showDeleteAccountDialog(BuildContext context) {
               style: AppTextStyles.bodyMedium.copyWith(color: c.textPrimary),
               decoration: InputDecoration(
                 hintText: 'DELETE',
-                hintStyle:
-                    AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
+                hintStyle: AppTextStyles.bodyMedium.copyWith(
+                  color: c.textSecondary,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: c.border, width: 2),
+                  borderSide: BorderSide(color: c.border, width: 2),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: c.border, width: 2),
+                  borderSide: BorderSide(color: c.border, width: 2),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(
-                      color: Colors.redAccent, width: 2),
+                    color: Colors.redAccent,
+                    width: 2,
+                  ),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
             ),
           ],
@@ -91,16 +102,40 @@ void showDeleteAccountDialog(BuildContext context) {
             isFullWidth: false,
             height: 44,
             onPressed: confirmController.text == 'DELETE'
-                ? () {
+                ? () async {
                     Navigator.of(dialogContext).pop();
-                    context.read<AuthBloc>().add(LogoutRequested());
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'You have been logged out. To fully delete your account data, please contact support.'),
-                        backgroundColor: Colors.redAccent,
-                      ),
-                    );
+                    final authBloc = context.read<AuthBloc>();
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      await authBloc.authRepository.deleteAccount();
+                      if (!context.mounted) return;
+                      // Reuse logout flow to clear local tokens and route state.
+                      authBloc.add(LogoutRequested());
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Your account has been permanently deleted.',
+                          ),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      final message = e.toString().replaceFirst(
+                        'Exception: ',
+                        '',
+                      );
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            message.isEmpty
+                                ? 'Failed to delete account. Please try again.'
+                                : message,
+                          ),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                    }
                   }
                 : null,
           ),

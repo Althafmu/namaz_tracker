@@ -65,10 +65,7 @@ class AuthRemoteDataSource {
     try {
       final response = await dio.post(
         '/api/auth/login/',
-        data: {
-          'username': username,
-          'password': password,
-        },
+        data: {'username': username, 'password': password},
       );
       // Response now contains 'access', 'refresh', and 'user' info
       return response.data;
@@ -84,10 +81,7 @@ class AuthRemoteDataSource {
     try {
       final response = await dio.put(
         '/api/auth/profile/',
-        data: {
-          'first_name': firstName,
-          'last_name': lastName,
-        },
+        data: {'first_name': firstName, 'last_name': lastName},
       );
       return UserModel.fromJson(response.data);
     } on DioException catch (e) {
@@ -122,24 +116,29 @@ class AuthRemoteDataSource {
   /// Logout and blacklist the refresh token.
   Future<void> logout({required String refreshToken}) async {
     try {
-      await dio.post(
-        '/api/auth/logout/',
-        data: {'refresh': refreshToken},
-      );
+      await dio.post('/api/auth/logout/', data: {'refresh': refreshToken});
     } catch (e) {
-      debugPrint('[AuthRemoteDataSource] Logout failed or token already invalid: $e');
+      debugPrint(
+        '[AuthRemoteDataSource] Logout failed or token already invalid: $e',
+      );
       // We explicitly swallow this so the local logout sequence continues smoothly
       return;
+    }
+  }
+
+  /// Permanently delete the current user account.
+  Future<void> deleteAccount() async {
+    try {
+      await dio.delete('/api/auth/delete/');
+    } on DioException catch (e) {
+      throw Exception(_parseDioError(e, 'Account deletion failed'));
     }
   }
 
   /// PATCH /api/profile/offsets/ — sync manual offsets and calculation settings to cloud.
   Future<void> patchProfileOffsets(Map<String, dynamic> data) async {
     try {
-      await dio.patch(
-        '/api/profile/offsets/',
-        data: data,
-      );
+      await dio.patch('/api/profile/offsets/', data: data);
     } on DioException catch (e) {
       final data = e.response?.data;
       String message = 'Settings sync failed';

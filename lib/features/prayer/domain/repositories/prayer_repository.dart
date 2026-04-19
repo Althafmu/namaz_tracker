@@ -50,7 +50,10 @@ abstract class PrayerRepository {
   // ── Phase 3: New Backend Features ──
 
   /// Undo the last prayer log. Returns the updated prayer list.
-  Future<List<Prayer>> undoLastPrayerLog();
+  Future<List<Prayer>> undoLastPrayerLog({
+    String? prayerName,
+    String? dateKey,
+  });
 
   /// Get sync metadata (last sync, source, conflict info).
   Future<Map<String, dynamic>> getSyncMetadata();

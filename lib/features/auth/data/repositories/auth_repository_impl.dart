@@ -53,7 +53,10 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    final responseData = await remoteDataSource.login(username: email, password: password);
+    final responseData = await remoteDataSource.login(
+      username: email,
+      password: password,
+    );
     final token = responseData['access'] as String;
     final refreshToken = responseData['refresh'] as String?;
 
@@ -65,8 +68,12 @@ class AuthRepositoryImpl implements AuthRepository {
     if (responseData['user'] != null) {
       user = UserModel.fromJson(responseData['user']);
     } else {
-      debugPrint('[AuthRepo] Server response missing user field — creating minimal user from email');
-      throw Exception('Login succeeded but server did not return user profile. Please try again.');
+      debugPrint(
+        '[AuthRepo] Server response missing user field — creating minimal user from email',
+      );
+      throw Exception(
+        'Login succeeded but server did not return user profile. Please try again.',
+      );
     }
 
     return AuthResponse(token: token, user: user);
@@ -88,6 +95,11 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<void> deleteAccount() async {
+    await remoteDataSource.deleteAccount();
+  }
+
   /// Attempt to refresh the access token using the stored refresh token.
   /// Returns the new access token, or null if refresh failed.
   Future<String?> refreshAccessToken() async {
@@ -95,7 +107,9 @@ class AuthRepositoryImpl implements AuthRepository {
     if (currentRefresh == null) return null;
 
     try {
-      final newAccess = await remoteDataSource.refreshToken(refreshToken: currentRefresh);
+      final newAccess = await remoteDataSource.refreshToken(
+        refreshToken: currentRefresh,
+      );
       await tokenProvider.updateAccessToken(newAccess);
       return newAccess;
     } catch (e) {
@@ -121,6 +135,7 @@ class AuthRepositoryImpl implements AuthRepository {
     String? calculationMethod,
     bool? useHanafi,
     String? intentLevel,
+    bool? sunnahEnabled,
   }) async {
     final data = <String, dynamic>{'manual_offsets': manualOffsets};
     if (calculationMethod != null) {
@@ -131,6 +146,9 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     if (intentLevel != null) {
       data['intent_level'] = intentLevel;
+    }
+    if (sunnahEnabled != null) {
+      data['sunnah_enabled'] = sunnahEnabled;
     }
     await remoteDataSource.patchProfileOffsets(data);
   }

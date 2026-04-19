@@ -31,6 +31,9 @@ class SessionCoordinator {
       if (state.status == AuthStatus.loadingConfig) {
         await _hydrateIntent();
         authBloc.add(ConfigLoadComplete());
+      } else if (state.status == AuthStatus.unauthenticated) {
+        settingsBloc.add(const ResetSessionScopedSettings());
+        _wasExcused = null;
       }
     });
 
@@ -56,16 +59,28 @@ class SessionCoordinator {
     for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
         final config = await authRepository.getUserConfig();
-        final intent = config['data']?['intent_level'];
-        if (intent != null) {
+        final data = config['data'] is Map<String, dynamic>
+            ? config['data'] as Map<String, dynamic>
+            : config;
+        final intent = data['intent_level'] ?? data['intent'];
+        final intentExplicitlySet =
+            data['intent_explicitly_set'] as bool? ?? false;
+        final sunnahEnabled = data['sunnah_enabled'] as bool?;
+
+        if (intent != null && intentExplicitlySet) {
           settingsBloc.add(LoadIntentFromBackend(intent));
         } else if (!settingsBloc.state.isIntentSet) {
-          settingsBloc.add(const LoadIntentFromBackend('foundation', isFallback: true));
+          settingsBloc.add(
+            const LoadIntentFromBackend('foundation', isFallback: true),
+          );
+        }
+        if (sunnahEnabled != null) {
+          settingsBloc.add(LoadSunnahEnabledFromBackend(sunnahEnabled));
         }
         return; // Success, exit retry loop
       } catch (e) {
         bool shouldRetry = false;
-        
+
         if (e is DioException) {
           final statusCode = e.response?.statusCode;
           // Retry on network/timeout errors or 5xx server errors
@@ -82,16 +97,23 @@ class SessionCoordinator {
         }
 
         if (attempt == maxRetries - 1 || !shouldRetry) {
-          debugPrint('[SessionCoordinator] Config fetch failed permanently: $e');
+          debugPrint(
+            '[SessionCoordinator] Config fetch failed permanently: $e',
+          );
           if (!settingsBloc.state.isIntentSet) {
-            settingsBloc.add(const LoadIntentFromBackend('foundation', isFallback: true));
+            settingsBloc.add(
+              const LoadIntentFromBackend('foundation', isFallback: true),
+            );
           }
           return;
         }
 
         // Exponential backoff with jitter
-        final delayMs = (baseDelayMs * pow(2, attempt)).toInt() + random.nextInt(300);
-        debugPrint('[SessionCoordinator] Config fetch failed (attempt ${attempt + 1}). Retrying in ${delayMs}ms...');
+        final delayMs =
+            (baseDelayMs * pow(2, attempt)).toInt() + random.nextInt(300);
+        debugPrint(
+          '[SessionCoordinator] Config fetch failed (attempt ${attempt + 1}). Retrying in ${delayMs}ms...',
+        );
         await Future.delayed(Duration(milliseconds: delayMs));
       }
     }

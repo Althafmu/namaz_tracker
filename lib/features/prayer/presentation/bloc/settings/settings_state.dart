@@ -81,7 +81,10 @@ class UpgradePromptState extends Equatable {
   }
 
   UpgradePromptState markShown() {
-    return UpgradePromptState(lastShownAt: TimeService.effectiveNow(), dismissed: false);
+    return UpgradePromptState(
+      lastShownAt: TimeService.effectiveNow(),
+      dismissed: false,
+    );
   }
 
   UpgradePromptState markDismissed() {
@@ -147,11 +150,20 @@ class SettingsState extends Equatable {
   final bool isFallbackIntent;
   final bool isInitialized;
 
+  /// Whether the one-time home welcome banner has been shown on this device.
+  final bool hasSeenHomeWelcomeBanner;
+
   /// Whether notifications are paused for today (backend-synced).
   final bool notificationsPausedToday;
 
   /// Status of the pause-notifications-for-today action.
   final PauseActionStatus pauseActionStatus;
+
+  /// Growth-only optional Sunna tracking toggle.
+  final bool sunnahEnabled;
+
+  /// Whether Qada analytics should be visible in profile/progress surfaces.
+  final bool qadaTrackingEnabled;
 
   /// Message to display after a settings action.
   final String? lastSettingsActionMessage;
@@ -196,8 +208,11 @@ class SettingsState extends Equatable {
     this.isIntentSet = false,
     this.isFallbackIntent = false,
     this.isInitialized = false,
+    this.hasSeenHomeWelcomeBanner = false,
     this.notificationsPausedToday = false,
     this.pauseActionStatus = PauseActionStatus.idle,
+    this.sunnahEnabled = false,
+    this.qadaTrackingEnabled = true,
     this.lastSettingsActionMessage,
   });
 
@@ -221,8 +236,11 @@ class SettingsState extends Equatable {
     bool? isIntentSet,
     bool? isFallbackIntent,
     bool? isInitialized,
+    bool? hasSeenHomeWelcomeBanner,
     bool? notificationsPausedToday,
     PauseActionStatus? pauseActionStatus,
+    bool? sunnahEnabled,
+    bool? qadaTrackingEnabled,
     String? lastSettingsActionMessage,
     bool clearActionMessage = false,
   }) {
@@ -247,9 +265,13 @@ class SettingsState extends Equatable {
       isIntentSet: isIntentSet ?? this.isIntentSet,
       isFallbackIntent: isFallbackIntent ?? this.isFallbackIntent,
       isInitialized: isInitialized ?? this.isInitialized,
+      hasSeenHomeWelcomeBanner:
+          hasSeenHomeWelcomeBanner ?? this.hasSeenHomeWelcomeBanner,
       notificationsPausedToday:
           notificationsPausedToday ?? this.notificationsPausedToday,
       pauseActionStatus: pauseActionStatus ?? this.pauseActionStatus,
+      sunnahEnabled: sunnahEnabled ?? this.sunnahEnabled,
+        qadaTrackingEnabled: qadaTrackingEnabled ?? this.qadaTrackingEnabled,
       lastSettingsActionMessage: clearActionMessage
           ? null
           : (lastSettingsActionMessage ?? this.lastSettingsActionMessage),
@@ -258,7 +280,8 @@ class SettingsState extends Equatable {
 
   bool get isExcused {
     final today = TimeService.effectiveNow();
-    final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final todayStr =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
     return excusedDays.contains(todayStr);
   }
 
@@ -285,7 +308,10 @@ class SettingsState extends Equatable {
       'isIntentSet': isIntentSet,
       'isFallbackIntent': isFallbackIntent,
       'isInitialized': isInitialized,
+      'hasSeenHomeWelcomeBanner': hasSeenHomeWelcomeBanner,
       'notificationsPausedToday': notificationsPausedToday,
+      'sunnahEnabled': sunnahEnabled,
+      'qadaTrackingEnabled': qadaTrackingEnabled,
     };
   }
 
@@ -349,7 +375,8 @@ class SettingsState extends Equatable {
       useHanafi: json['useHanafi'] as bool? ?? false,
       alarmSound: json['alarmSound'] as String? ?? 'system',
       notificationsPermitted: json['notificationsPermitted'] as bool? ?? false,
-      themeMode: json['themeMode'] as String? ??
+      themeMode:
+          json['themeMode'] as String? ??
           (json['isDarkMode'] == true ? 'dark' : 'system'),
       prayerConfigs: parsedConfigs,
       manualOffsets: parsedOffsets,
@@ -367,7 +394,8 @@ class SettingsState extends Equatable {
             'Other',
           ],
       alarmDurationMinutes: json['alarmDurationMinutes'] as int? ?? 1,
-excusedDays: (json['excusedDays'] as List<dynamic>?)
+      excusedDays:
+          (json['excusedDays'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toSet() ??
           {},
@@ -380,37 +408,51 @@ excusedDays: (json['excusedDays'] as List<dynamic>?)
           ? MilestoneState.fromJson(json['milestones'] as Map<String, dynamic>)
           : const MilestoneState(),
       upgradePrompt: json['upgradePrompt'] != null
-          ? UpgradePromptState.fromJson(json['upgradePrompt'] as Map<String, dynamic>)
+          ? UpgradePromptState.fromJson(
+              json['upgradePrompt'] as Map<String, dynamic>,
+            )
           : const UpgradePromptState(),
       isIntentSet: json['isIntentSet'] as bool? ?? false,
       isFallbackIntent: json['isFallbackIntent'] as bool? ?? false,
       isInitialized: true,
-      notificationsPausedToday: json['notificationsPausedToday'] as bool? ?? false,
+      hasSeenHomeWelcomeBanner: json.containsKey('hasSeenHomeWelcomeBanner')
+          ? (json['hasSeenHomeWelcomeBanner'] as bool? ?? false)
+          : true,
+      notificationsPausedToday:
+          json['notificationsPausedToday'] as bool? ?? false,
+      sunnahEnabled: json['sunnahEnabled'] as bool? ?? false,
+      qadaTrackingEnabled: json.containsKey('qadaTrackingEnabled')
+          ? (json['qadaTrackingEnabled'] as bool? ?? true)
+          : true,
     );
   }
 
   @override
   List<Object?> get props => [
-        calculationMethod,
-        useHanafi,
-        alarmSound,
-        notificationsPermitted,
-        themeMode,
-        prayerConfigs,
-        manualOffsets,
-        methodAutoDetected,
-        missedReasons,
-        alarmDurationMinutes,
-        excusedDays,
-        intentLevel,
-        bestStreak,
-        lastStreak,
-        milestones,
-        upgradePrompt,
-        isIntentSet,
-        isFallbackIntent,
-        notificationsPausedToday,
-        pauseActionStatus,
-        lastSettingsActionMessage,
-      ];
+    calculationMethod,
+    useHanafi,
+    alarmSound,
+    notificationsPermitted,
+    themeMode,
+    prayerConfigs,
+    manualOffsets,
+    methodAutoDetected,
+    missedReasons,
+    alarmDurationMinutes,
+    excusedDays,
+    intentLevel,
+    bestStreak,
+    lastStreak,
+    milestones,
+    upgradePrompt,
+    isIntentSet,
+    isFallbackIntent,
+    isInitialized,
+    hasSeenHomeWelcomeBanner,
+    notificationsPausedToday,
+    pauseActionStatus,
+    sunnahEnabled,
+    qadaTrackingEnabled,
+    lastSettingsActionMessage,
+  ];
 }

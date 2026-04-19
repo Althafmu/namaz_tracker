@@ -7,7 +7,10 @@ class UndoLastPrayerLogUseCase {
 
   UndoLastPrayerLogUseCase(this.repository);
 
-  Future<List<Prayer>> call() async {
-    return await repository.undoLastPrayerLog();
+  Future<List<Prayer>> call({String? prayerName, String? dateKey}) async {
+    return await repository.undoLastPrayerLog(
+      prayerName: prayerName,
+      dateKey: dateKey,
+    );
   }
 }

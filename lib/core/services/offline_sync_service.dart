@@ -3,9 +3,6 @@ import 'package:flutter/foundation.dart';
 
 import '../../features/prayer/data/repositories/offline_queue_repository.dart';
 import '../../features/prayer/domain/usecases/log_prayer_usecase.dart';
-import 'package:get_it/get_it.dart';
-import '../../features/prayer/presentation/bloc/settings/settings_bloc.dart';
-import '../../features/prayer/presentation/bloc/settings/settings_event.dart';
 
 /// Coordinates offline→online sync of queued prayer logs.
 ///
@@ -19,12 +16,14 @@ class OfflineSyncService {
   OfflineSyncService({
     required OfflineQueueRepository queueRepository,
     required LogPrayerUseCase logPrayerUseCase,
-  })  : _queueRepository = queueRepository,
-        _logPrayerUseCase = logPrayerUseCase;
+  }) : _queueRepository = queueRepository,
+       _logPrayerUseCase = logPrayerUseCase;
 
   /// Start listening for connectivity changes.
   void startListening() {
-    Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+    Connectivity().onConnectivityChanged.listen((
+      List<ConnectivityResult> results,
+    ) {
       if (results.contains(ConnectivityResult.mobile) ||
           results.contains(ConnectivityResult.wifi)) {
         processQueue();
@@ -62,7 +61,6 @@ class OfflineSyncService {
       if (_queueRepository.isEmpty) return;
 
       final actions = _queueRepository.getAllActions();
-      bool processedAny = false;
       for (final entry in actions) {
         final action = entry.value;
         try {

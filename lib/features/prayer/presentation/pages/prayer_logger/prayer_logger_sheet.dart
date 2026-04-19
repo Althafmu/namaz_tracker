@@ -36,7 +36,9 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
   void initState() {
     super.initState();
     _inJamaat = widget.prayer.isCompleted ? widget.prayer.inJamaat : true;
-    _selectedLocation = widget.prayer.isCompleted ? widget.prayer.location : 'mosque';
+    _selectedLocation = widget.prayer.isCompleted
+        ? widget.prayer.location
+        : 'mosque';
     _status = widget.prayer.isCompleted ? widget.prayer.status : 'on_time';
     _selectedReason = widget.prayer.isCompleted ? widget.prayer.reason : null;
   }
@@ -94,19 +96,53 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                 ),
                 if (!canEdit)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: c.textPrimary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'View Only',
-                      style: AppTextStyles.bodyMedium.copyWith(color: c.background),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: c.background,
+                      ),
                     ),
                   ),
               ],
             ),
           ),
+
+          // ── View-Only Explanation ──
+          if (!canEdit)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: c.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: c.textSecondary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Prayers older than 2 days cannot be edited.',
+                        style: TextStyle(fontSize: 12, color: c.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // ── Content ──
           Padding(
@@ -201,7 +237,8 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                           isSelected: _status == 'missed',
                           onTap: () => setState(() {
                             _status = 'missed';
-                            _inJamaat = false; // Cannot pray in jamaat if missed
+                            _inJamaat =
+                                false; // Cannot pray in jamaat if missed
                           }),
                         ),
                         // Phase 2: Qada status option
@@ -217,8 +254,10 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                       ],
                     ),
 
-                    // Reasons Section (Conditional)
-                    if (!_inJamaat) ...[
+                    // Reasons Section (show for late/missed/qada statuses)
+                    if (_status == 'late' ||
+                        _status == 'missed' ||
+                        _status == 'qada') ...[
                       const SizedBox(height: 24),
                       Text(
                         'REASON (OPTIONAL)',
@@ -239,19 +278,34 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                                   _selectedReason = isSelected ? null : reason;
                                 }),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? c.textPrimary : c.surface,
+                                    color: isSelected
+                                        ? c.textPrimary
+                                        : c.surface,
                                     borderRadius: BorderRadius.circular(9999),
-                                    border: Border.all(color: c.border, width: 2),
-                                    boxShadow: isSelected ? [] : [
-                                      BoxShadow(color: c.border, offset: const Offset(2, 2)),
-                                    ],
+                                    border: Border.all(
+                                      color: c.border,
+                                      width: 2,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? []
+                                        : [
+                                            BoxShadow(
+                                              color: c.border,
+                                              offset: const Offset(2, 2),
+                                            ),
+                                          ],
                                   ),
                                   child: Text(
                                     reason,
                                     style: AppTextStyles.bodyMedium.copyWith(
-                                      color: isSelected ? c.background : c.textPrimary,
+                                      color: isSelected
+                                          ? c.background
+                                          : c.textPrimary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -280,17 +334,45 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                             text: 'Delete',
                             icon: Icons.delete_outline,
                             color: c.error,
-                            onPressed: () {
+                            onPressed: () async {
                               final nav = Navigator.of(context);
-                              context.read<PrayerBloc>().add(LogPrayer(
+                              final bloc = context.read<PrayerBloc>();
+                              final selectedDateKey =
+                                  context.read<HistoryBloc>().state.selectedDateStr ??
+                                  HistoryState.todayKey;
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Delete Prayer Log'),
+                                  content: Text(
+                                    'Remove the log for ${widget.prayer.name}? This cannot be undone.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(ctx).pop(true),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: c.error,
+                                      ),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed == true) {
+                                bloc.add(
+                                  UndoLastPrayerLog(
                                     prayerName: widget.prayer.name,
-                                    completed: false,
-                                    inJamaat: false,
-                                    location: 'home',
-                                    status: 'on_time',
-                                    reason: null,
-                                  ));
-                              nav.pop();
+                                    dateKey: selectedDateKey,
+                                  ),
+                                );
+                                nav.pop();
+                              }
                             },
                           ),
                         ),
@@ -301,14 +383,16 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                             icon: Icons.save_outlined,
                             onPressed: () {
                               final nav = Navigator.of(context);
-                              context.read<PrayerBloc>().add(LogPrayer(
-                                    prayerName: widget.prayer.name,
-                                    completed: true,
-                                    inJamaat: _inJamaat,
-                                    location: _selectedLocation,
-                                    status: _status,
-                                    reason: _selectedReason,
-                                  ));
+                              context.read<PrayerBloc>().add(
+                                LogPrayer(
+                                  prayerName: widget.prayer.name,
+                                  completed: true,
+                                  inJamaat: _inJamaat,
+                                  location: _selectedLocation,
+                                  status: _status,
+                                  reason: _selectedReason,
+                                ),
+                              );
                               nav.pop();
                             },
                           ),
@@ -320,14 +404,16 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                       icon: Icons.check_circle,
                       onPressed: () {
                         final nav = Navigator.of(context);
-                        context.read<PrayerBloc>().add(LogPrayer(
-                              prayerName: widget.prayer.name,
-                              completed: true,
-                              inJamaat: _inJamaat,
-                              location: _selectedLocation,
-                              status: _status,
-                              reason: _selectedReason,
-                            ));
+                        context.read<PrayerBloc>().add(
+                          LogPrayer(
+                            prayerName: widget.prayer.name,
+                            completed: true,
+                            inJamaat: _inJamaat,
+                            location: _selectedLocation,
+                            status: _status,
+                            reason: _selectedReason,
+                          ),
+                        );
                         nav.pop();
                       },
                     ),
