@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
 import 'features/prayer/data/datasources/prayer_remote_data_source.dart';
+import 'features/prayer/data/datasources/sunnah_remote_data_source.dart';
 import 'features/prayer/data/repositories/prayer_repository_impl.dart';
 import 'features/prayer/data/repositories/offline_queue_repository.dart';
 import 'features/prayer/domain/repositories/prayer_repository.dart';
@@ -20,6 +21,7 @@ import 'features/prayer/domain/usecases/get_reason_summary_usecase.dart';
 import 'features/prayer/domain/usecases/log_prayer_usecase.dart';
 import 'features/prayer/domain/usecases/consume_protector_token_usecase.dart';
 import 'features/prayer/domain/usecases/set_excused_day_usecase.dart';
+import 'features/prayer/domain/usecases/clear_excused_day_usecase.dart';
 import 'features/prayer/domain/usecases/undo_last_prayer_log_usecase.dart';
 import 'features/prayer/domain/usecases/get_sync_metadata_usecase.dart';
 import 'features/prayer/domain/usecases/pause_notifications_for_today_usecase.dart';
@@ -29,6 +31,7 @@ import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'features/prayer/presentation/bloc/history/history_bloc.dart';
 import 'features/prayer/presentation/bloc/stats/stats_bloc.dart';
 import 'features/prayer/presentation/bloc/streak/streak_bloc.dart';
+import 'features/prayer/presentation/bloc/sunnah/sunnah_bloc.dart';
 import 'core/services/session_coordinator.dart';
 
 import 'core/network/token_provider.dart';
@@ -152,6 +155,9 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<PrayerRemoteDataSource>(
     () => PrayerRemoteDataSource(dio: sl()),
   );
+  sl.registerLazySingleton<SunnahRemoteDataSource>(
+    () => SunnahRemoteDataSource(dio: sl()),
+  );
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSource(dio: sl()),
   );
@@ -174,6 +180,7 @@ Future<void> initDependencies() async {
   // Phase 2: Streak Freeze System
   sl.registerLazySingleton(() => ConsumeProtectorTokenUseCase(sl()));
   sl.registerLazySingleton(() => SetExcusedDayUseCase(sl()));
+  sl.registerLazySingleton(() => ClearExcusedDayUseCase(sl()));
   // Phase 3: New Backend Features
   sl.registerLazySingleton(() => UndoLastPrayerLogUseCase(sl()));
   sl.registerLazySingleton(() => GetSyncMetadataUseCase(sl()));
@@ -189,6 +196,7 @@ Future<void> initDependencies() async {
   );
 
   // ── BLoC ──
+  sl.registerLazySingleton(() => SunnahBloc(remoteDataSource: sl()));
   sl.registerLazySingleton(
     () => SettingsBloc(
       notificationService: sl(),
@@ -219,6 +227,7 @@ Future<void> initDependencies() async {
     () => PrayerBloc(
       logPrayerUseCase: sl(),
       getDailyStatusUseCase: sl(),
+      clearExcusedDayUseCase: sl(),
       undoLastPrayerLogUseCase: sl(),
       offlineSyncService: sl(),
       prayerSchedulerService: sl(),
@@ -230,10 +239,7 @@ Future<void> initDependencies() async {
   );
 
   sl.registerLazySingleton(
-    () => AuthBloc(
-      authRepository: sl(),
-      tokenProvider: sl(),
-    ),
+    () => AuthBloc(authRepository: sl(), tokenProvider: sl()),
   );
 
   sl.registerLazySingleton(

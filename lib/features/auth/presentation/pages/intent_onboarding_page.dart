@@ -13,52 +13,46 @@ class IntentOnboardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.of(context).background,
+      backgroundColor: c.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 40),
               Text('Choose Your Path', style: AppTextStyles.headlineLarge),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
-                'Select the approach that fits where you are right now.',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.of(context).textSecondary,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Expanded(
-                child: _IntentCard(
-                  intent: IntentLevel.foundation,
-                  color: const Color(0xFF4CAF50),
-                  icon: Icons.grass,
-                  onTap: () => _selectIntent(context, IntentLevel.foundation),
+                'Select the approach that fits where you are right now. You can change this later.',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: c.textSecondary,
                 ),
               ),
               const SizedBox(height: 16),
-              Expanded(
-                child: _IntentCard(
-                  intent: IntentLevel.strengthening,
-                  color: const Color(0xFFFF9800),
-                  icon: Icons.trending_up,
-                  onTap: () =>
-                      _selectIntent(context, IntentLevel.strengthening),
-                ),
+              _IntentCard(
+                intent: IntentLevel.foundation,
+                color: const Color(0xFF4CAF50),
+                icon: Icons.grass,
+                onTap: () => _selectIntent(context, IntentLevel.foundation),
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _IntentCard(
-                  intent: IntentLevel.growth,
-                  color: const Color(0xFF2196F3),
-                  icon: Icons.bolt,
-                  onTap: () => _selectIntent(context, IntentLevel.growth),
-                ),
+              const SizedBox(height: 10),
+              _IntentCard(
+                intent: IntentLevel.strengthening,
+                color: const Color(0xFFFF9800),
+                icon: Icons.trending_up,
+                onTap: () => _selectIntent(context, IntentLevel.strengthening),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
+              _IntentCard(
+                intent: IntentLevel.growth,
+                color: const Color(0xFF2196F3),
+                icon: Icons.bolt,
+                onTap: () => _selectIntent(context, IntentLevel.growth),
+              ),
+              const SizedBox(height: 12),
               Center(
                 child: TextButton(
                   onPressed: () {
@@ -70,13 +64,12 @@ class IntentOnboardingPage extends StatelessWidget {
                   child: Text(
                     'Not ready yet? Start Simple',
                     style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.of(context).primary,
+                      color: c.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -105,44 +98,87 @@ class _IntentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final highlights = switch (intent) {
+      IntentLevel.foundation => const [
+        'Gentle restart',
+        'Full recovery options',
+      ],
+      IntentLevel.strengthening => const [
+        'Priority recovery',
+        'Stronger consistency focus',
+      ],
+      IntentLevel.growth => const [
+        'Optional Sunnah tracker',
+        'Most disciplined mode',
+      ],
+    };
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.of(context).surface,
-          border: Border.all(color: AppColors.of(context).border, width: 3),
+          color: c.surface,
+          border: Border.all(color: c.border, width: 3),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.of(context).border,
-              offset: const Offset(4, 4),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: c.border, offset: const Offset(4, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 32),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  intent.displayName,
+                  style: AppTextStyles.headlineSmall.copyWith(color: color),
+                ),
+              ],
             ),
-            const Spacer(),
-            Text(
-              intent.displayName,
-              style: AppTextStyles.headlineMedium.copyWith(color: color),
-            ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               intent.subtitle,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.of(context).textSecondary,
+                color: c.textSecondary,
+                height: 1.45,
               ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: highlights
+                  .map(
+                    (highlight) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: c.background,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: c.border, width: 2),
+                      ),
+                      child: Text(
+                        highlight,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: c.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ),

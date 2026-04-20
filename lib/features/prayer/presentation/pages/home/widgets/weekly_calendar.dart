@@ -71,6 +71,9 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
               return GestureDetector(
                 onTap: () {
                   context.read<HistoryBloc>().add(SelectDate(dateKey));
+                  context.read<HistoryBloc>().add(
+                    LoadMonthHistory(year: date.year, month: date.month),
+                  );
                 },
                 child: NeoCard(
                   padding: const EdgeInsets.symmetric(
@@ -88,7 +91,9 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: isSelected
-                              ? const Color(0xFF2B2D42) // Fixed dark color for contrast on primary background
+                              ? const Color(
+                                  0xFF2B2D42,
+                                ) // Fixed dark color for contrast on primary background
                               : c.textSecondary,
                         ),
                       ),
@@ -99,7 +104,9 @@ class _WeeklyCalendarState extends State<WeeklyCalendar> {
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           color: isSelected
-                              ? const Color(0xFF2B2D42) // Fixed dark color for contrast on primary background
+                              ? const Color(
+                                  0xFF2B2D42,
+                                ) // Fixed dark color for contrast on primary background
                               : c.textPrimary,
                         ),
                       ),

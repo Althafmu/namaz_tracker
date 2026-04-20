@@ -42,18 +42,15 @@ abstract class PrayerRepository {
 
   /// Mark a day as excused (travel, sickness, women's period).
   /// Returns the updated prayer log.
-  Future<List<Prayer>> setExcusedDay({
-    required String date,
-    String? reason,
-  });
+  Future<List<Prayer>> setExcusedDay({required String date, String? reason});
+
+  /// Clear a day's excused state and restore excused prayers to pending.
+  Future<List<Prayer>> clearExcusedDay({required String date});
 
   // ── Phase 3: New Backend Features ──
 
   /// Undo the last prayer log. Returns the updated prayer list.
-  Future<List<Prayer>> undoLastPrayerLog({
-    String? prayerName,
-    String? dateKey,
-  });
+  Future<List<Prayer>> undoLastPrayerLog({String? prayerName, String? dateKey});
 
   /// Get sync metadata (last sync, source, conflict info).
   Future<Map<String, dynamic>> getSyncMetadata();

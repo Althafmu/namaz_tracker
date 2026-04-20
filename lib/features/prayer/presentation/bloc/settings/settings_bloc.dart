@@ -43,9 +43,11 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     on<MarkMilestoneShown>(_onMarkMilestoneShown);
     on<DismissUpgradePrompt>(_onDismissUpgradePrompt);
     on<MarkHomeWelcomeSeen>(_onMarkHomeWelcomeSeen);
+    on<CompleteFirstRunSetup>(_onCompleteFirstRunSetup);
     on<PauseNotificationsForToday>(_onPauseNotificationsForToday);
     on<LoadNotificationsPauseStatus>(_onLoadNotificationsPauseStatus);
     on<ResetSessionScopedSettings>(_onResetSessionScopedSettings);
+    on<MarkLoginNotificationPromptSeen>(_onMarkLoginNotificationPromptSeen);
   }
 
   void _emitInitialized(Emitter<SettingsState> emit, SettingsState nextState) {
@@ -208,6 +210,9 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
         intentLevel: intent,
         isIntentSet: true,
         isFallbackIntent: false,
+        sunnahEnabled: intent == IntentLevel.growth
+            ? state.sunnahEnabled
+            : false,
       ),
     );
     add(const SyncSettingsToCloud());
@@ -310,6 +315,14 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     _emitInitialized(emit, state.copyWith(hasSeenHomeWelcomeBanner: true));
   }
 
+  void _onCompleteFirstRunSetup(
+    CompleteFirstRunSetup event,
+    Emitter<SettingsState> emit,
+  ) {
+    if (state.hasCompletedFirstRunSetup) return;
+    _emitInitialized(emit, state.copyWith(hasCompletedFirstRunSetup: true));
+  }
+
   Future<void> _onPauseNotificationsForToday(
     PauseNotificationsForToday event,
     Emitter<SettingsState> emit,
@@ -404,8 +417,19 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
         notificationsPausedToday: false,
         pauseActionStatus: PauseActionStatus.idle,
         excusedDays: <String>{},
+        hasSeenLoginNotificationPrompt: false,
         clearActionMessage: true,
       ),
+    );
+  }
+
+  void _onMarkLoginNotificationPromptSeen(
+    MarkLoginNotificationPromptSeen event,
+    Emitter<SettingsState> emit,
+  ) {
+    _emitInitialized(
+      emit,
+      state.copyWith(hasSeenLoginNotificationPrompt: true),
     );
   }
 

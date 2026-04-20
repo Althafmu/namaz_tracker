@@ -45,11 +45,13 @@ class CalculationSettingsPage extends StatelessWidget {
             elevation: 0,
             leading: IconButton(
               icon: Icon(Icons.arrow_back, color: c.textPrimary),
-              onPressed: () => context.go('/profile'),
+              onPressed: () => context.pop(),
             ),
             title: Text(
               'Salah Times Settings',
-              style: AppTextStyles.headlineMedium.copyWith(color: c.textPrimary),
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: c.textPrimary,
+              ),
             ),
             centerTitle: true,
           ),
@@ -93,8 +95,8 @@ class CalculationSettingsPage extends StatelessWidget {
                           textColor: c.primary,
                           onPressed: () {
                             context.read<PrayerBloc>().add(
-                                  const LoadDailyStatus(),
-                                ); // Forces GPS fetch & updates cached coordinates
+                              const LoadDailyStatus(),
+                            ); // Forces GPS fetch & updates cached coordinates
                           },
                         ),
                       ],
@@ -117,9 +119,8 @@ class CalculationSettingsPage extends StatelessWidget {
                         child: GestureDetector(
                           onTap: () {
                             context.read<SettingsBloc>().add(
-                                  const UpdateCalculationSettings(
-                                      useHanafi: false),
-                                );
+                              const UpdateCalculationSettings(useHanafi: false),
+                            );
                           },
                           child: NeoCard(
                             color: !state.useHanafi
@@ -159,17 +160,12 @@ class CalculationSettingsPage extends StatelessWidget {
                         child: GestureDetector(
                           onTap: () {
                             context.read<SettingsBloc>().add(
-                                  const UpdateCalculationSettings(
-                                      useHanafi: true),
-                                );
+                              const UpdateCalculationSettings(useHanafi: true),
+                            );
                           },
                           child: NeoCard(
-                            color: state.useHanafi
-                                ? c.primaryLight
-                                : c.surface,
-                            borderColor: state.useHanafi
-                                ? c.primary
-                                : c.border,
+                            color: state.useHanafi ? c.primaryLight : c.surface,
+                            borderColor: state.useHanafi ? c.primary : c.border,
                             padding: const EdgeInsets.symmetric(
                               vertical: 16,
                               horizontal: 8,
@@ -218,10 +214,7 @@ class CalculationSettingsPage extends StatelessWidget {
                       child: DropdownButton<String>(
                         value: state.calculationMethod,
                         isExpanded: true,
-                        icon: Icon(
-                          Icons.expand_more,
-                          color: c.textPrimary,
-                        ),
+                        icon: Icon(Icons.expand_more, color: c.textPrimary),
                         style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.bold,
                           color: c.textPrimary,
@@ -244,10 +237,10 @@ class CalculationSettingsPage extends StatelessWidget {
                         onChanged: (value) {
                           if (value != null) {
                             context.read<SettingsBloc>().add(
-                                  UpdateCalculationSettings(
-                                    calculationMethod: value,
-                                  ),
-                                );
+                              UpdateCalculationSettings(
+                                calculationMethod: value,
+                              ),
+                            );
                           }
                         },
                       ),
@@ -297,10 +290,7 @@ class CalculationSettingsPage extends StatelessWidget {
                               ],
                             ],
                           ),
-                          Icon(
-                            Icons.chevron_right,
-                            color: c.textPrimary,
-                          ),
+                          Icon(Icons.chevron_right, color: c.textPrimary),
                         ],
                       ),
                     ),
@@ -312,8 +302,8 @@ class CalculationSettingsPage extends StatelessWidget {
                     text: 'Save & Apply Changes',
                     onPressed: () {
                       context.read<PrayerBloc>().add(
-                            const RefreshPrayersAndAlarms(),
-                          );
+                        const RefreshPrayersAndAlarms(),
+                      );
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
@@ -369,9 +359,11 @@ class CalculationSettingsPage extends StatelessWidget {
           child: BlocBuilder<SettingsBloc, SettingsState>(
             builder: (ctx, state) {
               // Use bloc state coords, fallback to scheduler service cache
-              final lat = prayerBloc.state.cachedLat ??
+              final lat =
+                  prayerBloc.state.cachedLat ??
                   prayerBloc.prayerSchedulerService.cachedCoordinates?.latitude;
-              final lng = prayerBloc.state.cachedLng ??
+              final lng =
+                  prayerBloc.state.cachedLng ??
                   prayerBloc
                       .prayerSchedulerService
                       .cachedCoordinates
@@ -613,9 +605,9 @@ class _PrayerTimeAdjustmentSheetContentState
                                 ),
                                 onPressed: currentOffset > -120
                                     ? () => _updateOffset(
-                                          prayerName,
-                                          currentOffset - 1,
-                                        )
+                                        prayerName,
+                                        currentOffset - 1,
+                                      )
                                     : null,
                               ),
                               Container(
@@ -653,9 +645,9 @@ class _PrayerTimeAdjustmentSheetContentState
                                 ),
                                 onPressed: currentOffset < 120
                                     ? () => _updateOffset(
-                                          prayerName,
-                                          currentOffset + 1,
-                                        )
+                                        prayerName,
+                                        currentOffset + 1,
+                                      )
                                     : null,
                               ),
                             ],
@@ -696,12 +688,12 @@ class _PrayerTimeAdjustmentSheetContentState
                     final messenger = ScaffoldMessenger.of(context);
                     // Save the offsets to settings
                     context.read<SettingsBloc>().add(
-                          UpdateManualOffsets(manualOffsets: _localOffsets),
-                        );
+                      UpdateManualOffsets(manualOffsets: _localOffsets),
+                    );
                     // Explicitly trigger prayer time refresh
                     context.read<PrayerBloc>().add(
-                          const RefreshPrayersAndAlarms(),
-                        );
+                      const RefreshPrayersAndAlarms(),
+                    );
                     Navigator.pop(context);
                     messenger.showSnackBar(
                       const SnackBar(

@@ -9,6 +9,7 @@ import '../../features/prayer/presentation/pages/home/home_page.dart';
 import '../../features/prayer/presentation/pages/progress/progress_page.dart';
 import '../../features/prayer/presentation/pages/profile/settings_page.dart';
 import '../../features/prayer/presentation/pages/streak/streak_page.dart';
+import '../../features/prayer/presentation/pages/settings/settings_main_page.dart';
 import '../../features/prayer/presentation/pages/settings/notifications_settings_page.dart';
 import '../../features/prayer/presentation/pages/settings/calculation_settings_page.dart';
 import '../../features/prayer/presentation/pages/settings/reasons_settings_page.dart';
@@ -16,7 +17,6 @@ import '../../features/prayer/presentation/bloc/settings/settings_bloc.dart';
 
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/onboarding1_page.dart';
-import '../../features/auth/presentation/pages/onboarding_psych_page.dart';
 import '../../features/auth/presentation/pages/intent_onboarding_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
@@ -52,7 +52,11 @@ class AppRefreshListenable extends ChangeNotifier {
 }
 
 GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
+  final rootNavigatorKey = GlobalKey<NavigatorState>();
+  final shellNavigatorKey = GlobalKey<NavigatorState>();
+
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
     refreshListenable: AppRefreshListenable(authBloc, settingsBloc),
     redirect: (context, state) {
@@ -125,21 +129,35 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
         builder: (context, state) => const Onboarding1Page(),
       ),
       GoRoute(
-        path: '/onboarding-psych',
-        builder: (context, state) => const OnboardingPsychPage(),
-      ),
-      GoRoute(
-        path: '/onboarding2',
-        redirect: (context, state) => '/onboarding-psych',
-      ),
-      GoRoute(
         path: '/intent-setup',
         builder: (context, state) => const IntentOnboardingPage(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(path: '/signup', builder: (context, state) => const SignupPage()),
       GoRoute(path: '/streak', builder: (context, state) => const StreakPage()),
+      // ── Full-screen settings routes (outside shell — no bottom nav) ──
+      GoRoute(
+        path: '/settings',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const SettingsMainPage(),
+      ),
+      GoRoute(
+        path: '/settings/notifications',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const NotificationsSettingsPage(),
+      ),
+      GoRoute(
+        path: '/settings/calculation',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const CalculationSettingsPage(),
+      ),
+      GoRoute(
+        path: '/settings/reasons',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ReasonsSettingsPage(),
+      ),
       ShellRoute(
+        navigatorKey: shellNavigatorKey,
         builder: (context, state, child) => _AppShell(child: child),
         routes: [
           GoRoute(
@@ -156,21 +174,6 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
             path: '/profile',
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: SettingsPage()),
-          ),
-          GoRoute(
-            path: '/settings/notifications',
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: NotificationsSettingsPage()),
-          ),
-          GoRoute(
-            path: '/settings/calculation',
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: CalculationSettingsPage()),
-          ),
-          GoRoute(
-            path: '/settings/reasons',
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: ReasonsSettingsPage()),
           ),
         ],
       ),
@@ -222,7 +225,7 @@ class _AppShellState extends State<_AppShell> {
     if (location.startsWith('/progress')) {
       return 1;
     }
-    if (location.startsWith('/profile') || location.startsWith('/settings')) {
+    if (location.startsWith('/profile')) {
       return 2;
     }
     return 0;
@@ -233,86 +236,100 @@ class _AppShellState extends State<_AppShell> {
     final c = AppColors.of(context);
     final index = _currentIndex(context);
 
-    return Scaffold(
-      backgroundColor: c.background,
-      body: Column(
-        children: [
-          // ── Offline Banner ──
-          if (_isOffline)
-            Material(
-              color: Colors.orange.shade800,
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.cloud_off,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'You are offline. Changes will sync when reconnected.',
-                        style: const TextStyle(
+    return PopScope(
+      canPop: index == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          context.go('/');
+        }
+      },
+      child: Scaffold(
+        backgroundColor: c.background,
+        body: Column(
+          children: [
+            // ── Offline Banner ──
+            if (_isOffline)
+              Material(
+                color: Colors.orange.shade800,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.cloud_off,
                           color: Colors.white,
-                          fontSize: 12,
+                          size: 16,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Text(
+                          'You are offline. Changes will sync when reconnected.',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          Expanded(child: widget.child),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: c.surface,
-          border: Border(top: BorderSide(color: c.border, width: 2)),
-          boxShadow: [
-            BoxShadow(
-              color: c.border,
-              offset: const Offset(0, -4),
-              blurRadius: 0,
-            ),
+            Expanded(child: widget.child),
           ],
         ),
-        child: SafeArea(
-          child: SizedBox(
-            height: 72,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavItem(
-                  icon: Icons.home,
-                  label: 'HOME',
-                  isActive: index == 0,
-                  onTap: () {
-                    GetIt.I<HistoryBloc>().add(
-                      SelectDate(HistoryState.todayKey),
-                    );
-                    context.go('/');
-                  },
-                ),
-                _NavItem(
-                  icon: Icons.trending_up,
-                  label: 'PROGRESS',
-                  isActive: index == 1,
-                  onTap: () => context.go('/progress'),
-                ),
-                _NavItem(
-                  icon: Icons.person,
-                  label: 'PROFILE',
-                  isActive: index == 2,
-                  onTap: () => context.go('/profile'),
-                ),
-              ],
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: c.surface,
+            border: Border(top: BorderSide(color: c.border, width: 2)),
+            boxShadow: [
+              BoxShadow(
+                color: c.border,
+                offset: const Offset(0, -4),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: SizedBox(
+              height: 72,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.home,
+                      label: 'HOME',
+                      isActive: index == 0,
+                      onTap: () {
+                        GetIt.I<HistoryBloc>().add(
+                          SelectDate(HistoryState.todayKey),
+                        );
+                        context.go('/');
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.trending_up,
+                      label: 'PROGRESS',
+                      isActive: index == 1,
+                      onTap: () => context.go('/progress'),
+                    ),
+                  ),
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.person,
+                      label: 'PROFILE',
+                      isActive: index == 2,
+                      onTap: () => context.go('/profile'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -342,21 +359,37 @@ class _NavItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 64,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 28, color: isActive ? c.primary : c.textSecondary),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: AppTextStyles.navLabel.copyWith(
-                color: isActive ? c.primary : c.textSecondary,
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 96;
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: compact ? 24 : 28,
+                  color: isActive ? c.primary : c.textSecondary,
+                ),
+                SizedBox(height: compact ? 3 : 4),
+                Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.clip,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.navLabel.copyWith(
+                    color: isActive ? c.primary : c.textSecondary,
+                    fontSize: compact ? 9 : 10,
+                    letterSpacing: compact ? 0.8 : 1.5,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

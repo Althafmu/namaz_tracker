@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/services/milestone_service.dart';
 import '../../../../../core/services/time_service.dart';
@@ -20,11 +21,15 @@ import '../../bloc/settings/settings_state.dart';
 import '../../bloc/streak/streak_bloc.dart';
 import '../../bloc/streak/streak_event.dart';
 import '../../bloc/streak/streak_state.dart';
-import '../../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../domain/entities/prayer.dart';
 import '../prayer_logger/prayer_logger_sheet.dart';
 import 'widgets/excused_day_dialog.dart';
 import 'widgets/prayer_card.dart';
 import 'widgets/motivational_banner.dart';
+import 'widgets/sunnah_companion_card.dart';
+import 'widgets/sunnah_tracker_card.dart';
+import 'widgets/first_run_setup_dialog.dart';
+import 'widgets/notification_permission_overlay.dart';
 import 'widgets/weekly_calendar.dart';
 
 /// Dashboard / Home Page — matches dashboard.html Stitch mockup.
@@ -49,7 +54,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       if (mounted) {
         GetIt.I<StreakBloc>().add(const LoadStreak());
         context.read<PrayerBloc>().add(const LoadDailyStatus());
-        _maybeShowFirstLoginBanner();
+        _maybeShowFirstRunSetup();
+        _maybeShowLoginNotificationPrompt();
         _checkMilestones();
         _checkUpgradePrompt();
         _listenForActionMessages();
@@ -125,98 +131,59 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
   }
 
-  void _maybeShowFirstLoginBanner() {
+  void _maybeShowFirstRunSetup() {
     final settingsBloc = context.read<SettingsBloc>();
-    if (_welcomeBannerQueued || settingsBloc.state.hasSeenHomeWelcomeBanner) {
+    if (_welcomeBannerQueued || settingsBloc.state.hasCompletedFirstRunSetup) {
       return;
     }
 
     _welcomeBannerQueued = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      settingsBloc.add(const MarkHomeWelcomeSeen());
-      _showFirstLoginBanner();
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const FirstRunSetupDialog(),
+      );
+      if (!mounted) return;
+      settingsBloc.add(const CompleteFirstRunSetup());
     });
   }
 
-  void _showFirstLoginBanner() {
-    final c = AppColors.of(context);
-    final authState = context.read<AuthBloc>().state;
-    final firstName = authState.user?.firstName.trim();
-    final username = authState.user?.username.trim();
-    final greetingName = firstName != null && firstName.isNotEmpty
-        ? firstName
-        : (username != null && username.isNotEmpty ? username : 'friend');
-    final messenger = ScaffoldMessenger.of(context);
+  void _maybeShowLoginNotificationPrompt() {
+    final settingsBloc = context.read<SettingsBloc>();
+    final s = settingsBloc.state;
 
-    messenger.clearMaterialBanners();
-    messenger.showMaterialBanner(
-      MaterialBanner(
-        backgroundColor: c.surface,
-        forceActionsBelow: true,
-        leading: CircleAvatar(
-          backgroundColor: c.primaryLight,
-          child: Icon(Icons.mosque_rounded, color: c.primary),
-        ),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Assalamu alaikum, $greetingName.',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: c.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Start here:',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: c.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '1. Tap a prayer card to log today\'s salah.',
-              style: AppTextStyles.bodySmall.copyWith(color: c.textPrimary),
-            ),
-            Text(
-              '2. Pull down on the list if you need to refresh prayer times.',
-              style: AppTextStyles.bodySmall.copyWith(color: c.textPrimary),
-            ),
-            Text(
-              '3. Open Profile to tune reminders, themes, and calculation settings.',
-              style: AppTextStyles.bodySmall.copyWith(color: c.textPrimary),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              messenger.hideCurrentMaterialBanner();
-              context.go('/profile');
-            },
-            child: const Text('Open Profile'),
-          ),
-          TextButton(
-            onPressed: messenger.hideCurrentMaterialBanner,
-            child: const Text('Got it'),
-          ),
-        ],
-      ),
-    );
+    // Show only for returning users who haven't seen the prompt and haven't
+    // already granted notification permissions.
+    if (s.hasSeenLoginNotificationPrompt ||
+        s.notificationsPermitted ||
+        !s.hasCompletedFirstRunSetup) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      settingsBloc.add(const MarkLoginNotificationPromptSeen());
+      await NotificationPermissionOverlay.show(context);
+    });
   }
 
-  void _openExcusedModeDialog(BuildContext context) {
-    showDialog<bool>(
+  Future<void> _openExcusedModeDialog(BuildContext context) async {
+    final didChange = await showDialog<bool>(
       context: context,
-      builder: (_) => BlocProvider.value(
-        value: GetIt.I<StreakBloc>(),
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: GetIt.I<StreakBloc>()),
+          BlocProvider.value(value: context.read<PrayerBloc>()),
+        ],
         child: ExcusedDayDialog(date: HistoryState.todayKey),
       ),
     );
+
+    if (didChange == true && context.mounted) {
+      context.read<PrayerBloc>().add(const LoadDailyStatus());
+    }
   }
 
   void _showUpgradePromptBanner(BuildContext context) {
@@ -260,15 +227,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             final selectedDate = historyState.selectedDateStr;
             final isToday =
                 selectedDate == null || selectedDate == HistoryState.todayKey;
+            final viewedDateKey = selectedDate ?? HistoryState.todayKey;
             final displayPrayers = isToday
                 ? prayerState.prayers
                 : (historyState.historicalLog[selectedDate] ??
-                      prayerState.prayers);
+                      Prayer.defaultPrayers());
             final isHistorical = !isToday;
+            final isFullyExcusedDay =
+                isToday &&
+                displayPrayers.isNotEmpty &&
+                displayPrayers.every((prayer) => prayer.isExcused);
+            final excusedReason = displayPrayers
+                .where((prayer) => prayer.isExcused && prayer.reason != null)
+                .map((prayer) => prayer.reason!)
+                .cast<String?>()
+                .firstWhere(
+                  (reason) => reason != null && reason.isNotEmpty,
+                  orElse: () => null,
+                );
 
-            final completedToday = prayerState.prayers
+            final completedForViewedDay = displayPrayers
                 .where((p) => p.isCompleted && !p.isExcused)
                 .length;
+            final topBarSubtitle = isToday
+                ? '$completedForViewedDay/5 prayers today'
+                : '$completedForViewedDay/5 prayers on ${DateFormat('EEE d MMM').format(DateTime.parse(viewedDateKey))}';
 
             return SafeArea(
               child: Column(
@@ -280,7 +263,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       final streak = streakState.streak.displayStreak;
                       return _HomeTopBar(
                         streak: streak,
-                        completedToday: completedToday,
+                        subtitle: topBarSubtitle,
                         onStreakTap: () => context.push('/streak'),
                       );
                     },
@@ -289,278 +272,268 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          // ── Advanced Modules ──
-                          BlocBuilder<SettingsBloc, SettingsState>(
-                            builder: (context, settingsState) {
-                              return Column(
-                                children: [
-                                  if (TimeService.isLateNight() && isToday)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        top: 12,
-                                        bottom: 8,
-                                      ),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 12,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .withValues(alpha: 0.3),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.bedtime_outlined,
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.primary,
-                                              size: 20,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                "After midnight, prayers count toward yesterday until 3:00 AM",
-                                                style: TextStyle(
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.onSurface,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  const SizedBox(height: 12),
-                                  WeeklyCalendar(),
-                                  if (isToday) ...[
-                                    const SizedBox(height: 16),
-                                    _ExcusedModeCard(
-                                      isActive: settingsState.isExcused,
-                                      onTap: () => _openExcusedModeDialog(context),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 16),
-                                ],
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return RefreshIndicator(
+                            onRefresh: () async {
+                              context.read<PrayerBloc>().add(
+                                const LoadDailyStatus(),
+                              );
+                              await Future.delayed(
+                                const Duration(milliseconds: 800),
                               );
                             },
-                          ),
-
-                          // ── Prayer List ──
-                          Expanded(
-                            child:
-                                prayerState.isLoading && displayPrayers.isEmpty
-                                ? Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        CircularProgressIndicator(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Loading prayers...',
-                                          style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withValues(alpha: 0.6),
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : !prayerState.isLoading &&
-                                      displayPrayers.isEmpty
-                                ? Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(32),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.mosque_outlined,
-                                            size: 64,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .withValues(alpha: 0.4),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            'No prayers loaded',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w600,
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.onSurface,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Tap below to refresh prayer times based on your location.',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.6),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 20),
-                                          FilledButton.icon(
-                                            onPressed: () {
-                                              context.read<PrayerBloc>().add(
-                                                const LoadDailyStatus(),
-                                              );
-                                            },
-                                            icon: const Icon(
-                                              Icons.refresh,
-                                              size: 18,
-                                            ),
-                                            label: const Text('Load Prayers'),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                : RefreshIndicator(
-                                    onRefresh: () async {
-                                      context.read<PrayerBloc>().add(
-                                        const LoadDailyStatus(),
-                                      );
-                                      // Wait briefly for the bloc to process
-                                      await Future.delayed(
-                                        const Duration(milliseconds: 800),
-                                      );
-                                    },
-                                    child: ListView(
-                                      padding: EdgeInsets.zero,
-                                      children: () {
-                                        final items = <Widget>[];
-
-                                        for (
-                                          int i = 0;
-                                          i < displayPrayers.length;
-                                          i++
-                                        ) {
-                                          final prayer = displayPrayers[i];
-                                          items.add(
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 16,
-                                                right: 6,
-                                              ),
-                                              child: PrayerCard(
-                                                prayer: prayer,
-                                                showTime: !isHistorical,
-                                                onTap: () => _showPrayerLogger(
-                                                  context,
-                                                  prayer,
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.only(bottom: 24),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    BlocBuilder<SettingsBloc, SettingsState>(
+                                      builder: (context, settingsState) {
+                                        return Column(
+                                          children: [
+                                            if (TimeService.isLateNight() &&
+                                                isToday)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 12,
+                                                  bottom: 8,
                                                 ),
-                                              ),
-                                            ),
-                                          );
-
-                                          if (i == 3) {
-                                            // Insert motivational quote after Maghrib
-                                            items.add(
-                                              const Padding(
-                                                padding: EdgeInsets.only(
-                                                  bottom: 16,
-                                                  right: 6,
-                                                ),
-                                                child: MotivationalBanner(),
-                                              ),
-                                            );
-                                          }
-                                        }
-
-                                        // Undo button (only for today, when there are completed prayers)
-                                        if (isToday &&
-                                            displayPrayers.any(
-                                              (p) => p.isCompleted,
-                                            )) {
-                                          items.add(
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 16,
-                                                right: 6,
-                                              ),
-                                              child: Center(
-                                                child: TextButton.icon(
-                                                  onPressed:
-                                                      prayerState.undoStatus ==
-                                                          UndoStatus.loading
-                                                      ? null
-                                                      : () {
-                                                          context
-                                                              .read<
-                                                                PrayerBloc
-                                                              >()
-                                                              .add(
-                                                                const UndoLastPrayerLog(),
-                                                              );
-                                                        },
-                                                  icon:
-                                                      prayerState.undoStatus ==
-                                                          UndoStatus.loading
-                                                      ? SizedBox(
-                                                          width: 16,
-                                                          height: 16,
-                                                          child: CircularProgressIndicator(
-                                                            strokeWidth: 2,
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 12,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primary
+                                                        .withValues(alpha: 0.1),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .primary
+                                                          .withValues(
+                                                            alpha: 0.3,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.bedtime_outlined,
+                                                        color: Theme.of(
+                                                          context,
+                                                        ).colorScheme.primary,
+                                                        size: 20,
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      Expanded(
+                                                        child: Text(
+                                                          'After midnight, prayers count toward yesterday until 3:00 AM',
+                                                          style: TextStyle(
                                                             color:
                                                                 Theme.of(
                                                                       context,
                                                                     )
                                                                     .colorScheme
-                                                                    .primary,
+                                                                    .onSurface,
+                                                            fontSize: 13,
                                                           ),
-                                                        )
-                                                      : const Icon(
-                                                          Icons.undo,
-                                                          size: 18,
                                                         ),
-                                                  label: Text(
-                                                    prayerState.undoStatus ==
-                                                            UndoStatus.loading
-                                                        ? 'Undoing...'
-                                                        : 'Undo Last Log',
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                          );
-                                        }
-
-                                        return items;
-                                      }(),
+                                            const SizedBox(height: 12),
+                                            WeeklyCalendar(),
+                                            if (isToday) ...[
+                                              const SizedBox(height: 12),
+                                              if (isFullyExcusedDay ||
+                                                  settingsState.isExcused) ...[
+                                                _ExcusedModeCard(
+                                                  reason: excusedReason,
+                                                  onTap: () =>
+                                                      _openExcusedModeDialog(
+                                                        context,
+                                                      ),
+                                                ),
+                                              ] else ...[
+                                                Align(
+                                                  alignment:
+                                                      Alignment.centerLeft,
+                                                  child: TextButton.icon(
+                                                    onPressed: () =>
+                                                        _openExcusedModeDialog(
+                                                          context,
+                                                        ),
+                                                    icon: Icon(
+                                                      Icons.event_busy,
+                                                      color:
+                                                          settingsState
+                                                              .isExcused
+                                                          ? AppColors.of(
+                                                              context,
+                                                            ).statusExcused
+                                                          : AppColors.of(
+                                                              context,
+                                                            ).textSecondary,
+                                                    ),
+                                                    label: Text(
+                                                      'Can\'t pray today? Mark as excused',
+                                                      style: AppTextStyles
+                                                          .bodyMedium
+                                                          .copyWith(
+                                                            color: AppColors.of(
+                                                              context,
+                                                            ).textSecondary,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (settingsState.intentLevel ==
+                                                    IntentLevel.growth) ...[
+                                                  const SizedBox(height: 8),
+                                                  if (settingsState
+                                                      .sunnahEnabled)
+                                                    SunnahTrackerCard(
+                                                      dateKey:
+                                                          HistoryState.todayKey,
+                                                    )
+                                                  else
+                                                    const SunnahEnableCard(),
+                                                ],
+                                              ],
+                                            ],
+                                            const SizedBox(height: 8),
+                                          ],
+                                        );
+                                      },
                                     ),
-                                  ),
-                          ),
-                        ],
+                                    if (prayerState.isLoading &&
+                                        displayPrayers.isEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 48),
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              CircularProgressIndicator(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                'Loading prayers...',
+                                                style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.6),
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    else if (!prayerState.isLoading &&
+                                        displayPrayers.isEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          32,
+                                          32,
+                                          32,
+                                          24,
+                                        ),
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.mosque_outlined,
+                                                size: 64,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .withValues(alpha: 0.4),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                'No prayers loaded',
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                'Tap below to refresh prayer times based on your location.',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.6),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 20),
+                                              FilledButton.icon(
+                                                onPressed: () {
+                                                  context
+                                                      .read<PrayerBloc>()
+                                                      .add(
+                                                        const LoadDailyStatus(),
+                                                      );
+                                                },
+                                                icon: const Icon(
+                                                  Icons.refresh,
+                                                  size: 18,
+                                                ),
+                                                label: const Text(
+                                                  'Load Prayers',
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      ..._buildPrayerListItems(
+                                        context,
+                                        displayPrayers: displayPrayers,
+                                        isToday: isToday,
+                                        isHistorical: isHistorical,
+                                        prayerState: prayerState,
+                                        settingsState:
+                                            GetIt.I<SettingsBloc>().state,
+                                        dateKey: viewedDateKey,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -589,13 +562,106 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       ),
     );
   }
+
+  List<Widget> _buildPrayerListItems(
+    BuildContext context, {
+    required List<Prayer> displayPrayers,
+    required bool isToday,
+    required bool isHistorical,
+    required PrayerState prayerState,
+    required SettingsState settingsState,
+    required String dateKey,
+  }) {
+    final items = <Widget>[];
+    final showCompanion =
+        settingsState.intentLevel == IntentLevel.growth &&
+        settingsState.sunnahEnabled;
+
+    for (int index = 0; index < displayPrayers.length; index++) {
+      final prayer = displayPrayers[index];
+      items.add(
+        Padding(
+          padding: EdgeInsets.only(
+            bottom:
+                showCompanion &&
+                    SunnahCompanionCard.rawatibPrayers.contains(prayer.name)
+                ? 8
+                : 16,
+            right: 6,
+          ),
+          child: PrayerCard(
+            prayer: prayer,
+            showTime: !isHistorical,
+            onTap: () => _showPrayerLogger(context, prayer),
+          ),
+        ),
+      );
+
+      // Insert rawatib companion card after prayers that have sunnah
+      if (showCompanion &&
+          SunnahCompanionCard.rawatibPrayers.contains(prayer.name)) {
+        items.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16, right: 6),
+            child: SunnahCompanionCard(
+              prayerName: prayer.name,
+              dateKey: dateKey,
+            ),
+          ),
+        );
+      }
+
+      if (index == 3) {
+        items.add(
+          const Padding(
+            padding: EdgeInsets.only(bottom: 16, right: 6),
+            child: MotivationalBanner(),
+          ),
+        );
+      }
+    }
+
+    if (isToday && displayPrayers.any((prayer) => prayer.isCompleted)) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16, right: 6),
+          child: Center(
+            child: TextButton.icon(
+              onPressed: prayerState.undoStatus == UndoStatus.loading
+                  ? null
+                  : () {
+                      context.read<PrayerBloc>().add(const UndoLastPrayerLog());
+                    },
+              icon: prayerState.undoStatus == UndoStatus.loading
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    )
+                  : const Icon(Icons.undo, size: 18),
+              label: Text(
+                prayerState.undoStatus == UndoStatus.loading
+                    ? 'Undoing...'
+                    : 'Undo Last Log',
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return items;
+  }
 }
 
 class _ExcusedModeCard extends StatelessWidget {
-  final bool isActive;
+  final String? reason;
   final VoidCallback onTap;
 
-  const _ExcusedModeCard({required this.isActive, required this.onTap});
+  const _ExcusedModeCard({required this.onTap, this.reason});
 
   @override
   Widget build(BuildContext context) {
@@ -612,9 +678,7 @@ class _ExcusedModeCard extends StatelessWidget {
             color: c.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: c.border, width: 2),
-            boxShadow: [
-              BoxShadow(color: c.border, offset: const Offset(4, 4)),
-            ],
+            boxShadow: [BoxShadow(color: c.border, offset: const Offset(4, 4))],
           ),
           child: Row(
             children: [
@@ -626,11 +690,7 @@ class _ExcusedModeCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: c.border, width: 2),
                 ),
-                child: Icon(
-                  Icons.event_busy,
-                  color: c.statusExcused,
-                  size: 22,
-                ),
+                child: Icon(Icons.event_busy, color: c.statusExcused, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -638,7 +698,7 @@ class _ExcusedModeCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isActive ? 'Excused Mode Active' : 'Need Excused Mode?',
+                      'Excused Mode Active',
                       style: AppTextStyles.bodyLarge.copyWith(
                         color: c.textPrimary,
                         fontWeight: FontWeight.bold,
@@ -646,9 +706,9 @@ class _ExcusedModeCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isActive
-                          ? 'Today is already marked for travel, sickness, or period.'
-                          : 'Mark today as excused for travel, sickness, or period.',
+                      reason != null && reason!.isNotEmpty
+                          ? 'Today is marked as $reason. Tap to manage or resume normal logging.'
+                          : 'Today is marked for travel, sickness, or period. Tap to manage or resume normal logging.',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: c.textSecondary,
                       ),
@@ -658,7 +718,7 @@ class _ExcusedModeCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                isActive ? 'View' : 'Open',
+                'Manage',
                 style: AppTextStyles.bodySmall.copyWith(
                   color: c.primary,
                   fontWeight: FontWeight.bold,
@@ -676,12 +736,12 @@ class _ExcusedModeCard extends StatelessWidget {
 /// Shows app name on left and a streak badge (fire + count) on right.
 class _HomeTopBar extends StatelessWidget {
   final int streak;
-  final int completedToday;
+  final String subtitle;
   final VoidCallback onStreakTap;
 
   const _HomeTopBar({
     required this.streak,
-    required this.completedToday,
+    required this.subtitle,
     required this.onStreakTap,
   });
 
@@ -713,7 +773,7 @@ class _HomeTopBar extends StatelessWidget {
                 ),
               ),
               Text(
-                '$completedToday/5 prayers today',
+                subtitle,
                 style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
               ),
             ],

@@ -35,13 +35,13 @@ class LogPrayer extends PrayerEvent {
 
   @override
   List<Object?> get props => [
-        prayerName,
-        completed,
-        inJamaat,
-        location,
-        status,
-        reason,
-      ];
+    prayerName,
+    completed,
+    inJamaat,
+    location,
+    status,
+    reason,
+  ];
 }
 
 /// Toggle jama'at for the prayer logger.
@@ -72,6 +72,16 @@ class SyncWithServer extends PrayerEvent {
 /// Refresh prayers and alarms when settings change.
 class RefreshPrayersAndAlarms extends PrayerEvent {
   const RefreshPrayersAndAlarms();
+}
+
+/// Clear a day's excused state and return its prayers to pending.
+class ResumeExcusedDay extends PrayerEvent {
+  final String dateKey;
+
+  const ResumeExcusedDay({required this.dateKey});
+
+  @override
+  List<Object?> get props => [dateKey];
 }
 
 /// Undo the last prayer log action.

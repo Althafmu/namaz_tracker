@@ -5,82 +5,24 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/services/time_service.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_text_styles.dart';
-import '../../../../../core/widgets/neo_button.dart';
+import '../../../../../core/widgets/neo_settings_tile.dart';
 import '../../bloc/streak/streak_bloc.dart';
 import '../../bloc/streak/streak_state.dart';
+import '../../bloc/prayer/prayer_bloc.dart';
+import '../../bloc/prayer/prayer_event.dart';
+import '../../bloc/settings/settings_bloc.dart';
+import '../../bloc/settings/settings_event.dart';
+import '../../bloc/settings/settings_state.dart';
 import 'widgets/user_info_card.dart';
-import 'widgets/settings_list.dart';
 import 'widgets/account_actions.dart';
 import '../home/widgets/excused_day_dialog.dart';
 import 'widgets/edit_profile_sheet.dart';
 import 'widgets/logout_dialog.dart';
 import 'widgets/delete_account_dialog.dart';
 
-/// Settings Page (formerly Profile Page).
+/// Profile Page — clean view with user info, excused mode, and account actions.
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
-
-  // ─── Placeholder Sheet ───
-  void _showPlaceholderSheet(
-    BuildContext context,
-    String title,
-    String description,
-  ) {
-    final c = AppColors.of(context);
-
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      backgroundColor: c.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        side: BorderSide(color: c.border, width: 2),
-      ),
-      builder: (sheetContext) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: c.textSecondary,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                title,
-                style: AppTextStyles.headlineMedium.copyWith(
-                  color: c.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                description,
-                style: AppTextStyles.bodyMedium.copyWith(color: c.textPrimary),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Planned for an upcoming release.',
-                style: AppTextStyles.bodySmall.copyWith(color: c.textPrimary),
-              ),
-              const SizedBox(height: 24),
-              NeoButton(
-                text: 'Got it',
-                onPressed: () => Navigator.of(sheetContext).pop(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   void _showExcusedModeDialog(BuildContext context) {
     final today = TimeService.effectiveNow();
@@ -89,11 +31,18 @@ class SettingsPage extends StatelessWidget {
 
     showDialog<bool>(
       context: context,
-      builder: (_) => BlocProvider.value(
-        value: context.read<StreakBloc>(),
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: context.read<StreakBloc>()),
+          BlocProvider.value(value: context.read<PrayerBloc>()),
+        ],
         child: ExcusedDayDialog(date: dateKey),
       ),
-    );
+    ).then((didChange) {
+      if (didChange == true && context.mounted) {
+        context.read<PrayerBloc>().add(const LoadDailyStatus());
+      }
+    });
   }
 
   @override
@@ -107,14 +56,46 @@ class SettingsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Header ──
+                // ── Header with gear icon ──
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
-                  child: Text(
-                    'Profile',
-                    style: AppTextStyles.headlineLarge.copyWith(
-                      color: c.textPrimary,
-                    ),
+                  padding: const EdgeInsets.fromLTRB(24, 40, 16, 0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Profile',
+                          style: AppTextStyles.headlineLarge.copyWith(
+                            color: c.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Tooltip(
+                        message: 'Settings',
+                        child: GestureDetector(
+                          onTap: () => context.push('/settings'),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: c.surface,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: c.border, width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: c.border,
+                                  offset: const Offset(2, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.settings,
+                              size: 20,
+                              color: c.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -130,15 +111,94 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-                // ── Settings List ──
+                // ── Excused Mode ──
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SettingsList(
-                    onPlaceholderTap: (title, description) =>
-                        _showPlaceholderSheet(context, title, description),
-                    onExcusedModeTap: () => _showExcusedModeDialog(context),
+                  child: BlocBuilder<SettingsBloc, SettingsState>(
+                    buildWhen: (prev, curr) =>
+                        prev.excusedDays != curr.excusedDays,
+                    builder: (context, settingsState) {
+                      return NeoSettingsTile(
+                        title: settingsState.isExcused
+                            ? 'Excused Mode Active'
+                            : 'Excused Mode',
+                        subtitle: settingsState.isExcused
+                            ? 'Today is marked excused. Open it to resume normal logging if needed.'
+                            : 'Mark today for travel, sickness, or period.',
+                        icon: Icons.event_busy,
+                        iconColor: c.statusExcused,
+                        iconBg: c.statusExcused.withValues(alpha: 0.15),
+                        onTap: () => _showExcusedModeDialog(context),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Quick Settings ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: BlocBuilder<SettingsBloc, SettingsState>(
+                    buildWhen: (prev, curr) =>
+                        prev.notificationsPausedToday !=
+                            curr.notificationsPausedToday ||
+                        prev.pauseActionStatus != curr.pauseActionStatus,
+                    builder: (context, settingsState) {
+                      return Column(
+                        children: [
+                          NeoSettingsTile(
+                            title: 'Notifications',
+                            subtitle: 'Manage prayer alerts',
+                            icon: Icons.notifications,
+                            iconColor: c.primary,
+                            iconBg: c.primaryLight,
+                            onTap: () =>
+                                context.push('/settings/notifications'),
+                          ),
+                          const SizedBox(height: 12),
+                          NeoSettingsTile(
+                            title: 'Salah Times',
+                            subtitle: 'Calculation methods & offsets',
+                            icon: Icons.access_time,
+                            iconColor: c.streak,
+                            iconBg: c.streakLight,
+                            onTap: () => context.push('/settings/calculation'),
+                          ),
+                          const SizedBox(height: 12),
+                          NeoSettingsTile(
+                            title: 'Pause Notifications',
+                            subtitle: settingsState.notificationsPausedToday
+                                ? 'Paused for today'
+                                : 'Pause all alerts for today',
+                            icon: settingsState.notificationsPausedToday
+                                ? Icons.notifications_paused
+                                : Icons.notifications_off_outlined,
+                            iconColor: settingsState.notificationsPausedToday
+                                ? c.textSecondary
+                                : c.primary,
+                            iconBg: settingsState.notificationsPausedToday
+                                ? c.border
+                                : c.primaryLight,
+                            isToggle: true,
+                            toggleValue: settingsState.notificationsPausedToday,
+                            onToggleChanged:
+                                settingsState.pauseActionStatus ==
+                                    PauseActionStatus.loading
+                                ? null
+                                : (val) {
+                                    if (val) {
+                                      context.read<SettingsBloc>().add(
+                                        const PauseNotificationsForToday(),
+                                      );
+                                    }
+                                  },
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
 

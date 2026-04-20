@@ -135,10 +135,7 @@ class LoadIntentFromBackend extends SettingsEvent {
   final String intentLevel;
   final bool isFallback;
 
-  const LoadIntentFromBackend(
-    this.intentLevel, {
-    this.isFallback = false,
-  });
+  const LoadIntentFromBackend(this.intentLevel, {this.isFallback = false});
 
   @override
   List<Object?> get props => [intentLevel, isFallback];
@@ -204,6 +201,11 @@ class MarkHomeWelcomeSeen extends SettingsEvent {
   const MarkHomeWelcomeSeen();
 }
 
+/// Marks the first-run setup dialog (contextual tips overlay) as completed.
+class CompleteFirstRunSetup extends SettingsEvent {
+  const CompleteFirstRunSetup();
+}
+
 /// Pause all notifications for the remainder of today.
 class PauseNotificationsForToday extends SettingsEvent {
   const PauseNotificationsForToday();
@@ -217,4 +219,9 @@ class LoadNotificationsPauseStatus extends SettingsEvent {
 /// Clears auth-scoped local settings when the active user session ends.
 class ResetSessionScopedSettings extends SettingsEvent {
   const ResetSessionScopedSettings();
+}
+
+/// Marks the login notification-permission overlay as shown.
+class MarkLoginNotificationPromptSeen extends SettingsEvent {
+  const MarkLoginNotificationPromptSeen();
 }

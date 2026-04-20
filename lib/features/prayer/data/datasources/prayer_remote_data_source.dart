@@ -100,6 +100,16 @@ class PrayerRemoteDataSource {
     return response.data as Map<String, dynamic>;
   }
 
+  /// POST /api/prayers/excused/clear/
+  /// Clear a day's excused state and restore remaining prayers to pending.
+  Future<Map<String, dynamic>> clearExcusedDay({required String date}) async {
+    final response = await dio.post(
+      '/api/prayers/excused/clear/',
+      data: {'date': date},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
   // ── Phase 3: New Backend Features ──
 
   /// POST /api/prayers/undo/

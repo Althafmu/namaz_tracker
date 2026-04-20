@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -18,6 +19,9 @@ import '../../bloc/stats/stats_bloc.dart';
 import '../../bloc/stats/stats_state.dart';
 import '../../bloc/streak/streak_bloc.dart';
 import '../../bloc/streak/streak_state.dart';
+import '../../bloc/sunnah/sunnah_bloc.dart';
+import '../../bloc/sunnah/sunnah_event.dart';
+import '../../bloc/sunnah/sunnah_state.dart';
 import 'widgets/monthly_calendar.dart';
 import 'widgets/top_reasons.dart';
 import 'widgets/badges_grid.dart';
@@ -79,17 +83,16 @@ class ProgressPage extends StatelessWidget {
                     );
 
                     // Total lifetime prayers logged
-                    final totalLogged = mergedHistoricalLog.values
-                        .fold<int>(
-                          0,
-                          (sum, prayers) =>
-                              sum +
-                              prayers
-                                  .where((p) => p.isCompleted && !p.isExcused)
-                                  .length,
-                        );
+                    final totalLogged = mergedHistoricalLog.values.fold<int>(
+                      0,
+                      (sum, prayers) =>
+                          sum +
+                          prayers
+                              .where((p) => p.isCompleted && !p.isExcused)
+                              .length,
+                    );
                     // Total days with at least one prayer
-                      final totalDays = mergedHistoricalLog.entries
+                    final totalDays = mergedHistoricalLog.entries
                         .where(
                           (e) =>
                               e.value.any((p) => p.isCompleted && !p.isExcused),
@@ -238,6 +241,16 @@ class ProgressPage extends StatelessWidget {
                                   context,
                                   qadaAnalytics,
                                 ),
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+
+                            if (settingsState.sunnahEnabled) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                ),
+                                child: _SunnahAnalyticsCard(),
                               ),
                               const SizedBox(height: 20),
                             ],
@@ -676,9 +689,7 @@ class ProgressPage extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             StatusHelper.description('qada'),
-            style: AppTextStyles.bodySmall.copyWith(
-              color: c.textSecondary,
-            ),
+            style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
           ),
         ],
       ),
@@ -694,7 +705,9 @@ class ProgressPage extends StatelessWidget {
       return merged;
     }
 
-    final todayKey = DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+    final todayKey = DateFormat(
+      'yyyy-MM-dd',
+    ).format(TimeService.effectiveNow());
     merged[todayKey] = todayPrayers;
     return merged;
   }
@@ -703,7 +716,9 @@ class ProgressPage extends StatelessWidget {
     Map<String, List<Prayer>> historicalLog,
     List<Prayer> todayPrayers,
   ) {
-    final todayKey = DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+    final todayKey = DateFormat(
+      'yyyy-MM-dd',
+    ).format(TimeService.effectiveNow());
     final todayCount = (historicalLog[todayKey] ?? todayPrayers)
         .where((p) => p.isQada)
         .length;
@@ -718,7 +733,11 @@ class ProgressPage extends StatelessWidget {
 
       lifetimeCount += qadaForDay.length;
       for (final prayer in qadaForDay) {
-        prayerCounts.update(prayer.name, (count) => count + 1, ifAbsent: () => 1);
+        prayerCounts.update(
+          prayer.name,
+          (count) => count + 1,
+          ifAbsent: () => 1,
+        );
       }
 
       if (date == null) {
@@ -842,4 +861,144 @@ class _QadaAnalytics {
     required this.openRecoveryCount,
     required this.topPrayerName,
   });
+}
+
+/// Compact sunnah analytics card using SunnahBloc cached data.
+class _SunnahAnalyticsCard extends StatefulWidget {
+  @override
+  State<_SunnahAnalyticsCard> createState() => _SunnahAnalyticsCardState();
+}
+
+class _SunnahAnalyticsCardState extends State<_SunnahAnalyticsCard> {
+  late final SunnahBloc _sunnahBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _sunnahBloc = GetIt.I<SunnahBloc>();
+    _sunnahBloc.add(const LoadWeeklySunnah());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
+    return BlocBuilder<SunnahBloc, SunnahState>(
+      bloc: _sunnahBloc,
+      builder: (context, state) {
+        final week = state.weekSummary;
+        final todayKey = DateFormat(
+          'yyyy-MM-dd',
+        ).format(TimeService.effectiveNow());
+        final today = state.dailyCache[todayKey];
+        final todayDone = today?.completedCount ?? 0;
+        final todayTotal = today?.totalOpportunities ?? 0;
+        final weekDone = week?.totalCompleted ?? 0;
+        final weekTotal = week?.totalOpportunities ?? 0;
+        final weekRatio = weekTotal > 0 ? weekDone / weekTotal : 0.0;
+
+        return NeoCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: c.jamaatLight,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: c.border, width: 2),
+                    ),
+                    child: Icon(Icons.auto_awesome, size: 18, color: c.jamaat),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Sunnah This Week',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: c.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSunnahStat(
+                      context,
+                      label: 'Today',
+                      value: '$todayDone/$todayTotal',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildSunnahStat(
+                      context,
+                      label: 'Weekly',
+                      value: '$weekDone/$weekTotal',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: weekRatio,
+                  minHeight: 8,
+                  backgroundColor: c.surface,
+                  color: c.jamaat,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${(weekRatio * 100).round()}% weekly completion',
+                style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSunnahStat(
+    BuildContext context, {
+    required String label,
+    required String value,
+  }) {
+    final c = AppColors.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: c.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.border, width: 2),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$label ',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: c.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            value,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: c.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

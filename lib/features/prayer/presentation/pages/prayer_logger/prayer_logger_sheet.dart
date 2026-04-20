@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_text_styles.dart';
 import '../../../../../core/widgets/neo_button.dart';
 import '../../../../../core/services/status_helper.dart';
 import '../../../domain/entities/prayer.dart';
+import '../../bloc/sunnah/sunnah_bloc.dart';
+import '../../bloc/sunnah/sunnah_event.dart';
 import '../../bloc/prayer/prayer_bloc.dart';
 import '../../bloc/prayer/prayer_event.dart';
 import '../../bloc/history/history_bloc.dart';
@@ -31,16 +34,41 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
   late String _selectedLocation;
   late String _status;
   String? _selectedReason;
+  bool? _withRawatib;
+
+  /// Fard prayers that have mu'akkadah rawatib sunnah linked to them.
+  static const _rawatibPrayers = {'Fajr', 'Dhuhr', 'Maghrib', 'Isha'};
+
+  bool get _hasRawatib => _rawatibPrayers.contains(widget.prayer.name);
+
+  void _logRawatibIfNeeded(String dateKey) {
+    if (_withRawatib == true && _hasRawatib) {
+      GetIt.I<SunnahBloc>().add(
+        SetSunnahPrayerCompletion(
+          prayerType: widget.prayer.name.toLowerCase(),
+          dateKey: dateKey,
+          completed: true,
+        ),
+      );
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _inJamaat = widget.prayer.isCompleted ? widget.prayer.inJamaat : true;
-    _selectedLocation = widget.prayer.isCompleted
+    final isExcused = widget.prayer.isExcused;
+    _inJamaat = widget.prayer.isCompleted && !isExcused
+        ? widget.prayer.inJamaat
+        : true;
+    _selectedLocation = widget.prayer.isCompleted && !isExcused
         ? widget.prayer.location
         : 'mosque';
-    _status = widget.prayer.isCompleted ? widget.prayer.status : 'on_time';
-    _selectedReason = widget.prayer.isCompleted ? widget.prayer.reason : null;
+    _status = isExcused
+        ? 'on_time'
+        : (widget.prayer.isCompleted ? widget.prayer.status : 'on_time');
+    _selectedReason = isExcused
+        ? null
+        : (widget.prayer.isCompleted ? widget.prayer.reason : null);
   }
 
   bool _canEdit(BuildContext context) {
@@ -55,6 +83,13 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
   Widget build(BuildContext context) {
     final canEdit = _canEdit(context);
     final c = AppColors.of(context);
+    final settingsState = context.read<SettingsBloc>().state;
+    final selectedKey =
+        context.read<HistoryBloc>().state.selectedDateStr ??
+        HistoryState.todayKey;
+    final isExcusedDay =
+        settingsState.excusedDays.contains(selectedKey) ||
+        widget.prayer.isExcused;
 
     return Container(
       decoration: BoxDecoration(
@@ -154,6 +189,42 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (isExcusedDay) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: c.statusExcused.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: c.statusExcused.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: c.textSecondary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'This day is marked as excused. Saving a normal prayer will resume regular logging for this day.',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: c.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                     // Jama'at Toggle
                     JamaatToggle(
                       isActive: _inJamaat,
@@ -316,6 +387,78 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                         },
                       ),
                     ],
+
+                    // ── Rawatib Sunnah Toggle ──
+                    if (_hasRawatib &&
+                        _status != 'missed' &&
+                        settingsState.intentLevel == IntentLevel.growth &&
+                        settingsState.sunnahEnabled) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        'WITH RAWATIB?',
+                        style: AppTextStyles.sectionHeader.copyWith(
+                          color: c.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () => setState(
+                          () => _withRawatib = !(_withRawatib ?? false),
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (_withRawatib ?? false)
+                                ? c.jamaatLight
+                                : c.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: (_withRawatib ?? false)
+                                  ? c.jamaat
+                                  : c.border,
+                              width: 2,
+                            ),
+                            boxShadow: (_withRawatib ?? false)
+                                ? []
+                                : [
+                                    BoxShadow(
+                                      color: c.border,
+                                      offset: const Offset(2, 2),
+                                    ),
+                                  ],
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                (_withRawatib ?? false)
+                                    ? Icons.check_circle
+                                    : Icons.add_circle_outline,
+                                color: (_withRawatib ?? false)
+                                    ? c.jamaat
+                                    : c.textSecondary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Yes, I prayed the ${widget.prayer.name} sunnah${widget.prayer.name == 'Dhuhr' ? ' (4 rakah: 2+2)' : ''}',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: (_withRawatib ?? false)
+                                        ? c.jamaat
+                                        : c.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -338,7 +481,10 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                               final nav = Navigator.of(context);
                               final bloc = context.read<PrayerBloc>();
                               final selectedDateKey =
-                                  context.read<HistoryBloc>().state.selectedDateStr ??
+                                  context
+                                      .read<HistoryBloc>()
+                                      .state
+                                      .selectedDateStr ??
                                   HistoryState.todayKey;
                               final confirmed = await showDialog<bool>(
                                 context: context,
@@ -383,6 +529,12 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                             icon: Icons.save_outlined,
                             onPressed: () {
                               final nav = Navigator.of(context);
+                              final dateKey =
+                                  context
+                                      .read<HistoryBloc>()
+                                      .state
+                                      .selectedDateStr ??
+                                  HistoryState.todayKey;
                               context.read<PrayerBloc>().add(
                                 LogPrayer(
                                   prayerName: widget.prayer.name,
@@ -393,6 +545,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                                   reason: _selectedReason,
                                 ),
                               );
+                              _logRawatibIfNeeded(dateKey);
                               nav.pop();
                             },
                           ),
@@ -404,6 +557,9 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                       icon: Icons.check_circle,
                       onPressed: () {
                         final nav = Navigator.of(context);
+                        final dateKey =
+                            context.read<HistoryBloc>().state.selectedDateStr ??
+                            HistoryState.todayKey;
                         context.read<PrayerBloc>().add(
                           LogPrayer(
                             prayerName: widget.prayer.name,
@@ -414,6 +570,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                             reason: _selectedReason,
                           ),
                         );
+                        _logRawatibIfNeeded(dateKey);
                         nav.pop();
                       },
                     ),

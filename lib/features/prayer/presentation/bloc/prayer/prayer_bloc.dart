@@ -13,6 +13,7 @@ import '../../../../../core/services/time_service.dart';
 import '../../../domain/entities/prayer.dart';
 import '../../../domain/usecases/log_prayer_usecase.dart';
 import '../../../domain/usecases/get_daily_status_usecase.dart';
+import '../../../domain/usecases/clear_excused_day_usecase.dart';
 import '../../../domain/usecases/undo_last_prayer_log_usecase.dart';
 import '../history/history_bloc.dart';
 import '../history/history_event.dart';
@@ -31,6 +32,7 @@ import 'prayer_state.dart';
 class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
   final LogPrayerUseCase logPrayerUseCase;
   final GetDailyStatusUseCase getDailyStatusUseCase;
+  final ClearExcusedDayUseCase clearExcusedDayUseCase;
   final UndoLastPrayerLogUseCase? undoLastPrayerLogUseCase;
   final OfflineSyncService offlineSyncService;
   final PrayerSchedulerService prayerSchedulerService;
@@ -44,6 +46,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
   PrayerBloc({
     required this.logPrayerUseCase,
     required this.getDailyStatusUseCase,
+    required this.clearExcusedDayUseCase,
     this.undoLastPrayerLogUseCase,
     required this.offlineSyncService,
     required this.prayerSchedulerService,
@@ -58,6 +61,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     on<SetPrayerLocation>(_onSetPrayerLocation);
     on<SyncWithServer>(_onSyncWithServer);
     on<RefreshPrayersAndAlarms>(_onRefreshPrayersAndAlarms);
+    on<ResumeExcusedDay>(_onResumeExcusedDay);
     on<UndoLastPrayerLog>(_onUndoLastPrayerLog);
 
     _settingsSubscription = settingsBloc.stream.listen((_) {
@@ -158,7 +162,9 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       }).toList();
 
       // Update today in HistoryBloc
-      final todayKey = DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+      final todayKey = DateFormat(
+        'yyyy-MM-dd',
+      ).format(TimeService.effectiveNow());
       historyBloc.add(UpdateDayLog(dateStr: todayKey, prayers: merged));
 
       emit(state.copyWith(prayers: merged));
@@ -168,7 +174,9 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       // State already has optimistic updates from HydratedBloc
     } on ServerException catch (e) {
       // Server error - log but don't crash, use cached state
-      debugPrint('[PrayerBloc] Server error during sync (${e.statusCode}): ${e.message}');
+      debugPrint(
+        '[PrayerBloc] Server error during sync (${e.statusCode}): ${e.message}',
+      );
     } on NoDataException catch (e) {
       // No data - use defaults
       debugPrint('[PrayerBloc] No data: ${e.message}');
@@ -178,21 +186,48 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
 
     // 3. Trigger history and stats loading in their respective BLoCs
     final effectiveNow = TimeService.effectiveNow();
-    historyBloc.add(LoadMonthHistory(
-      year: effectiveNow.year,
-      month: effectiveNow.month,
-    ));
+    historyBloc.add(
+      LoadMonthHistory(year: effectiveNow.year, month: effectiveNow.month),
+    );
     statsBloc.add(const LoadAllReasons());
   }
 
   Future<void> _onLogPrayer(LogPrayer event, Emitter<PrayerState> emit) async {
     // Get the selected date from HistoryBloc
-    final effectiveDateKey = historyBloc.state.selectedDateStr ??
+    final effectiveDateKey =
+        historyBloc.state.selectedDateStr ??
         DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
-    final isToday = effectiveDateKey == DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+    final isToday =
+        effectiveDateKey ==
+        DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+
+    var currentDayPrayers = isToday
+        ? state.prayers
+        : (historyBloc.state.historicalLog[effectiveDateKey] ??
+              Prayer.defaultPrayers());
+
+    if (event.status != 'excused' &&
+        _isExcusedDay(effectiveDateKey, currentDayPrayers)) {
+      settingsBloc.add(ClearExcusedDay(effectiveDateKey));
+      currentDayPrayers = _clearExcusedPrayersLocally(currentDayPrayers);
+      historyBloc.add(
+        UpdateDayLog(dateStr: effectiveDateKey, prayers: currentDayPrayers),
+      );
+      if (isToday) {
+        emit(state.copyWith(prayers: currentDayPrayers));
+      }
+
+      try {
+        currentDayPrayers = await clearExcusedDayUseCase(
+          date: effectiveDateKey,
+        );
+      } catch (e) {
+        debugPrint('[PrayerBloc] Failed to clear excused day before log: $e');
+      }
+    }
 
     // 1. Optimistic local update
-    final updatedPrayers = state.prayers.map((prayer) {
+    final updatedPrayers = currentDayPrayers.map((prayer) {
       if (prayer.name.toLowerCase() == event.prayerName.toLowerCase()) {
         return prayer.copyWith(
           isCompleted: event.completed,
@@ -206,27 +241,9 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     }).toList();
 
     // 2. Update HistoryBloc
-    final historyPrayers = isToday
-        ? updatedPrayers
-        : (historyBloc.state.historicalLog[effectiveDateKey] ?? Prayer.defaultPrayers());
-
-    if (!isToday) {
-      final updatedHistoryPrayers = historyPrayers.map((prayer) {
-        if (prayer.name.toLowerCase() == event.prayerName.toLowerCase()) {
-          return prayer.copyWith(
-            isCompleted: event.completed,
-            inJamaat: event.inJamaat,
-            location: event.location,
-            status: event.status,
-            reason: event.reason,
-          );
-        }
-        return prayer;
-      }).toList();
-      historyBloc.add(UpdateDayLog(dateStr: effectiveDateKey, prayers: updatedHistoryPrayers));
-    } else {
-      historyBloc.add(UpdateDayLog(dateStr: effectiveDateKey, prayers: updatedPrayers));
-    }
+    historyBloc.add(
+      UpdateDayLog(dateStr: effectiveDateKey, prayers: updatedPrayers),
+    );
 
     // 3. Optimistic update
     final tempPrayers = isToday ? updatedPrayers : state.prayers;
@@ -265,7 +282,9 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       emit(state.copyWith(syncStatus: SyncStatus.error));
     } on ServerException catch (e) {
       // Server error - enqueue for retry
-      debugPrint('[PrayerBloc] Server error during log (${e.statusCode}): ${e.message}');
+      debugPrint(
+        '[PrayerBloc] Server error during log (${e.statusCode}): ${e.message}',
+      );
       await offlineSyncService.enqueueAction(
         prayerName: event.prayerName,
         completed: event.completed,
@@ -292,9 +311,12 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
   }
 
   void _onToggleJamaat(ToggleJamaat event, Emitter<PrayerState> emit) {
-    final effectiveDateKey = historyBloc.state.selectedDateStr ??
+    final effectiveDateKey =
+        historyBloc.state.selectedDateStr ??
         DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
-    final isToday = effectiveDateKey == DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+    final isToday =
+        effectiveDateKey ==
+        DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
 
     final updatedPrayers = state.prayers.map((prayer) {
       if (prayer.name.toLowerCase() == event.prayerName.toLowerCase()) {
@@ -305,7 +327,9 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
 
     if (isToday) {
       emit(state.copyWith(prayers: updatedPrayers));
-      historyBloc.add(UpdateDayLog(dateStr: effectiveDateKey, prayers: updatedPrayers));
+      historyBloc.add(
+        UpdateDayLog(dateStr: effectiveDateKey, prayers: updatedPrayers),
+      );
     }
   }
 
@@ -381,15 +405,110 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     await prayerSchedulerService.scheduleNotifications(settings);
   }
 
+  Future<void> _onResumeExcusedDay(
+    ResumeExcusedDay event,
+    Emitter<PrayerState> emit,
+  ) async {
+    final todayKey = DateFormat(
+      'yyyy-MM-dd',
+    ).format(TimeService.effectiveNow());
+    final isToday = event.dateKey == todayKey;
+    final currentDayPrayers = isToday
+        ? state.prayers
+        : (historyBloc.state.historicalLog[event.dateKey] ??
+              Prayer.defaultPrayers());
+
+    if (!_isExcusedDay(event.dateKey, currentDayPrayers)) {
+      return;
+    }
+
+    final locallyCleared = _clearExcusedPrayersLocally(currentDayPrayers);
+    settingsBloc.add(ClearExcusedDay(event.dateKey));
+    historyBloc.add(
+      UpdateDayLog(dateStr: event.dateKey, prayers: locallyCleared),
+    );
+    emit(
+      state.copyWith(
+        prayers: isToday ? locallyCleared : state.prayers,
+        syncStatus: SyncStatus.syncing,
+        lastActionMessage:
+            'Excused mode turned off. You can log prayers normally now.',
+      ),
+    );
+
+    try {
+      final clearedPrayers = await clearExcusedDayUseCase(date: event.dateKey);
+      historyBloc.add(
+        UpdateDayLog(dateStr: event.dateKey, prayers: clearedPrayers),
+      );
+      emit(
+        state.copyWith(
+          prayers: isToday ? clearedPrayers : state.prayers,
+          syncStatus: SyncStatus.synced,
+          lastActionMessage:
+              'Excused mode turned off. You can log prayers normally now.',
+        ),
+      );
+    } on NetworkException catch (e) {
+      debugPrint(
+        '[PrayerBloc] Network error clearing excused day: ${e.message}',
+      );
+      emit(
+        state.copyWith(
+          syncStatus: SyncStatus.error,
+          lastActionMessage:
+              'Excused mode was updated locally. It will sync when possible.',
+        ),
+      );
+    } on ServerException catch (e) {
+      debugPrint(
+        '[PrayerBloc] Server error clearing excused day (${e.statusCode}): ${e.message}',
+      );
+      emit(
+        state.copyWith(
+          syncStatus: SyncStatus.error,
+          lastActionMessage: e.userMessage,
+        ),
+      );
+    } catch (e) {
+      debugPrint('[PrayerBloc] Unexpected error clearing excused day: $e');
+      emit(
+        state.copyWith(
+          syncStatus: SyncStatus.error,
+          lastActionMessage: 'Failed to update excused mode. Please try again.',
+        ),
+      );
+    }
+  }
+
+  bool _isExcusedDay(String dateKey, List<Prayer> prayers) {
+    return settingsBloc.state.excusedDays.contains(dateKey) ||
+        (prayers.isNotEmpty && prayers.every((prayer) => prayer.isExcused));
+  }
+
+  List<Prayer> _clearExcusedPrayersLocally(List<Prayer> prayers) {
+    return prayers.map((prayer) {
+      if (!prayer.isExcused) return prayer;
+      return prayer.copyWith(
+        isCompleted: false,
+        inJamaat: false,
+        status: 'pending',
+        reason: null,
+      );
+    }).toList();
+  }
+
   Future<void> _onUndoLastPrayerLog(
     UndoLastPrayerLog event,
     Emitter<PrayerState> emit,
   ) async {
     if (undoLastPrayerLogUseCase == null) {
-      emit(state.copyWith(
-        undoStatus: UndoStatus.error,
-        lastActionMessage: 'Undo is not available.',
-      ));
+      emit(
+        state.copyWith(
+          undoStatus: UndoStatus.error,
+          lastActionMessage: 'Undo is not available.',
+        ),
+      );
       return;
     }
 
@@ -399,37 +518,49 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
       final targetDateKey =
           event.dateKey ??
           DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
-      final todayKey = DateFormat('yyyy-MM-dd').format(TimeService.effectiveNow());
+      final todayKey = DateFormat(
+        'yyyy-MM-dd',
+      ).format(TimeService.effectiveNow());
       final isToday = targetDateKey == todayKey;
       final updatedPrayers = await undoLastPrayerLogUseCase!(
         prayerName: event.prayerName,
         dateKey: targetDateKey,
       );
-      historyBloc.add(UpdateDayLog(dateStr: targetDateKey, prayers: updatedPrayers));
+      historyBloc.add(
+        UpdateDayLog(dateStr: targetDateKey, prayers: updatedPrayers),
+      );
 
-      emit(state.copyWith(
-        prayers: isToday ? updatedPrayers : state.prayers,
-        undoStatus: UndoStatus.success,
-        lastActionMessage: event.prayerName != null
-            ? '${event.prayerName} log removed.'
-            : 'Last prayer log undone successfully.',
-      ));
+      emit(
+        state.copyWith(
+          prayers: isToday ? updatedPrayers : state.prayers,
+          undoStatus: UndoStatus.success,
+          lastActionMessage: event.prayerName != null
+              ? '${event.prayerName} log removed.'
+              : 'Last prayer log undone successfully.',
+        ),
+      );
     } on ServerException catch (e) {
-      emit(state.copyWith(
-        undoStatus: UndoStatus.error,
-        lastActionMessage: e.userMessage,
-      ));
+      emit(
+        state.copyWith(
+          undoStatus: UndoStatus.error,
+          lastActionMessage: e.userMessage,
+        ),
+      );
     } on NetworkException catch (e) {
-      emit(state.copyWith(
-        undoStatus: UndoStatus.error,
-        lastActionMessage: 'Network error. Please check your connection.',
-      ));
+      emit(
+        state.copyWith(
+          undoStatus: UndoStatus.error,
+          lastActionMessage: 'Network error. Please check your connection.',
+        ),
+      );
       debugPrint('[PrayerBloc] Network error during undo: ${e.message}');
     } catch (e) {
-      emit(state.copyWith(
-        undoStatus: UndoStatus.error,
-        lastActionMessage: 'Failed to undo. Please try again.',
-      ));
+      emit(
+        state.copyWith(
+          undoStatus: UndoStatus.error,
+          lastActionMessage: 'Failed to undo. Please try again.',
+        ),
+      );
       debugPrint('[PrayerBloc] Unexpected error during undo: $e');
     }
   }

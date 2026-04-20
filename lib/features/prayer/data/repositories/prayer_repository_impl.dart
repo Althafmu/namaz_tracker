@@ -81,7 +81,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'getDailyStatus');
     } catch (e) {
-      throw NetworkException('Unexpected error during getDailyStatus', originalError: e);
+      throw NetworkException(
+        'Unexpected error during getDailyStatus',
+        originalError: e,
+      );
     }
   }
 
@@ -109,7 +112,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'logPrayer');
     } catch (e) {
-      throw NetworkException('Unexpected error during logPrayer', originalError: e);
+      throw NetworkException(
+        'Unexpected error during logPrayer',
+        originalError: e,
+      );
     }
   }
 
@@ -121,7 +127,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'getStreak');
     } catch (e) {
-      throw NetworkException('Unexpected error during getStreak', originalError: e);
+      throw NetworkException(
+        'Unexpected error during getStreak',
+        originalError: e,
+      );
     }
   }
 
@@ -141,7 +150,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'getWeeklyHistory');
     } catch (e) {
-      throw NetworkException('Unexpected error during getWeeklyHistory', originalError: e);
+      throw NetworkException(
+        'Unexpected error during getWeeklyHistory',
+        originalError: e,
+      );
     }
   }
 
@@ -187,7 +199,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'getDetailedMonthHistory');
     } catch (e) {
-      throw NetworkException('Unexpected error during getDetailedMonthHistory', originalError: e);
+      throw NetworkException(
+        'Unexpected error during getDetailedMonthHistory',
+        originalError: e,
+      );
     }
   }
 
@@ -200,7 +215,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'getReasonSummary');
     } catch (e) {
-      throw NetworkException('Unexpected error during getReasonSummary', originalError: e);
+      throw NetworkException(
+        'Unexpected error during getReasonSummary',
+        originalError: e,
+      );
     }
   }
 
@@ -216,7 +234,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'consumeProtectorToken');
     } catch (e) {
-      throw NetworkException('Unexpected error during consumeProtectorToken', originalError: e);
+      throw NetworkException(
+        'Unexpected error during consumeProtectorToken',
+        originalError: e,
+      );
     }
   }
 
@@ -226,12 +247,33 @@ class PrayerRepositoryImpl implements PrayerRepository {
     String? reason,
   }) async {
     try {
-      final data = await remoteDataSource.setExcusedDay(date: date, reason: reason);
+      final data = await remoteDataSource.setExcusedDay(
+        date: date,
+        reason: reason,
+      );
       return PrayerModel.fromApiResponse(data);
     } on DioException catch (e) {
       _handleDioError(e, 'setExcusedDay');
     } catch (e) {
-      throw NetworkException('Unexpected error during setExcusedDay', originalError: e);
+      throw NetworkException(
+        'Unexpected error during setExcusedDay',
+        originalError: e,
+      );
+    }
+  }
+
+  @override
+  Future<List<Prayer>> clearExcusedDay({required String date}) async {
+    try {
+      final data = await remoteDataSource.clearExcusedDay(date: date);
+      return PrayerModel.fromApiResponse(data);
+    } on DioException catch (e) {
+      _handleDioError(e, 'clearExcusedDay');
+    } catch (e) {
+      throw NetworkException(
+        'Unexpected error during clearExcusedDay',
+        originalError: e,
+      );
     }
   }
 
@@ -251,7 +293,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'undoLastPrayerLog');
     } catch (e) {
-      throw NetworkException('Unexpected error during undoLastPrayerLog', originalError: e);
+      throw NetworkException(
+        'Unexpected error during undoLastPrayerLog',
+        originalError: e,
+      );
     }
   }
 
@@ -262,7 +307,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'getSyncMetadata');
     } catch (e) {
-      throw NetworkException('Unexpected error during getSyncMetadata', originalError: e);
+      throw NetworkException(
+        'Unexpected error during getSyncMetadata',
+        originalError: e,
+      );
     }
   }
 
@@ -273,7 +321,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'pauseNotificationsForToday');
     } catch (e) {
-      throw NetworkException('Unexpected error during pauseNotificationsForToday', originalError: e);
+      throw NetworkException(
+        'Unexpected error during pauseNotificationsForToday',
+        originalError: e,
+      );
     }
   }
 
@@ -284,7 +335,10 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } on DioException catch (e) {
       _handleDioError(e, 'getNotificationsPauseStatus');
     } catch (e) {
-      throw NetworkException('Unexpected error during getNotificationsPauseStatus', originalError: e);
+      throw NetworkException(
+        'Unexpected error during getNotificationsPauseStatus',
+        originalError: e,
+      );
     }
   }
 }

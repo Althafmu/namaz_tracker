@@ -118,7 +118,7 @@ class SettingsList extends StatelessWidget {
               NeoSettingsTile(
                 title: 'Sunna Tracker',
                 subtitle: settingsState.sunnahEnabled
-                    ? 'Enabled for your Growth plan. Dedicated tracking UI comes next.'
+                    ? 'Enabled for your Growth plan and shown on Home.'
                     : 'Enable optional Sunna tracking for your Growth plan.',
                 icon: Icons.auto_awesome,
                 iconColor: c.jamaat,
@@ -132,7 +132,8 @@ class SettingsList extends StatelessWidget {
             ] else ...[
               NeoSettingsTile(
                 title: 'Sunna Tracker',
-                subtitle: 'Visible in Growth mode. Tap to switch your path and unlock it.',
+                subtitle:
+                    'Visible in Growth mode. Tap to switch your path and unlock it.',
                 icon: Icons.auto_awesome,
                 iconColor: c.jamaat,
                 iconBg: c.jamaatLight,
@@ -145,7 +146,7 @@ class SettingsList extends StatelessWidget {
                   ? 'Excused Mode Active'
                   : 'Excused Mode',
               subtitle: settingsState.isExcused
-                  ? 'Today is marked excused for travel, sickness, or period.'
+                  ? 'Today is marked excused. Open it to resume normal logging if needed.'
                   : 'Mark today for travel, sickness, or period.',
               icon: Icons.event_busy,
               iconColor: c.statusExcused,

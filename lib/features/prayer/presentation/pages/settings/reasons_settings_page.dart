@@ -77,7 +77,7 @@ class _ReasonsSettingsPageState extends State<ReasonsSettingsPage> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: c.textPrimary),
-          onPressed: () => context.go('/profile'),
+          onPressed: () => context.pop(),
         ),
         title: Text(
           'Edit Reasons',

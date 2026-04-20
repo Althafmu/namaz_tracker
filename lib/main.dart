@@ -118,7 +118,9 @@ Future<bool> _attemptStorageRecovery(Directory docDir) async {
 
   try {
     // Try to backup any readable .hive files before wiping
-    final backupDir = Directory('${docDir.path}/hive_backup_${DateTime.now().millisecondsSinceEpoch}');
+    final backupDir = Directory(
+      '${docDir.path}/hive_backup_${DateTime.now().millisecondsSinceEpoch}',
+    );
     await backupDir.create(recursive: true);
 
     for (final file in docDir.listSync()) {
@@ -127,7 +129,9 @@ Future<bool> _attemptStorageRecovery(Directory docDir) async {
           // Try to read the file - if successful, it's partially recoverable
           final bytes = await file.readAsBytes();
           if (bytes.isNotEmpty) {
-            final backupFile = File('${backupDir.path}/${file.uri.pathSegments.last}');
+            final backupFile = File(
+              '${backupDir.path}/${file.uri.pathSegments.last}',
+            );
             await backupFile.writeAsBytes(bytes);
             debugPrint('[Main] Backed up: ${file.path}');
             anyRecovered = true;
@@ -187,10 +191,7 @@ Future<void> checkAndClearStorageCorruptionFlag(BuildContext context) async {
           SnackBar(
             content: Text(message),
             duration: const Duration(seconds: 6),
-            action: SnackBarAction(
-              label: 'OK',
-              onPressed: () {},
-            ),
+            action: SnackBarAction(label: 'OK', onPressed: () {}),
           ),
         );
       }
@@ -216,7 +217,6 @@ class FalahApp extends StatelessWidget {
       child: BlocBuilder<SettingsBloc, SettingsState>(
         buildWhen: (prev, curr) => prev.themeMode != curr.themeMode,
         builder: (context, settingsState) {
-
           ThemeMode currentThemeMode;
           if (settingsState.themeMode == 'dark') {
             currentThemeMode = ThemeMode.dark;

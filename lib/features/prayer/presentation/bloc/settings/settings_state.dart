@@ -153,6 +153,9 @@ class SettingsState extends Equatable {
   /// Whether the one-time home welcome banner has been shown on this device.
   final bool hasSeenHomeWelcomeBanner;
 
+  /// Whether the first-run setup dialog (contextual tips on Home) has been completed.
+  final bool hasCompletedFirstRunSetup;
+
   /// Whether notifications are paused for today (backend-synced).
   final bool notificationsPausedToday;
 
@@ -164,6 +167,9 @@ class SettingsState extends Equatable {
 
   /// Whether Qada analytics should be visible in profile/progress surfaces.
   final bool qadaTrackingEnabled;
+
+  /// Whether the notification permission overlay has been shown after login.
+  final bool hasSeenLoginNotificationPrompt;
 
   /// Message to display after a settings action.
   final String? lastSettingsActionMessage;
@@ -209,10 +215,12 @@ class SettingsState extends Equatable {
     this.isFallbackIntent = false,
     this.isInitialized = false,
     this.hasSeenHomeWelcomeBanner = false,
+    this.hasCompletedFirstRunSetup = false,
     this.notificationsPausedToday = false,
     this.pauseActionStatus = PauseActionStatus.idle,
     this.sunnahEnabled = false,
-    this.qadaTrackingEnabled = true,
+    this.qadaTrackingEnabled = false,
+    this.hasSeenLoginNotificationPrompt = false,
     this.lastSettingsActionMessage,
   });
 
@@ -237,10 +245,12 @@ class SettingsState extends Equatable {
     bool? isFallbackIntent,
     bool? isInitialized,
     bool? hasSeenHomeWelcomeBanner,
+    bool? hasCompletedFirstRunSetup,
     bool? notificationsPausedToday,
     PauseActionStatus? pauseActionStatus,
     bool? sunnahEnabled,
     bool? qadaTrackingEnabled,
+    bool? hasSeenLoginNotificationPrompt,
     String? lastSettingsActionMessage,
     bool clearActionMessage = false,
   }) {
@@ -267,11 +277,15 @@ class SettingsState extends Equatable {
       isInitialized: isInitialized ?? this.isInitialized,
       hasSeenHomeWelcomeBanner:
           hasSeenHomeWelcomeBanner ?? this.hasSeenHomeWelcomeBanner,
+      hasCompletedFirstRunSetup:
+          hasCompletedFirstRunSetup ?? this.hasCompletedFirstRunSetup,
       notificationsPausedToday:
           notificationsPausedToday ?? this.notificationsPausedToday,
       pauseActionStatus: pauseActionStatus ?? this.pauseActionStatus,
       sunnahEnabled: sunnahEnabled ?? this.sunnahEnabled,
-        qadaTrackingEnabled: qadaTrackingEnabled ?? this.qadaTrackingEnabled,
+      qadaTrackingEnabled: qadaTrackingEnabled ?? this.qadaTrackingEnabled,
+      hasSeenLoginNotificationPrompt:
+          hasSeenLoginNotificationPrompt ?? this.hasSeenLoginNotificationPrompt,
       lastSettingsActionMessage: clearActionMessage
           ? null
           : (lastSettingsActionMessage ?? this.lastSettingsActionMessage),
@@ -309,9 +323,11 @@ class SettingsState extends Equatable {
       'isFallbackIntent': isFallbackIntent,
       'isInitialized': isInitialized,
       'hasSeenHomeWelcomeBanner': hasSeenHomeWelcomeBanner,
+      'hasCompletedFirstRunSetup': hasCompletedFirstRunSetup,
       'notificationsPausedToday': notificationsPausedToday,
       'sunnahEnabled': sunnahEnabled,
       'qadaTrackingEnabled': qadaTrackingEnabled,
+      'hasSeenLoginNotificationPrompt': hasSeenLoginNotificationPrompt,
     };
   }
 
@@ -418,12 +434,17 @@ class SettingsState extends Equatable {
       hasSeenHomeWelcomeBanner: json.containsKey('hasSeenHomeWelcomeBanner')
           ? (json['hasSeenHomeWelcomeBanner'] as bool? ?? false)
           : true,
+      hasCompletedFirstRunSetup: json.containsKey('hasCompletedFirstRunSetup')
+          ? (json['hasCompletedFirstRunSetup'] as bool? ?? false)
+          : true,
       notificationsPausedToday:
           json['notificationsPausedToday'] as bool? ?? false,
       sunnahEnabled: json['sunnahEnabled'] as bool? ?? false,
       qadaTrackingEnabled: json.containsKey('qadaTrackingEnabled')
-          ? (json['qadaTrackingEnabled'] as bool? ?? true)
-          : true,
+          ? (json['qadaTrackingEnabled'] as bool? ?? false)
+          : false,
+      hasSeenLoginNotificationPrompt:
+          json['hasSeenLoginNotificationPrompt'] as bool? ?? false,
     );
   }
 
@@ -449,10 +470,12 @@ class SettingsState extends Equatable {
     isFallbackIntent,
     isInitialized,
     hasSeenHomeWelcomeBanner,
+    hasCompletedFirstRunSetup,
     notificationsPausedToday,
     pauseActionStatus,
     sunnahEnabled,
     qadaTrackingEnabled,
+    hasSeenLoginNotificationPrompt,
     lastSettingsActionMessage,
   ];
 }

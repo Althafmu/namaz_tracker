@@ -25,31 +25,38 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
 
   final List<_PsychSlide> _slides = const [
     _PsychSlide(
-      icon: Icons.nightlight_round,
-      title: 'Prayer anchors\nyour heart',
-      subtitle: '"Establish prayer for My remembrance."',
-      source: 'Quran 20:14',
+      icon: Icons.touch_app_rounded,
+      title: 'Log each salah\nwithout friction',
+      subtitle:
+          'Tap a prayer card from Home, choose the status that matches your day, and keep your dashboard honest.',
+      highlights: ['Daily logging from Home', 'Edit the last 2 days if needed'],
     ),
     _PsychSlide(
-      icon: Icons.favorite,
-      title: 'Consistency is beloved\nto Allah',
+      icon: Icons.alt_route,
+      title: 'Choose a path that\nfits your pace',
       subtitle:
-          '"The most beloved deeds to Allah are those done consistently, even if they are small."',
-      source: 'Sahih al-Bukhari and Sahih Muslim',
+          'Foundation keeps recovery gentle. Growth adds tighter expectations and optional Sunnah practice.',
+      highlights: ['Change your path later', 'Growth unlocks Sunnah tracking'],
     ),
     _PsychSlide(
-      icon: Icons.water_drop_outlined,
-      title: 'Every salah is a chance\nto be cleansed again',
+      icon: Icons.event_busy,
+      title: 'Use excused mode\nonly when needed',
       subtitle:
-          '"The five daily prayers are expiation for what is between them, so long as major sins are avoided."',
-      source: 'Sahih Muslim',
+          'Travel, sickness, or period can freeze a day without breaking your streak. If your day changes, you can resume logging.',
+      highlights: [
+        'Streak stays preserved',
+        'Notifications pause for excused days',
+      ],
     ),
     _PsychSlide(
-      icon: Icons.refresh_rounded,
-      title: 'Mercy stays open\nafter a miss',
+      icon: Icons.notifications_active_outlined,
+      title: 'Set preferences\nfrom day one',
       subtitle:
-          '"Do not despair of Allah\'s mercy. Indeed, Allah forgives all sins."',
-      source: 'Quran 39:53',
+          'We will ask for reminder permission next. Later you can fine-tune prayer times, themes, and optional tracking from Profile.',
+      highlights: [
+        'Reminder permission comes next',
+        'Profile holds the rest of your settings',
+      ],
     ),
   ];
 
@@ -73,8 +80,10 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.of(context).background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -89,9 +98,7 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
                     width: _currentPage == index ? 24 : 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: _currentPage == index
-                          ? AppColors.of(context).primary
-                          : AppColors.of(context).border,
+                      color: _currentPage == index ? c.primary : c.border,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -107,55 +114,89 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
                 },
                 itemBuilder: (context, index) {
                   final slide = _slides[index];
-                  return Padding(
-                    padding: const EdgeInsets.all(36.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: AppColors.of(context).surface,
-                            border: Border.all(
-                              color: AppColors.of(context).border,
-                              width: 3,
-                            ),
-                            borderRadius: BorderRadius.circular(24),
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final iconBoxSize = constraints.maxHeight < 560
+                          ? 96.0
+                          : 120.0;
+
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
                           ),
-                          child: Icon(
-                            slide.icon,
-                            size: 64,
-                            color: AppColors.of(context).primary,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: iconBoxSize,
+                                height: iconBoxSize,
+                                decoration: BoxDecoration(
+                                  color: c.surface,
+                                  border: Border.all(color: c.border, width: 3),
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Icon(
+                                  slide.icon,
+                                  size: iconBoxSize * 0.5,
+                                  color: c.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              Text(
+                                slide.title,
+                                style: AppTextStyles.headlineLarge,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 18),
+                              Text(
+                                slide.subtitle,
+                                style: AppTextStyles.bodyLarge.copyWith(
+                                  color: c.textPrimary,
+                                  height: 1.6,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 24),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                alignment: WrapAlignment.center,
+                                children: slide.highlights
+                                    .map(
+                                      (highlight) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: c.surface,
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
+                                          border: Border.all(
+                                            color: c.border,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          highlight,
+                                          style: AppTextStyles.bodySmall
+                                              .copyWith(
+                                                color: c.textPrimary,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 48),
-                        Text(
-                          slide.title,
-                          style: AppTextStyles.headlineLarge,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          slide.subtitle,
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: AppColors.of(context).textPrimary,
-                            fontStyle: FontStyle.italic,
-                            height: 1.6,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          slide.source,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.of(context).textSecondary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               ),
@@ -180,7 +221,7 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
                           child: Text(
                             'Skip',
                             style: AppTextStyles.bodyLarge.copyWith(
-                              color: AppColors.of(context).textSecondary,
+                              color: c.textSecondary,
                             ),
                           ),
                         ),
@@ -189,7 +230,7 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
                           height: 48,
                           child: NeoButton(
                             text: 'Next',
-                            color: AppColors.of(context).primary,
+                            color: c.primary,
                             onPressed: () {
                               _pageController.nextPage(
                                 duration: const Duration(milliseconds: 300),
@@ -206,9 +247,7 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
               child: Text(
                 'Next, we will ask for notification permission so prayer reminders can work from day one.',
                 textAlign: TextAlign.center,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.of(context).textSecondary,
-                ),
+                style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
               ),
             ),
           ],
@@ -222,12 +261,12 @@ class _PsychSlide {
   final IconData icon;
   final String title;
   final String subtitle;
-  final String source;
+  final List<String> highlights;
 
   const _PsychSlide({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.source,
+    required this.highlights,
   });
 }
