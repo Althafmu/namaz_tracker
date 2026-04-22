@@ -115,6 +115,18 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 24),
                 Center(
                   child: GestureDetector(
+                    onTap: () => context.push('/password-reset'),
+                    child: Text(
+                      'Forgot Password? Reset it',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.of(context).textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: GestureDetector(
                     onTap: () => context.go('/signup'),
                     child: Text(
                       'Don\'t have an account? Sign Up',

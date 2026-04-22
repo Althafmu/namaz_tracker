@@ -8,7 +8,6 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'prayer_time_service.dart';
 import '../../features/prayer/domain/entities/prayer_notification_config.dart';
-import '../../features/prayer/presentation/bloc/settings/settings_state.dart';
 import 'notification_service_interface.dart';
 
 /// Handles scheduling and cancelling local OS notifications for Adhan and reminders.
@@ -36,7 +35,7 @@ class NotificationService implements NotificationServiceInterface {
   /// For production use, inject via GetIt in injection_container.dart.
   /// For testing, inject a mock implementing [NotificationServiceInterface].
   NotificationService({FlutterLocalNotificationsPlugin? plugin})
-      : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+    : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   /// Resets internal state. Call this in tests to ensure clean state.
   @visibleForTesting
@@ -57,8 +56,9 @@ class NotificationService implements NotificationServiceInterface {
       tz.initializeTimeZones();
       String timeZoneName;
       try {
-        timeZoneName = await FlutterTimezone.getLocalTimezone()
-            .timeout(const Duration(seconds: 3));
+        timeZoneName = await FlutterTimezone.getLocalTimezone().timeout(
+          const Duration(seconds: 3),
+        );
       } catch (e) {
         debugPrint('[Notification] FlutterTimezone timed out or failed: $e');
         // Fallback: try to guess from offset
@@ -70,7 +70,9 @@ class NotificationService implements NotificationServiceInterface {
         tz.setLocalLocation(tz.getLocation(timeZoneName));
       } catch (_) {
         // If the IANA name still fails, fall back to UTC as last resort
-        debugPrint('[Notification] Failed to set timezone "$timeZoneName", falling back to UTC');
+        debugPrint(
+          '[Notification] Failed to set timezone "$timeZoneName", falling back to UTC',
+        );
         tz.setLocalLocation(tz.getLocation('UTC'));
       }
     } catch (e) {
@@ -88,20 +90,18 @@ class NotificationService implements NotificationServiceInterface {
 
       const DarwinInitializationSettings initializationSettingsDarwin =
           DarwinInitializationSettings(
-        requestSoundPermission: false,
-        requestBadgePermission: false,
-        requestAlertPermission: false,
-      );
+            requestSoundPermission: false,
+            requestBadgePermission: false,
+            requestAlertPermission: false,
+          );
 
       const InitializationSettings initializationSettings =
           InitializationSettings(
-        android: initializationSettingsAndroid,
-        iOS: initializationSettingsDarwin,
-      );
+            android: initializationSettingsAndroid,
+            iOS: initializationSettingsDarwin,
+          );
 
-      await _plugin.initialize(
-        settings: initializationSettings,
-      );
+      await _plugin.initialize(settings: initializationSettings);
     } catch (e) {
       debugPrint('[Notification] Plugin init failed: $e');
       _isInitialized = true;
@@ -120,7 +120,8 @@ class NotificationService implements NotificationServiceInterface {
     try {
       final androidImpl = _plugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
       if (androidImpl != null) {
         final notifGranted =
@@ -130,7 +131,8 @@ class NotificationService implements NotificationServiceInterface {
         _permissionsGranted = notifGranted;
         _exactAlarmGranted = exactAlarmGranted;
         debugPrint(
-            '[Notification] Permissions check: notif=$notifGranted, exactAlarm=$exactAlarmGranted');
+          '[Notification] Permissions check: notif=$notifGranted, exactAlarm=$exactAlarmGranted',
+        );
       } else {
         // iOS / other — assume granted if plugin initialized
         _permissionsGranted = true;
@@ -156,11 +158,11 @@ class NotificationService implements NotificationServiceInterface {
     try {
       final androidImpl = _plugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
       if (androidImpl != null) {
-        notifGranted =
-            await androidImpl.areNotificationsEnabled() ?? false;
+        notifGranted = await androidImpl.areNotificationsEnabled() ?? false;
         exactAlarmGranted =
             await androidImpl.canScheduleExactNotifications() ?? false;
       }
@@ -184,32 +186,37 @@ class NotificationService implements NotificationServiceInterface {
     try {
       final androidImpl = _plugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
       if (androidImpl != null) {
-        final notifGranted =
-            await androidImpl.requestNotificationsPermission();
-        
+        final notifGranted = await androidImpl.requestNotificationsPermission();
+
         // Only request exact alarms if not already granted. Trying to request it
         // when USE_EXACT_ALARM is present might cause issues on some devices.
-        bool exactGranted = await androidImpl.canScheduleExactNotifications() ?? false;
+        bool exactGranted =
+            await androidImpl.canScheduleExactNotifications() ?? false;
         if (!exactGranted) {
           try {
-            exactGranted = await androidImpl.requestExactAlarmsPermission() ?? false;
+            exactGranted =
+                await androidImpl.requestExactAlarmsPermission() ?? false;
           } catch (e) {
-            debugPrint('[Notification] requestExactAlarmsPermission failed: $e');
+            debugPrint(
+              '[Notification] requestExactAlarmsPermission failed: $e',
+            );
             exactGranted = false;
           }
         }
-        
-        _permissionsGranted =
-            (notifGranted ?? false) && exactGranted;
+
+        _permissionsGranted = (notifGranted ?? false) && exactGranted;
       } else {
         final iosImpl = _plugin
             .resolvePlatformSpecificImplementation<
-                IOSFlutterLocalNotificationsPlugin>();
+              IOSFlutterLocalNotificationsPlugin
+            >();
         if (iosImpl != null) {
-          _permissionsGranted = await iosImpl.requestPermissions(
+          _permissionsGranted =
+              await iosImpl.requestPermissions(
                 alert: true,
                 badge: true,
                 sound: true,
@@ -243,17 +250,16 @@ class NotificationService implements NotificationServiceInterface {
     try {
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
-        'prayer_alerts',
-        'Prayer Alerts',
-        channelDescription: 'Notifications for Adhan times',
-        icon: 'mipmap/launcher_icon',
-        importance: Importance.max,
-        priority: Priority.high,
-        playSound: true,
-      );
+            'prayer_alerts',
+            'Prayer Alerts',
+            channelDescription: 'Notifications for Adhan times',
+            icon: 'mipmap/launcher_icon',
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+          );
 
-      const DarwinNotificationDetails darwinDetails =
-          DarwinNotificationDetails(
+      const DarwinNotificationDetails darwinDetails = DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
@@ -295,13 +301,16 @@ class NotificationService implements NotificationServiceInterface {
       final result = await _scheduleAlarm(
         id: 99998,
         title: "⏰ Alarm Test",
-        body: "If you see this and hear the alarm, your Prayer Reminders are working perfectly!",
+        body:
+            "If you see this and hear the alarm, your Prayer Reminders are working perfectly!",
         scheduledTime: scheduledTime,
         isAlarmStyle: true,
         alarmSound: alarmSound,
       );
       if (result == null) {
-        debugPrint('[Notification] Test alarm scheduled for 5 seconds from now');
+        debugPrint(
+          '[Notification] Test alarm scheduled for 5 seconds from now',
+        );
         return 'OK';
       } else {
         return 'ERR: $result';
@@ -316,8 +325,7 @@ class NotificationService implements NotificationServiceInterface {
   @override
   Future<int> getPendingNotificationCount() async {
     try {
-      final pending =
-          await _plugin.pendingNotificationRequests();
+      final pending = await _plugin.pendingNotificationRequests();
       debugPrint('[Notification] Pending notifications: ${pending.length}');
       for (final n in pending) {
         debugPrint('  → id=${n.id} title="${n.title}"');
@@ -407,7 +415,8 @@ class NotificationService implements NotificationServiceInterface {
       for (final entry in prayerTimesMap.entries) {
         final prayerName = entry.key;
         final prayerTime = entry.value;
-        final config = prayerConfigs[prayerName] ?? const PrayerNotificationConfig();
+        final config =
+            prayerConfigs[prayerName] ?? const PrayerNotificationConfig();
 
         // Only schedule if the time is in the future
         if (prayerTime.isAfter(now)) {
@@ -453,8 +462,9 @@ class NotificationService implements NotificationServiceInterface {
         if (config.streakProtection) {
           final endTime = prayerEndTimes[prayerName];
           if (endTime != null) {
-            final streakAlertTime =
-                endTime.subtract(const Duration(minutes: 15));
+            final streakAlertTime = endTime.subtract(
+              const Duration(minutes: 15),
+            );
             if (streakAlertTime.isAfter(now) &&
                 streakAlertTime.isAfter(prayerTime)) {
               final streakId = (dayOffset * 100) + (prayerIndex * 10) + 3;
@@ -472,41 +482,27 @@ class NotificationService implements NotificationServiceInterface {
             }
           }
         }
-
-        // 4. Schedule Pre-Miss Nudge (30 mins after prayer time if reminderIsBefore)
-        if (config.reminderIsBefore && intentLevel != null) {
-          final nudgeTime = prayerTime.add(const Duration(minutes: 30));
-          if (nudgeTime.isAfter(now)) {
-            final nudgeId = (dayOffset * 100) + (prayerIndex * 10) + 4;
-            final body = _getPreMissNudgeBody(prayerName, intentLevel);
-            final result = await _scheduleAlarm(
-              id: nudgeId,
-              title: "⏰ $prayerName",
-              body: body,
-              scheduledTime: nudgeTime,
-              isAlarmStyle: true,
-              alarmSound: alarmSound,
-              alarmDurationMinutes: alarmDurationMinutes,
-            );
-            if (result == null) scheduledCount++;
-          }
-        }
         prayerIndex++;
       }
     }
 
-    debugPrint('[Notification] Scheduled $scheduledCount notifications for 3 days');
+    debugPrint(
+      '[Notification] Scheduled $scheduledCount notifications for 3 days',
+    );
 
-    // Schedule daily 10 PM reminder
-    final reminderCount = await _scheduleDailyReminders(now: now, excusedDays: excusedDays);
+    final reminderCount = await _scheduleDailyReminders(
+      now: now,
+      excusedDays: excusedDays,
+    );
     scheduledCount += reminderCount;
 
     return scheduledCount;
   }
 
-  /// Schedule daily reminder notifications at 10 PM for the next 3 days.
-  /// ID scheme: 9000 + dayOffset
-  Future<int> _scheduleDailyReminders({required DateTime now, Set<String>? excusedDays}) async {
+  Future<int> _scheduleDailyReminders({
+    required DateTime now,
+    Set<String>? excusedDays,
+  }) async {
     int count = 0;
     final dateFormat = DateFormat('yyyy-MM-dd');
 
@@ -514,41 +510,28 @@ class NotificationService implements NotificationServiceInterface {
       final date = now.add(Duration(days: dayOffset));
       final dateKey = dateFormat.format(date);
 
-      // Skip if this day is excused
       if (excusedDays != null && excusedDays.contains(dateKey)) {
         continue;
       }
 
-      final reminderTime = DateTime(date.year, date.month, date.day, 22, 0); // 10 PM
-
-      if (reminderTime.isAfter(now)) {
-        final reminderId = 9000 + dayOffset;
-        final result = await _scheduleAlarm(
-          id: reminderId,
-          title: "🌙 Daily Prayer Reminder",
-          body: "Have you completed all your prayers today? Don't break your streak!",
-          scheduledTime: reminderTime,
-          isAlarmStyle: true,
-          alarmDurationMinutes: 1,
-        );
-        if (result == null) count++;
+      final reminderTime = DateTime(date.year, date.month, date.day, 22, 0);
+      if (!reminderTime.isAfter(now)) {
+        continue;
       }
+
+      final reminderId = 9000 + dayOffset;
+      final result = await _scheduleAlarm(
+        id: reminderId,
+        title: '🌙 Daily Prayer Reminder',
+        body:
+            "Have you completed all your prayers today? Don't break your streak!",
+        scheduledTime: reminderTime,
+      );
+      if (result == null) count++;
     }
 
     debugPrint('[Notification] Scheduled $count daily reminders at 10 PM');
     return count;
-  }
-
-  String _getPreMissNudgeBody(String prayerName, String intentLevel) {
-    final intent = IntentLevel.fromString(intentLevel);
-    switch (intent) {
-      case IntentLevel.foundation:
-        return "Don't forget your $prayerName — take a moment for it";
-      case IntentLevel.strengthening:
-        return "Your $prayerName time — stay consistent";
-      case IntentLevel.growth:
-        return "$prayerName time now";
-    }
   }
 
   /// Schedule a single alarm. Returns null on success, or error string on failure.
@@ -565,8 +548,10 @@ class NotificationService implements NotificationServiceInterface {
     int alarmDurationMinutes = 1,
   }) async {
     try {
-      final tz.TZDateTime tzScheduledTime =
-          tz.TZDateTime.from(scheduledTime, tz.local);
+      final tz.TZDateTime tzScheduledTime = tz.TZDateTime.from(
+        scheduledTime,
+        tz.local,
+      );
 
       // Standard notification channel (Adhan alerts)
       const standardChannel = AndroidNotificationDetails(
@@ -582,7 +567,9 @@ class NotificationService implements NotificationServiceInterface {
       // Resolve sound object based on selected sound option
       AndroidNotificationSound? androidSound;
       if (alarmSound == 'system') {
-        androidSound = const UriAndroidNotificationSound('content://settings/system/alarm_alert');
+        androidSound = const UriAndroidNotificationSound(
+          'content://settings/system/alarm_alert',
+        );
       } else if (alarmSound.startsWith('/')) {
         androidSound = UriAndroidNotificationSound('file://$alarmSound');
       } else {
@@ -607,14 +594,18 @@ class NotificationService implements NotificationServiceInterface {
         category: AndroidNotificationCategory.alarm,
         visibility: NotificationVisibility.public,
         audioAttributesUsage: AudioAttributesUsage.alarm,
-        timeoutAfter: alarmDurationMinutes * 60000, // Stop ringing after dynamic duration
-        additionalFlags: Int32List.fromList(<int>[4]), // FLAG_INSISTENT (loops sound until dismissed)
+        timeoutAfter:
+            alarmDurationMinutes * 60000, // Stop ringing after dynamic duration
+        additionalFlags: Int32List.fromList(<int>[
+          4,
+        ]), // FLAG_INSISTENT (loops sound until dismissed)
         actions: <AndroidNotificationAction>[
           const AndroidNotificationAction(
             'stop_id_1',
             'Stop Alarm 🛑',
             cancelNotification: true,
-            showsUserInterface: false, // Prevents forcefully opening the app, just stops the alarm
+            showsUserInterface:
+                false, // Prevents forcefully opening the app, just stops the alarm
           ),
         ],
       );
@@ -641,7 +632,9 @@ class NotificationService implements NotificationServiceInterface {
         );
       } catch (e) {
         if (e.toString().contains('exact_alarms_not_permitted')) {
-          debugPrint('[Notification] Exact alarms not permitted, falling back to inexact for $id');
+          debugPrint(
+            '[Notification] Exact alarms not permitted, falling back to inexact for $id',
+          );
           await _plugin.zonedSchedule(
             id: id,
             title: title,

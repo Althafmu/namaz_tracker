@@ -162,4 +162,43 @@ class AuthRemoteDataSource {
       throw Exception(message);
     }
   }
+
+  /// Request password reset email.
+  Future<void> requestPasswordReset({required String email}) async {
+    try {
+      await dio.post('/api/auth/password-reset/', data: {'email': email});
+    } on DioException catch (e) {
+      throw Exception(_parseDioError(e, 'Password reset request failed'));
+    }
+  }
+
+  /// Confirm password reset with token.
+  Future<void> confirmPasswordReset({required String token, required String newPassword}) async {
+    try {
+      await dio.post('/api/auth/password-reset/confirm/', data: {
+        'token': token,
+        'password': newPassword,
+      });
+    } on DioException catch (e) {
+      throw Exception(_parseDioError(e, 'Password reset failed'));
+    }
+  }
+
+  /// Verify email with token.
+  /// Returns true if verification succeeded and tokens were returned.
+  Future<bool> verifyEmail({String? token}) async {
+    if (token == null || token.isEmpty) return false;
+    try {
+      final response = await dio.get('/api/auth/verify-email/', queryParameters: {'token': token});
+      // If we get tokens back, the email was verified successfully
+      return response.data['access'] != null;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      String message = 'Email verification failed';
+      if (data is Map<String, dynamic>) {
+        message = data['error']?.toString() ?? data['detail']?.toString() ?? message;
+      }
+      throw Exception(message);
+    }
+  }
 }

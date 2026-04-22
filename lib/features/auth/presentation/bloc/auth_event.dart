@@ -54,3 +54,31 @@ class ConfigLoadComplete extends AuthEvent {}
 class OnboardingCompleted extends AuthEvent {
   const OnboardingCompleted();
 }
+
+class PasswordResetRequested extends AuthEvent {
+  final String email;
+
+  const PasswordResetRequested({required this.email});
+
+  @override
+  List<Object?> get props => [email];
+}
+
+class PasswordResetConfirmed extends AuthEvent {
+  final String token;
+  final String newPassword;
+
+  const PasswordResetConfirmed({required this.token, required this.newPassword});
+
+  @override
+  List<Object?> get props => [token, newPassword];
+}
+
+class EmailVerificationRequested extends AuthEvent {
+  final String? token;
+
+  const EmailVerificationRequested({this.token});
+
+  @override
+  List<Object?> get props => [token];
+}

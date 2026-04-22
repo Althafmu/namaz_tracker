@@ -46,6 +46,40 @@ class NotificationsSettingsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  NeoCard(
+                    color: c.surface,
+                    padding: const EdgeInsets.all(16),
+                    borderRadius: 16,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: c.primaryLight,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.info_outline,
+                            color: c.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Adhan Alerts and the nightly 10 PM reminder use a standard notification. Prayer Reminder and Streak Protection use the alarm sound below only when you switch them on for a prayer.',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: c.textSecondary,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
                   // Global Sound Setting
                   Text(
                     'Global Alarm Sound',
@@ -89,9 +123,17 @@ class NotificationsSettingsPage extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  _getAlarmSoundDisplayName(state.alarmSound),
+                                  'Used only for Prayer Reminder and Streak Protection alarms',
                                   style: AppTextStyles.bodySmall.copyWith(
                                     color: c.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _getAlarmSoundDisplayName(state.alarmSound),
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: c.textPrimary,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -310,7 +352,7 @@ class _PrayerNotificationCard extends StatelessWidget {
               _buildToggleRow(
                 context,
                 title: 'Adhan Alerts',
-                subtitle: 'Push notifications at prayer time',
+                subtitle: 'Standard notification at prayer time',
                 icon: Icons.notifications_active,
                 iconColor: c.primary,
                 iconBg: c.primaryLight,
@@ -328,7 +370,7 @@ class _PrayerNotificationCard extends StatelessWidget {
               _buildToggleRow(
                 context,
                 title: 'Prayer Reminder',
-                subtitle: 'Customizable alert for this prayer',
+                subtitle: 'Alarm-style alert with the selected sound',
                 icon: Icons.timer,
                 iconColor: c.jamaat,
                 iconBg: c.jamaatLight,
@@ -351,7 +393,8 @@ class _PrayerNotificationCard extends StatelessWidget {
               _buildToggleRow(
                 context,
                 title: 'Streak Protection',
-                subtitle: 'Alert if missing last prayer',
+                subtitle:
+                    'Alarm-style warning near the end of the prayer window',
                 icon: Icons.shield,
                 iconColor: c.streak,
                 iconBg: c.streakLight,
@@ -665,7 +708,7 @@ class _SoundPickerBottomSheetState extends State<SoundPickerBottomSheet> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Select Reminder Sound',
+              'Select Alarm Sound',
               style: AppTextStyles.headlineMedium.copyWith(
                 color: c.textPrimary,
               ),

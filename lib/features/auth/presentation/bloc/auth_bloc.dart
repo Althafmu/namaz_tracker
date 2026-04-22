@@ -24,6 +24,9 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     on<UpdateProfileRequested>(_onUpdateProfileRequested);
     on<ConfigLoadComplete>(_onConfigLoadComplete);
     on<OnboardingCompleted>(_onOnboardingCompleted);
+    on<PasswordResetRequested>(_onPasswordResetRequested);
+    on<PasswordResetConfirmed>(_onPasswordResetConfirmed);
+    on<EmailVerificationRequested>(_onEmailVerificationRequested);
   }
 
   Future<void> _onLoginRequested(
@@ -168,6 +171,54 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) {
     emit(state.copyWith(hasSeenOnboarding: true));
+  }
+
+  Future<void> _onPasswordResetRequested(
+    PasswordResetRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(status: AuthStatus.loading, errorMessage: null));
+    try {
+      await authRepository.requestPasswordReset(email: event.email);
+      emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null));
+    } catch (e) {
+      emit(state.copyWith(status: AuthStatus.error, errorMessage: _cleanError(e)));
+      emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null));
+    }
+  }
+
+  Future<void> _onPasswordResetConfirmed(
+    PasswordResetConfirmed event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(state.copyWith(status: AuthStatus.loading, errorMessage: null));
+    try {
+      await authRepository.confirmPasswordReset(
+        token: event.token,
+        newPassword: event.newPassword,
+      );
+      emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null));
+    } catch (e) {
+      emit(state.copyWith(status: AuthStatus.error, errorMessage: _cleanError(e)));
+      emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null));
+    }
+  }
+
+  Future<void> _onEmailVerificationRequested(
+    EmailVerificationRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (event.token == null || event.token!.isEmpty) return;
+    emit(state.copyWith(status: AuthStatus.loading, errorMessage: null));
+    try {
+      final success = await authRepository.verifyEmail(token: event.token);
+      if (success) {
+        emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null));
+      }
+    } catch (e) {
+      emit(state.copyWith(status: AuthStatus.error, errorMessage: _cleanError(e)));
+      emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null));
+    }
   }
 
   @override

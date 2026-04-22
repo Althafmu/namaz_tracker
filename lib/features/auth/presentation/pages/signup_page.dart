@@ -83,7 +83,7 @@ class _SignupPageState extends State<SignupPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 16),
-                Text('Join Namaz Tracker', style: AppTextStyles.headlineLarge),
+                Text('Join Falah', style: AppTextStyles.headlineLarge),
                 const SizedBox(height: 8),
                 Text(
                   'Create an account to track your prayers across devices.',

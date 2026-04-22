@@ -77,8 +77,8 @@ class _SplashPageState extends State<SplashPage> {
               color: AppColors.of(context).primary,
             ),
             const SizedBox(height: 24),
-            Text('NAMAZ', style: AppTextStyles.headlineLarge),
-            Text('TRACKER', style: AppTextStyles.headlineMedium),
+            Text('Falah', style: AppTextStyles.headlineLarge),
+            Text('Prayer Tracker', style: AppTextStyles.headlineMedium),
             const SizedBox(height: 32),
             if (_timedOut) ...[
               Text(

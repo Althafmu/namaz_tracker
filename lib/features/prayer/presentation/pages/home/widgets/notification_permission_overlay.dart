@@ -91,7 +91,7 @@ class NotificationPermissionOverlay extends StatelessWidget {
 
             // Explanation
             Text(
-              'Falah needs notification permission to send prayer reminders. You can customise which prayers trigger alerts in Settings.',
+              'Falah needs notification permission to send prayer-time alerts and a nightly 10 PM reminder. Alarm-style reminder sounds stay off unless you enable Prayer Reminder or Streak Protection in Settings.',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: c.textSecondary,
                 height: 1.5,

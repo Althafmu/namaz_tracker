@@ -31,15 +31,19 @@ class _Onboarding1PageState extends State<Onboarding1Page> {
     super.dispose();
   }
 
-  Future<void> _finishOnboarding() async {
+  Future<void> _completeOnboarding({bool requestNotifications = false}) async {
     context.read<AuthBloc>().add(const OnboardingCompleted());
 
-    final granted = await GetIt.I<NotificationService>().requestPermissions();
-    if (!mounted) return;
+    if (requestNotifications) {
+      final granted = await GetIt.I<NotificationService>().requestPermissions();
+      if (!mounted) return;
 
-    context.read<SettingsBloc>().add(
-      UpdateGlobalNotificationSettings(notificationsPermitted: granted),
-    );
+      context.read<SettingsBloc>().add(
+        UpdateGlobalNotificationSettings(notificationsPermitted: granted),
+      );
+    }
+
+    if (!mounted) return;
     context.go('/signup');
   }
 
@@ -67,7 +71,7 @@ class _Onboarding1PageState extends State<Onboarding1Page> {
               child: Padding(
                 padding: const EdgeInsets.only(top: 12, right: 16),
                 child: TextButton(
-                  onPressed: _finishOnboarding,
+                  onPressed: () => _completeOnboarding(),
                   child: Text(
                     'SKIP',
                     style: AppTextStyles.bodyMedium.copyWith(
@@ -138,7 +142,8 @@ class _Onboarding1PageState extends State<Onboarding1Page> {
                       text: _currentPage == 2 ? 'Get Started' : 'Next',
                       color: c.primary,
                       onPressed: _currentPage == 2
-                          ? _finishOnboarding
+                          ? () =>
+                                _completeOnboarding(requestNotifications: true)
                           : _nextPage,
                     ),
                   ),
@@ -346,7 +351,7 @@ class _NotificationPage extends StatelessWidget {
 
                 // Description
                 Text(
-                  'Get gentle reminders at each prayer time. You can customise which prayers notify you later in Settings.',
+                  'Prayer-time alerts and a nightly 10 PM reminder can start once you allow notifications. Alarm-style reminder sounds stay off unless you enable Prayer Reminder or Streak Protection later in Settings.',
                   style: AppTextStyles.bodyLarge.copyWith(
                     color: c.textSecondary,
                     height: 1.5,

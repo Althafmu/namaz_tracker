@@ -20,6 +20,8 @@ import '../../features/auth/presentation/pages/onboarding1_page.dart';
 import '../../features/auth/presentation/pages/intent_onboarding_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
+import '../../features/auth/presentation/pages/password_reset_request_page.dart';
+import '../../features/auth/presentation/pages/password_reset_confirm_page.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 
@@ -134,6 +136,14 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(path: '/signup', builder: (context, state) => const SignupPage()),
+      GoRoute(path: '/password-reset', builder: (context, state) => const PasswordResetRequestPage()),
+      GoRoute(
+        path: '/password-reset/confirm',
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'];
+          return PasswordResetConfirmPage(token: token);
+        },
+      ),
       GoRoute(path: '/streak', builder: (context, state) => const StreakPage()),
       // ── Full-screen settings routes (outside shell — no bottom nav) ──
       GoRoute(

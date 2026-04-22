@@ -111,10 +111,9 @@ class PrayerSchedulerService {
       return 0;
     }
 
-    if (!settings.notificationsPermitted &&
-        !_notificationService.permissionsGranted) {
+    if (!settings.notificationsPermitted) {
       debugPrint(
-        '[PrayerScheduler] Permissions not granted — skipping notification scheduling',
+        '[PrayerScheduler] Notifications not explicitly permitted in settings — skipping notification scheduling',
       );
       return 0;
     }

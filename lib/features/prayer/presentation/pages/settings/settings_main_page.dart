@@ -314,6 +314,15 @@ class SettingsMainPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 48),
+                  Center(
+                    child: Text(
+                      'Falah v0.1.0',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
             );

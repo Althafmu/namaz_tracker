@@ -157,4 +157,22 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Map<String, dynamic>> getUserConfig() async {
     return await remoteDataSource.getUserConfig();
   }
+
+  @override
+  Future<void> requestPasswordReset({required String email}) async {
+    await remoteDataSource.requestPasswordReset(email: email);
+  }
+
+  @override
+  Future<void> confirmPasswordReset({required String token, required String newPassword}) async {
+    await remoteDataSource.confirmPasswordReset(token: token, newPassword: newPassword);
+  }
+
+  @override
+  Future<bool> verifyEmail({String? token}) async {
+    if (token == null || token.isEmpty) {
+      return false;
+    }
+    return await remoteDataSource.verifyEmail(token: token);
+  }
 }

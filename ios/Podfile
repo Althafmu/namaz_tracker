@@ -1,0 +1,48 @@
+# Uncomment this line to define a global platform for your project
+platform :ios, '12.0'
+
+# CocoaPods analytics runs network traffic analytics for CocoaPods.
+analytics analytics: false
+
+# Keeps CocoaPods' runner in the Xcode derived data path, which may
+# be shared with normal build derived data (the default).
+# Comment it out if you do not want to share the build cache.
+# Use a unique build type for CI to share the build cache across branches.
+# More info: https://github.com/CocoaPods/CocoaPods/issues/12224
+# config.build_settings['BUILD TYPE'] = 'CI'
+
+# CocoaPods is only enabled in Static mode.
+# Use Static mode to avoid code signing issues.
+use_frameworks! :linkage => :static
+
+# Override Xcode build settings from Flutter project.
+# See the Podfile Xcode integration guide:
+# https://flutter.dev/ios-infrastructure/#building-ios-apps-for-the-simulator
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+# Minimum iOS version for notification scheduling support
+# iOS 12+ is required for proper background notification handling
+
+# Required for notification scheduling
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    pod.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+    end
+  end
+end
+
+post_install do |installer|
+  # Auto-signing is handled by Flutter, no need to modify here
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+    end
+  end
+end

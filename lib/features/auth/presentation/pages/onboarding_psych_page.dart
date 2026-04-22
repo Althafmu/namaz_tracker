@@ -52,7 +52,7 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
       icon: Icons.notifications_active_outlined,
       title: 'Set preferences\nfrom day one',
       subtitle:
-          'We will ask for reminder permission next. Later you can fine-tune prayer times, themes, and optional tracking from Profile.',
+          'We will ask for prayer-time notification permission next. That covers prayer alerts and a nightly 10 PM reminder. Alarm-style reminder sounds stay off until you enable them later from Profile.',
       highlights: [
         'Reminder permission comes next',
         'Profile holds the rest of your settings',
@@ -66,15 +66,19 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
     super.dispose();
   }
 
-  Future<void> _completeOnboardingAndRequestNotifications() async {
+  Future<void> _completeOnboarding({bool requestNotifications = false}) async {
     context.read<AuthBloc>().add(const OnboardingCompleted());
 
-    final granted = await GetIt.I<NotificationService>().requestPermissions();
-    if (!mounted) return;
+    if (requestNotifications) {
+      final granted = await GetIt.I<NotificationService>().requestPermissions();
+      if (!mounted) return;
 
-    context.read<SettingsBloc>().add(
-      UpdateGlobalNotificationSettings(notificationsPermitted: granted),
-    );
+      context.read<SettingsBloc>().add(
+        UpdateGlobalNotificationSettings(notificationsPermitted: granted),
+      );
+    }
+
+    if (!mounted) return;
     context.go('/signup');
   }
 
@@ -210,14 +214,15 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
                       child: NeoButton(
                         text: 'Get Started',
                         color: AppColors.of(context).primary,
-                        onPressed: _completeOnboardingAndRequestNotifications,
+                        onPressed: () =>
+                            _completeOnboarding(requestNotifications: true),
                       ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         TextButton(
-                          onPressed: _completeOnboardingAndRequestNotifications,
+                          onPressed: () => _completeOnboarding(),
                           child: Text(
                             'Skip',
                             style: AppTextStyles.bodyLarge.copyWith(
@@ -245,7 +250,7 @@ class _OnboardingPsychPageState extends State<OnboardingPsychPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: Text(
-                'Next, we will ask for notification permission so prayer reminders can work from day one.',
+                'Next, we will ask for prayer-time notification permission. That covers prayer alerts and a nightly 10 PM reminder. Alarm-style reminder sounds stay off unless you switch on Prayer Reminder or Streak Protection later.',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
               ),

@@ -34,4 +34,10 @@ abstract class AuthRepository {
   });
 
   Future<Map<String, dynamic>> getUserConfig();
+
+  Future<void> requestPasswordReset({required String email});
+
+  Future<void> confirmPasswordReset({required String token, required String newPassword});
+
+  Future<bool> verifyEmail({String? token});
 }
