@@ -33,8 +33,11 @@ class AuthRepositoryImpl implements AuthRepository {
       lastName: lastName,
     );
 
-    final token = responseData['access'] as String;
+    final token = responseData['access'] as String?;
     final refreshToken = responseData['refresh'] as String?;
+    if (token == null) {
+      throw Exception('Server response missing access token');
+    }
 
     await tokenProvider.updateTokens(access: token, refresh: refreshToken);
 
@@ -42,7 +45,7 @@ class AuthRepositoryImpl implements AuthRepository {
     if (responseData['user'] != null) {
       user = UserModel.fromJson(responseData['user']);
     } else {
-      user = UserModel.fromJson(responseData); // Fallback in case of raw user
+      user = UserModel.fromJson(responseData);
     }
 
     return AuthResponse(token: token, user: user);
@@ -57,13 +60,16 @@ class AuthRepositoryImpl implements AuthRepository {
       username: email,
       password: password,
     );
-    final token = responseData['access'] as String;
+    final token = responseData['access'] as String?;
     final refreshToken = responseData['refresh'] as String?;
+    if (token == null) {
+      throw Exception('Server response missing access token');
+    }
 
     // Persist both tokens atomically via single write path
     await tokenProvider.updateTokens(access: token, refresh: refreshToken);
 
-    // Finding #10: throw if server omits user data instead of creating phantom user
+    // throw if server omits user data instead of creating phantom user
     User user;
     if (responseData['user'] != null) {
       user = UserModel.fromJson(responseData['user']);

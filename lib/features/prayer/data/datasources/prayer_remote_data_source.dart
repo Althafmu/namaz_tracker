@@ -21,12 +21,14 @@ class PrayerRemoteDataSource {
     String? status,
     String? reason,
     String? dateKey,
+    bool prayedJumah = false,
   }) async {
     final Map<String, dynamic> data = {
       'prayer': prayerName.toLowerCase(),
       'completed': completed,
       'in_jamaat': inJamaat,
       'location': location,
+      'prayed_jumah': prayedJumah,
     };
     if (status != null) data['status'] = status;
     if (reason != null) data['reason'] = reason;

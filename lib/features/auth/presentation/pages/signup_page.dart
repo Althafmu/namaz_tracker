@@ -62,7 +62,13 @@ class _SignupPageState extends State<SignupPage> {
         iconTheme: IconThemeData(color: AppColors.of(context).textPrimary),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/onboarding-psych'),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/login');
+            }
+          },
         ),
       ),
       body: BlocListener<AuthBloc, AuthState>(

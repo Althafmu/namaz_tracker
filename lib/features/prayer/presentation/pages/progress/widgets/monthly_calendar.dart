@@ -57,7 +57,8 @@ class MonthlyCalendar extends StatelessWidget {
     final startWeekday = firstDayOfMonth.weekday; // 1=Monday, 7=Sunday
     final now = TimeService.effectiveNow();
     final isCurrentMonth = year == now.year && month == now.month;
-    final isFutureBlocked = isCurrentMonth; // Can't go forward past current month
+    final isFutureBlocked =
+        isCurrentMonth; // Can't go forward past current month
 
     // Calculate total grid items (padding before 1st day + days in month)
     final totalGridItems = (startWeekday - 1) + daysInMonth;
@@ -73,7 +74,9 @@ class MonthlyCalendar extends StatelessWidget {
             children: [
               Text(
                 '${_getMonthName(month)} $year',
-                style: AppTextStyles.headlineMedium.copyWith(color: c.textPrimary),
+                style: AppTextStyles.headlineMedium.copyWith(
+                  color: c.textPrimary,
+                ),
               ),
               Row(
                 children: [
@@ -135,7 +138,7 @@ class MonthlyCalendar extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: c.textPrimary,
+                          color: AppColors.textDark,
                         ),
                       ),
                     ),
@@ -178,7 +181,10 @@ class MonthlyCalendar extends StatelessWidget {
                   return Container(
                     decoration: BoxDecoration(
                       color: c.background,
-                      border: Border.all(color: c.border.withValues(alpha: 0.3), width: 0.5),
+                      border: Border.all(
+                        color: c.border.withValues(alpha: 0.3),
+                        width: 0.5,
+                      ),
                     ),
                   );
                 }
@@ -192,10 +198,11 @@ class MonthlyCalendar extends StatelessWidget {
 
                 return Container(
                   decoration: BoxDecoration(
-                    color: prayers.isNotEmpty
-                        ? c.surface
-                        : c.background,
-                    border: Border.all(color: c.border.withValues(alpha: 0.3), width: 0.5),
+                    color: prayers.isNotEmpty ? c.surface : c.background,
+                    border: Border.all(
+                      color: c.border.withValues(alpha: 0.3),
+                      width: 0.5,
+                    ),
                   ),
                   child: Stack(
                     alignment: Alignment.center,

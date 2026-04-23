@@ -15,7 +15,8 @@ class PasswordResetConfirmPage extends StatefulWidget {
   const PasswordResetConfirmPage({super.key, this.token});
 
   @override
-  State<PasswordResetConfirmPage> createState() => _PasswordResetConfirmPageState();
+  State<PasswordResetConfirmPage> createState() =>
+      _PasswordResetConfirmPageState();
 }
 
 class _PasswordResetConfirmPageState extends State<PasswordResetConfirmPage> {
@@ -35,15 +36,17 @@ class _PasswordResetConfirmPageState extends State<PasswordResetConfirmPage> {
 
     if (password.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be at least 8 characters.')),
+        const SnackBar(
+          content: Text('Password must be at least 8 characters.'),
+        ),
       );
       return;
     }
 
     if (password != confirm) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match.')));
       return;
     }
 
@@ -94,66 +97,109 @@ class _PasswordResetConfirmPageState extends State<PasswordResetConfirmPage> {
         },
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 24),
-                Icon(
-                  Icons.lock_outline,
-                  size: 64,
-                  color: c.primary,
-                ),
-                const SizedBox(height: 32),
-                Text('New Password', style: AppTextStyles.headlineLarge),
-                const SizedBox(height: 8),
-                Text(
-                  'Create a strong password for your account.',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: c.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 48),
-                NeoTextField(
-                  label: 'New Password',
-                  hint: 'At least 8 characters',
-                  controller: _passwordController,
-                  isPassword: true,
-                ),
-                const SizedBox(height: 24),
-                NeoTextField(
-                  label: 'Confirm Password',
-                  hint: 'Re-enter your password',
-                  controller: _confirmController,
-                  isPassword: true,
-                ),
-                const SizedBox(height: 32),
-                BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    final isLoading = state.status == AuthStatus.loading;
-                    return SizedBox(
-                      height: 56,
-                      child: NeoButton(
-                        text: 'Reset Password',
-                        color: c.primary,
-                        onPressed: isLoading ? null : _onSubmit,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
+                // Distinct Header Area
                 Center(
-                  child: GestureDetector(
-                    onTap: () => context.go('/login'),
-                    child: Text(
-                      'Remember your password? Login',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: c.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: c.primary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: c.primary.withOpacity(0.3), width: 2),
+                    ),
+                    child: Center(
+                      child: Icon(Icons.lock_person_outlined, size: 56, color: c.primary),
                     ),
                   ),
                 ),
+                const SizedBox(height: 40),
+                Text(
+                  'Set New Password',
+                  style: AppTextStyles.headlineLarge.copyWith(fontWeight: FontWeight.w800),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Your new password must be unique from those previously used.',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: c.textSecondary,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 48),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: c.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: c.border, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: c.textPrimary.withOpacity(0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      NeoTextField(
+                        label: 'New Password',
+                        hint: 'At least 8 characters',
+                        controller: _passwordController,
+                        isPassword: true,
+                      ),
+                      const SizedBox(height: 24),
+                      NeoTextField(
+                        label: 'Confirm Password',
+                        hint: 'Re-enter your password',
+                        controller: _confirmController,
+                        isPassword: true,
+                      ),
+                      const SizedBox(height: 32),
+                      BlocBuilder<AuthBloc, AuthState>(
+                        builder: (context, state) {
+                          final isLoading = state.status == AuthStatus.loading;
+                          return SizedBox(
+                            height: 56,
+                            child: NeoButton(
+                              text: 'Reset Password',
+                              color: c.primary,
+                              onPressed: isLoading ? null : _onSubmit,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
+                Center(
+                  child: GestureDetector(
+                    onTap: () => context.go('/login'),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.arrow_back_ios_new, size: 14, color: c.textPrimary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Back to Login',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            color: c.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),

@@ -11,6 +11,7 @@ class PrayerModel extends Prayer {
     super.status,
     super.reason,
     super.recoveryState,
+    super.prayedJumah,
   });
 
   /// Validates and normalizes a prayer status string from the backend.
@@ -44,6 +45,18 @@ class PrayerModel extends Prayer {
     final prayerNames = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
     final displayNames = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
+    final dateStr = json['date'] as String?;
+    final isFriday = dateStr != null && DateTime.tryParse(dateStr)?.weekday == DateTime.friday;
+    final prayedJumah = json['prayed_jumah'] as bool? ?? false;
+    final dhuhrCompleted = json['dhuhr'] as bool? ?? false;
+
+    // Determine the name of the noon prayer
+    if (isFriday) {
+      if (!dhuhrCompleted || prayedJumah) {
+        displayNames[1] = 'Jum\'ah';
+      }
+    }
+
     // Extract recovery data from API response
     final recoveryMap = json['recovery'] as Map<String, dynamic>?;
 
@@ -69,6 +82,7 @@ class PrayerModel extends Prayer {
         status: _normalizeStatus(json['${key}_status']),
         reason: json['${key}_reason'] as String?,
         recoveryState: recoveryState,
+        prayedJumah: json['prayed_jumah'] as bool? ?? false,
       );
     });
   }

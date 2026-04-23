@@ -15,6 +15,7 @@ class LogPrayerUseCase {
     String? status,
     String? reason,
     String? dateKey,
+    bool? prayedJumah,
   }) {
     return repository.logPrayer(
       prayerName: prayerName,
@@ -24,6 +25,7 @@ class LogPrayerUseCase {
       status: status,
       reason: reason,
       dateKey: dateKey,
+      prayedJumah: prayedJumah,
     );
   }
 }

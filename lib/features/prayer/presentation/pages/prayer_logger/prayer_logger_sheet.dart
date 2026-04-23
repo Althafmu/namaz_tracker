@@ -35,6 +35,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
   late String _status;
   String? _selectedReason;
   bool? _withRawatib;
+  bool _prayedJumah = false;
 
   /// Fard prayers that have mu'akkadah rawatib sunnah linked to them.
   static const _rawatibPrayers = {'Fajr', 'Dhuhr', 'Maghrib', 'Isha'};
@@ -69,6 +70,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
     _selectedReason = isExcused
         ? null
         : (widget.prayer.isCompleted ? widget.prayer.reason : null);
+    _prayedJumah = widget.prayer.prayedJumah;
   }
 
   bool _canEdit(BuildContext context) {
@@ -87,6 +89,9 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
     final selectedKey =
         context.read<HistoryBloc>().state.selectedDateStr ??
         HistoryState.todayKey;
+    final selectedDate = DateTime.parse(selectedKey);
+    final isFriday = selectedDate.weekday == DateTime.friday;
+    final isDhuhrOnFriday = isFriday && widget.prayer.name == 'Dhuhr';
     final isExcusedDay =
         settingsState.excusedDays.contains(selectedKey) ||
         widget.prayer.isExcused;
@@ -124,7 +129,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Log ${widget.prayer.name}',
+                  'Log ${isDhuhrOnFriday && _prayedJumah ? "Jum'ah" : widget.prayer.name}',
                   style: AppTextStyles.headlineLarge.copyWith(
                     color: c.textPrimary,
                   ),
@@ -230,6 +235,70 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                       isActive: _inJamaat,
                       onTap: () => setState(() => _inJamaat = !_inJamaat),
                     ),
+
+                    if (isDhuhrOnFriday) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        'FRIDAY PRAYER',
+                        style: AppTextStyles.sectionHeader.copyWith(
+                          color: c.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() => _prayedJumah = true),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: _prayedJumah ? c.jamaatLight : c.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _prayedJumah ? c.jamaat : c.border,
+                                    width: 2,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  "Jum'ah",
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: _prayedJumah ? c.jamaat : c.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => setState(() => _prayedJumah = false),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: !_prayedJumah ? c.jamaatLight : c.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: !_prayedJumah ? c.jamaat : c.border,
+                                    width: 2,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  "Dhuhr",
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: !_prayedJumah ? c.jamaat : c.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
 
                     const SizedBox(height: 24),
 
@@ -543,6 +612,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                                   location: _selectedLocation,
                                   status: _status,
                                   reason: _selectedReason,
+                                  prayedJumah: isDhuhrOnFriday ? _prayedJumah : false,
                                 ),
                               );
                               _logRawatibIfNeeded(dateKey);
@@ -568,6 +638,7 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                             location: _selectedLocation,
                             status: _status,
                             reason: _selectedReason,
+                            prayedJumah: isDhuhrOnFriday ? _prayedJumah : false,
                           ),
                         );
                         _logRawatibIfNeeded(dateKey);

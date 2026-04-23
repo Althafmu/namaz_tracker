@@ -97,6 +97,7 @@ class PrayerRepositoryImpl implements PrayerRepository {
     String? status,
     String? reason,
     String? dateKey,
+    bool? prayedJumah,
   }) async {
     try {
       final data = await remoteDataSource.logPrayer(
@@ -107,6 +108,7 @@ class PrayerRepositoryImpl implements PrayerRepository {
         status: status,
         reason: reason,
         dateKey: dateKey,
+        prayedJumah: prayedJumah ?? false,
       );
       return PrayerModel.fromApiResponse(data);
     } on DioException catch (e) {

@@ -235,6 +235,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
           location: event.location,
           status: event.status,
           reason: event.reason,
+          prayedJumah: event.prayedJumah,
         );
       }
       return prayer;
@@ -264,6 +265,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         location: event.location,
         status: event.status,
         reason: event.reason,
+        prayedJumah: event.prayedJumah,
         dateKey: isToday ? null : effectiveDateKey,
       );
       emit(state.copyWith(syncStatus: SyncStatus.synced));
@@ -277,6 +279,7 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         location: event.location,
         status: event.status,
         reason: event.reason,
+        // prayedJumah: event.prayedJumah, // Update if offline sync supports it
         dateKey: isToday ? null : effectiveDateKey,
       );
       emit(state.copyWith(syncStatus: SyncStatus.error));

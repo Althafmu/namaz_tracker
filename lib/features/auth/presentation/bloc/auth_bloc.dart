@@ -70,10 +70,10 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
-      // Auto-login since register now returns tokens
+      // Wait for email verification before loading config
       emit(
         state.copyWith(
-          status: AuthStatus.loadingConfig,
+          status: AuthStatus.emailVerificationPending,
           user: response.user,
           errorMessage: null,
           hasSeenOnboarding: true,

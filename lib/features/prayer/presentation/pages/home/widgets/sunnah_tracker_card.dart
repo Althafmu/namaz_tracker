@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 
@@ -9,6 +10,7 @@ import '../../../bloc/settings/settings_event.dart';
 import '../../../bloc/sunnah/sunnah_bloc.dart';
 import '../../../bloc/sunnah/sunnah_event.dart';
 import '../../../bloc/sunnah/sunnah_state.dart';
+import 'sunnah_info_dialog.dart';
 
 class SunnahTrackerCard extends StatefulWidget {
   final String dateKey;
@@ -44,6 +46,7 @@ class _SunnahTrackerCardState extends State<SunnahTrackerCard> {
   }
 
   void _togglePrayer(String prayerType) {
+    HapticFeedback.lightImpact();
     _sunnahBloc.add(
       ToggleSunnahPrayer(prayerType: prayerType, dateKey: widget.dateKey),
     );
@@ -89,7 +92,12 @@ class _SunnahTrackerCardState extends State<SunnahTrackerCard> {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: () => showSunnahInfoDialog(context),
+                child: Icon(Icons.help_outline, size: 16, color: c.textSecondary),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Wrap(
                   spacing: 8,
@@ -99,46 +107,50 @@ class _SunnahTrackerCardState extends State<SunnahTrackerCard> {
                     final completed =
                         summary?.isCompleted(item.prayerType) ?? false;
 
-                    return GestureDetector(
-                      onTap: () => _togglePrayer(item.prayerType),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: completed ? c.primary : c.background,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: c.border, width: 2),
-                          boxShadow: completed
-                              ? []
-                              : [
-                                  BoxShadow(
-                                    color: c.border,
-                                    offset: const Offset(2, 2),
-                                  ),
-                                ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              completed
-                                  ? Icons.check_circle
-                                  : Icons.add_circle_outline,
-                              size: 16,
-                              color: completed ? c.background : c.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              item.label,
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: completed ? c.background : c.textPrimary,
-                                fontWeight: FontWeight.w700,
+                    return Material(
+                      color: completed ? c.primary : c.background,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        onTap: () => _togglePrayer(item.prayerType),
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: c.border, width: 2),
+                            boxShadow: completed
+                                ? []
+                                : [
+                                    BoxShadow(
+                                      color: c.border,
+                                      offset: const Offset(2, 2),
+                                    ),
+                                  ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                completed
+                                    ? Icons.check_circle
+                                    : Icons.add_circle_outline,
+                                size: 16,
+                                color: completed ? c.background : c.primary,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Text(
+                                item.label,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: completed ? c.background : c.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -186,12 +198,21 @@ class SunnahEnableCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Add Sunnah to Home',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: c.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Add Sunnah to Home',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: c.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () => showSunnahInfoDialog(context),
+                      child: Icon(Icons.help_outline, size: 16, color: c.textSecondary),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(

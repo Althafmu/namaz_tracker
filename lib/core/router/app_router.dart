@@ -17,11 +17,13 @@ import '../../features/prayer/presentation/bloc/settings/settings_bloc.dart';
 
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/onboarding1_page.dart';
+import '../../features/auth/presentation/pages/onboarding_psych_page.dart';
 import '../../features/auth/presentation/pages/intent_onboarding_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
 import '../../features/auth/presentation/pages/password_reset_request_page.dart';
 import '../../features/auth/presentation/pages/password_reset_confirm_page.dart';
+import '../../features/auth/presentation/pages/email_verification_pending_page.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 
@@ -69,16 +71,19 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
       final splash = state.uri.path == '/splash';
       final onboarding = state.uri.path.startsWith('/onboarding');
       final intentSetup = state.uri.path == '/intent-setup';
+      final emailVerifying = state.uri.path == '/email-verification';
 
       // While bootstrapping from storage, ensure we stay on splash.
       if (status == AuthStatus.unknown) {
         return splash ? null : '/splash';
       }
 
-      // During login/register, keep the user on the auth screen spinner instead
+      final passwordResetting = state.uri.path.startsWith('/password-reset');
+
+      // During login/register/reset, keep the user on the auth screen spinner instead
       // of bouncing through splash again.
       if (status == AuthStatus.loading) {
-        if (splash || loggingIn || signingUp) {
+        if (splash || loggingIn || signingUp || passwordResetting) {
           return null;
         }
         return '/splash';
@@ -89,7 +94,7 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
       // - Stay in place on auth screens so the loading spinner remains visible.
       // - Redirect to splash if somehow on a protected route (e.g. expired-session).
       if (status == AuthStatus.loadingConfig) {
-        if (splash || loggingIn || signingUp || onboarding || intentSetup) {
+        if (splash || loggingIn || signingUp || onboarding || intentSetup || passwordResetting) {
           return null;
         }
         return '/splash';
@@ -105,18 +110,25 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
           return '/';
         }
 
-        if (loggingIn || signingUp || onboarding || splash) {
+        if (loggingIn || signingUp || onboarding || splash || emailVerifying) {
           return '/';
         }
         return null;
       }
 
-      // If unauthenticated, redirect to login unless on signup/onboarding
+      if (status == AuthStatus.emailVerificationPending) {
+        if (emailVerifying) {
+          return null;
+        }
+        return '/email-verification';
+      }
+
+      // If unauthenticated, redirect to login unless on signup/onboarding/password-reset
       if (status == AuthStatus.unauthenticated) {
         if (splash) {
           return authState.hasSeenOnboarding ? '/login' : '/onboarding1';
         }
-        if (loggingIn || signingUp || onboarding) {
+        if (loggingIn || signingUp || onboarding || passwordResetting) {
           return null;
         }
         return '/login';
@@ -131,11 +143,16 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
         builder: (context, state) => const Onboarding1Page(),
       ),
       GoRoute(
+        path: '/onboarding-psych',
+        builder: (context, state) => const OnboardingPsychPage(),
+      ),
+      GoRoute(
         path: '/intent-setup',
         builder: (context, state) => const IntentOnboardingPage(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(path: '/signup', builder: (context, state) => const SignupPage()),
+      GoRoute(path: '/email-verification', builder: (context, state) => const EmailVerificationPendingPage()),
       GoRoute(path: '/password-reset', builder: (context, state) => const PasswordResetRequestPage()),
       GoRoute(
         path: '/password-reset/confirm',

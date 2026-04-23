@@ -43,6 +43,7 @@ class Prayer extends Equatable {
   final String? baseTime;
   final int? offset;
   final RecoveryState? recoveryState;
+  final bool prayedJumah;
 
   const Prayer({
     required this.name,
@@ -55,6 +56,7 @@ class Prayer extends Equatable {
     this.baseTime,
     this.offset,
     this.recoveryState,
+    this.prayedJumah = false,
   });
 
   // Phase 2: Helper getters for status
@@ -80,6 +82,7 @@ class Prayer extends Equatable {
     String? baseTime,
     int? offset,
     RecoveryState? recoveryState,
+    bool? prayedJumah,
   }) {
     return Prayer(
       name: name ?? this.name,
@@ -92,6 +95,7 @@ class Prayer extends Equatable {
       baseTime: baseTime ?? this.baseTime,
       offset: offset ?? this.offset,
       recoveryState: recoveryState ?? this.recoveryState,
+      prayedJumah: prayedJumah ?? this.prayedJumah,
     );
   }
 
@@ -117,6 +121,7 @@ class Prayer extends Equatable {
       'reason': reason,
       'baseTime': baseTime,
       'offset': offset,
+      'prayedJumah': prayedJumah,
       'recoveryState': recoveryState != null
           ? {
               'is_protected': recoveryState!.isProtected,
@@ -138,6 +143,7 @@ class Prayer extends Equatable {
       reason: json['reason'] as String?,
       baseTime: json['baseTime'] as String?,
       offset: json['offset'] as int?,
+      prayedJumah: json['prayedJumah'] as bool? ?? false,
       recoveryState: json['recoveryState'] != null
           ? RecoveryState.fromJson(json['recoveryState'] as Map<String, dynamic>)
           : null,
@@ -156,5 +162,6 @@ class Prayer extends Equatable {
         baseTime,
         offset,
         recoveryState,
+        prayedJumah,
       ];
 }

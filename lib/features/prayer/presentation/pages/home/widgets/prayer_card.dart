@@ -192,11 +192,25 @@ class NormalPrayerView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    
+    String? warningMessage;
+    Color? warningColor;
+    Color? warningBackgroundColor;
+
+    if (prayer.name == 'Jum\'ah' && !prayer.isCompleted && prayer.status != 'missed') {
+      warningMessage = '"Whoever reads Surah Al-Kahf on Friday, he will be illuminated with light between the two Fridays."';
+      warningColor = c.primary;
+      warningBackgroundColor = c.primary.withValues(alpha: 0.1);
+    }
+
     return _BasePrayerView(
       prayer: prayer,
       onTap: onTap,
       showTime: showTime,
       cardColor: _getPrayerColor(prayer, c),
+      warningMessage: warningMessage,
+      warningColor: warningColor,
+      warningBackgroundColor: warningBackgroundColor,
     );
   }
 }

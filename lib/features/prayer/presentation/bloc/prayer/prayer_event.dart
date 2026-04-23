@@ -23,6 +23,7 @@ class LogPrayer extends PrayerEvent {
   final String location;
   final String status;
   final String? reason;
+  final bool? prayedJumah;
 
   const LogPrayer({
     required this.prayerName,
@@ -31,6 +32,7 @@ class LogPrayer extends PrayerEvent {
     this.location = 'home',
     this.status = 'on_time',
     this.reason,
+    this.prayedJumah,
   });
 
   @override
@@ -41,6 +43,7 @@ class LogPrayer extends PrayerEvent {
     location,
     status,
     reason,
+    prayedJumah,
   ];
 }
 

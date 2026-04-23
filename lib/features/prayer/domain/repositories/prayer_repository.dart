@@ -15,6 +15,7 @@ abstract class PrayerRepository {
     String? status,
     String? reason,
     String? dateKey,
+    bool? prayedJumah,
   });
 
   /// Get the user's current streak info.
