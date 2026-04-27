@@ -97,3 +97,8 @@ class UndoLastPrayerLog extends PrayerEvent {
   @override
   List<Object?> get props => [prayerName, dateKey];
 }
+
+/// Clear the action message so snackbar doesn't re-fire on rebuild.
+class ClearActionMessage extends PrayerEvent {
+  const ClearActionMessage();
+}

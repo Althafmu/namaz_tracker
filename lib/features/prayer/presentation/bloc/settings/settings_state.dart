@@ -138,7 +138,13 @@ class SettingsState extends Equatable {
   final int alarmDurationMinutes;
 
   // Dates marked as excused (yyyy-MM-dd strings) — notifications suppressed for these days
+  // Deprecated: Use excusedPrayers for per-prayer tracking instead.
   final Set<String> excusedDays;
+
+  // Map<date, Set<prayerName>> — tracks which specific prayers are excused on each date.
+  // A full-day excuse (all 5 prayers) is stored as the date in excusedDays for backward compat.
+  // Partial excuses are stored here with specific prayer names.
+  final Map<String, Set<String>> excusedPrayers;
 
   // Phase 3.1: Intent-driven behavior
   final IntentLevel intentLevel;
@@ -164,6 +170,12 @@ class SettingsState extends Equatable {
 
   /// Growth-only optional Sunna tracking toggle.
   final bool sunnahEnabled;
+
+  /// Backend behavior config: messaging style (soft/balanced/direct)
+  final String behaviorStyle;
+
+  /// Backend behavior config: nudge intensity (light/medium/strong)
+  final String nudgeIntensity;
 
   /// Whether Qada analytics should be visible in profile/progress surfaces.
   final bool qadaTrackingEnabled;
@@ -206,6 +218,7 @@ class SettingsState extends Equatable {
     ],
     this.alarmDurationMinutes = 1,
     this.excusedDays = const {},
+    this.excusedPrayers = const {},
     this.intentLevel = IntentLevel.foundation,
     this.bestStreak = 0,
     this.lastStreak = 0,
@@ -222,6 +235,8 @@ class SettingsState extends Equatable {
     this.qadaTrackingEnabled = false,
     this.hasSeenLoginNotificationPrompt = false,
     this.lastSettingsActionMessage,
+    this.behaviorStyle = 'soft',
+    this.nudgeIntensity = 'light',
   });
 
   SettingsState copyWith({
@@ -236,6 +251,7 @@ class SettingsState extends Equatable {
     List<String>? missedReasons,
     int? alarmDurationMinutes,
     Set<String>? excusedDays,
+    Map<String, Set<String>>? excusedPrayers,
     IntentLevel? intentLevel,
     int? bestStreak,
     int? lastStreak,
@@ -252,6 +268,8 @@ class SettingsState extends Equatable {
     bool? qadaTrackingEnabled,
     bool? hasSeenLoginNotificationPrompt,
     String? lastSettingsActionMessage,
+    String? behaviorStyle,
+    String? nudgeIntensity,
     bool clearActionMessage = false,
   }) {
     return SettingsState(
@@ -267,6 +285,7 @@ class SettingsState extends Equatable {
       missedReasons: missedReasons ?? this.missedReasons,
       alarmDurationMinutes: alarmDurationMinutes ?? this.alarmDurationMinutes,
       excusedDays: excusedDays ?? this.excusedDays,
+      excusedPrayers: excusedPrayers ?? this.excusedPrayers,
       intentLevel: intentLevel ?? this.intentLevel,
       bestStreak: bestStreak ?? this.bestStreak,
       lastStreak: lastStreak ?? this.lastStreak,
@@ -289,6 +308,8 @@ class SettingsState extends Equatable {
       lastSettingsActionMessage: clearActionMessage
           ? null
           : (lastSettingsActionMessage ?? this.lastSettingsActionMessage),
+      behaviorStyle: behaviorStyle ?? this.behaviorStyle,
+      nudgeIntensity: nudgeIntensity ?? this.nudgeIntensity,
     );
   }
 
@@ -296,7 +317,17 @@ class SettingsState extends Equatable {
     final today = TimeService.effectiveNow();
     final todayStr =
         '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    return excusedDays.contains(todayStr);
+    return excusedDays.contains(todayStr) ||
+        (excusedPrayers.containsKey(todayStr) &&
+            excusedPrayers[todayStr]!.isNotEmpty);
+  }
+
+  Set<String> getExcusedPrayersForDate(String dateKey) {
+    return excusedPrayers[dateKey] ?? {};
+  }
+
+  bool isPrayerExcused(String dateKey, String prayerName) {
+    return excusedPrayers[dateKey]?.contains(prayerName) ?? false;
   }
 
   Map<String, dynamic> toJson() {
@@ -328,6 +359,8 @@ class SettingsState extends Equatable {
       'sunnahEnabled': sunnahEnabled,
       'qadaTrackingEnabled': qadaTrackingEnabled,
       'hasSeenLoginNotificationPrompt': hasSeenLoginNotificationPrompt,
+      'behaviorStyle': behaviorStyle,
+      'nudgeIntensity': nudgeIntensity,
     };
   }
 
@@ -415,6 +448,14 @@ class SettingsState extends Equatable {
               ?.map((e) => e.toString())
               .toSet() ??
           {},
+      excusedPrayers:
+          (json['excusedPrayers'] as Map<String, dynamic>?)?.map(
+                (key, value) => MapEntry(
+                  key,
+                  (value as List<dynamic>).map((e) => e.toString()).toSet(),
+                ),
+              ) ??
+          {},
       intentLevel: json['intentLevel'] != null
           ? IntentLevel.fromString(json['intentLevel'] as String)
           : IntentLevel.foundation,
@@ -445,6 +486,8 @@ class SettingsState extends Equatable {
           : false,
       hasSeenLoginNotificationPrompt:
           json['hasSeenLoginNotificationPrompt'] as bool? ?? false,
+      behaviorStyle: json['behaviorStyle'] as String? ?? 'soft',
+      nudgeIntensity: json['nudgeIntensity'] as String? ?? 'light',
     );
   }
 
@@ -461,6 +504,7 @@ class SettingsState extends Equatable {
     missedReasons,
     alarmDurationMinutes,
     excusedDays,
+    excusedPrayers,
     intentLevel,
     bestStreak,
     lastStreak,
@@ -477,5 +521,7 @@ class SettingsState extends Equatable {
     qadaTrackingEnabled,
     hasSeenLoginNotificationPrompt,
     lastSettingsActionMessage,
+    behaviorStyle,
+    nudgeIntensity,
   ];
 }

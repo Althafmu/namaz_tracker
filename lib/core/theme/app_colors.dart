@@ -36,6 +36,10 @@ class AppColors {
     statusQada: Color(0xFF6366F1), // Phase 2: Qada (makeup prayer) - Indigo
     statusExcused: Color(0xFF9CA3AF), // Phase 2: Excused - Muted gray
     statusNotLogged: Color(0xFFE2DADA),
+    // Intent level path colors
+    foundation: Color(0xFF4CAF50), // Green - Start Fresh
+    strengthening: Color(0xFFFF9800), // Orange - Build Momentum
+    growth: Color(0xFF2196F3), // Blue - Go All In
   );
 
   /// Dark theme color palette.
@@ -70,6 +74,10 @@ class AppColors {
     statusQada: Color(0xFF818CF8), // Phase 2: Qada - Lighter indigo for dark theme
     statusExcused: Color(0xFF9CA3AF), // Phase 2: Excused - Muted gray for dark theme
     statusNotLogged: Color(0xFF2A2A3A), // Subtle ring – blends into surface
+    // Intent level path colors
+    foundation: Color(0xFF4CAF50), // Green - Start Fresh (same for both themes)
+    strengthening: Color(0xFFFF9800), // Orange - Build Momentum (same for both themes)
+    growth: Color(0xFF2196F3), // Blue - Go All In (same for both themes)
   );
 
   // ── Legacy static constants (kept for const constructor defaults) ──
@@ -133,6 +141,11 @@ class AppColorPalette {
   final Color statusExcused; // Phase 2: Excused (travel/sickness/women's period)
   final Color statusNotLogged;
 
+  // Intent level path colors
+  final Color foundation; // Green - Start Fresh path
+  final Color strengthening; // Orange - Build Momentum path
+  final Color growth; // Blue - Go All In path
+
   const AppColorPalette({
     required this.primary,
     required this.background,
@@ -152,6 +165,9 @@ class AppColorPalette {
     required this.statusQada,
     required this.statusExcused,
     required this.statusNotLogged,
+    required this.foundation,
+    required this.strengthening,
+    required this.growth,
   });
 
   // Convenience getters matching old API names or expected semantic names

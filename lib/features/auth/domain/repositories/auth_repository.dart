@@ -1,10 +1,15 @@
 import '../entities/user.dart';
 
 class AuthResponse {
+  final String access;
+  final String refresh;
   final User user;
-  final String token;
 
-  AuthResponse({required this.user, required this.token});
+  AuthResponse({
+    required this.access,
+    required this.refresh,
+    required this.user,
+  });
 }
 
 abstract class AuthRepository {
@@ -15,6 +20,8 @@ abstract class AuthRepository {
   });
 
   Future<AuthResponse> login({required String email, required String password});
+
+  Future<AuthResponse> googleSignIn({required String idToken});
 
   Future<void> logout();
 

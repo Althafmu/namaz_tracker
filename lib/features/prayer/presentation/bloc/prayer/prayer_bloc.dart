@@ -63,6 +63,9 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
     on<RefreshPrayersAndAlarms>(_onRefreshPrayersAndAlarms);
     on<ResumeExcusedDay>(_onResumeExcusedDay);
     on<UndoLastPrayerLog>(_onUndoLastPrayerLog);
+    on<ClearActionMessage>((event, emit) {
+      emit(state.copyWith(clearActionMessage: true));
+    });
 
     _settingsSubscription = settingsBloc.stream.listen((_) {
       add(const RefreshPrayersAndAlarms());
@@ -208,24 +211,53 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
 
     if (event.status != 'excused' &&
         _isExcusedDay(effectiveDateKey, currentDayPrayers)) {
-      settingsBloc.add(ClearExcusedDay(effectiveDateKey));
-      currentDayPrayers = _clearExcusedPrayersLocally(currentDayPrayers);
+      // Only update the logged prayer — leave other prayers in excused status
+      final updatedPrayers = currentDayPrayers.map((prayer) {
+        if (prayer.name.toLowerCase() == event.prayerName.toLowerCase()) {
+          return prayer.copyWith(
+            isCompleted: event.completed,
+            inJamaat: event.inJamaat,
+            location: event.location,
+            status: event.status,
+            reason: event.reason,
+            prayedJumah: event.prayedJumah,
+          );
+        }
+        return prayer;
+      }).toList();
+
       historyBloc.add(
-        UpdateDayLog(dateStr: effectiveDateKey, prayers: currentDayPrayers),
+        UpdateDayLog(dateStr: effectiveDateKey, prayers: updatedPrayers),
       );
       if (isToday) {
-        emit(state.copyWith(prayers: currentDayPrayers));
+        emit(state.copyWith(prayers: updatedPrayers, syncStatus: SyncStatus.syncing));
       }
 
+      // Only clear excused day from settings when ALL prayers are logged
+      final allLogged = updatedPrayers.every((p) => p.status != 'pending' && p.status != 'excused');
+      if (allLogged) {
+        settingsBloc.add(ClearExcusedDay(effectiveDateKey));
+      }
+
+      // Sync with backend
       try {
-        currentDayPrayers = await clearExcusedDayUseCase(
-          date: effectiveDateKey,
+        await logPrayerUseCase(
+          prayerName: event.prayerName,
+          completed: event.completed,
+          inJamaat: event.inJamaat,
+          location: event.location,
+          status: event.status,
+          reason: event.reason,
+          prayedJumah: event.prayedJumah,
+          dateKey: isToday ? null : effectiveDateKey,
         );
       } catch (e) {
-        debugPrint('[PrayerBloc] Failed to clear excused day before log: $e');
+        debugPrint('[PrayerBloc] Failed to log prayer: $e');
       }
+      return;
     }
 
+    // Normal flow (non-excused day)
     // 1. Optimistic local update
     final updatedPrayers = currentDayPrayers.map((prayer) {
       if (prayer.name.toLowerCase() == event.prayerName.toLowerCase()) {
@@ -373,23 +405,8 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
 
     if (prayerSchedulerService.cachedCoordinates == null) {
       debugPrint(
-        '[PrayerBloc] No cached coords — falling back to full GPS refresh',
+        '[PrayerBloc] No cached coords — skipping recalculation (handled by LoadDailyStatus)',
       );
-      final result = await prayerSchedulerService.refreshPrayersAndAlarms(
-        currentPrayers: state.prayers,
-        settingsState: settings,
-        cachedLat: state.cachedLat,
-        cachedLng: state.cachedLng,
-      );
-      if (result != null) {
-        emit(
-          state.copyWith(
-            prayers: result.prayers,
-            cachedLat: result.lat,
-            cachedLng: result.lng,
-          ),
-        );
-      }
       return;
     }
 

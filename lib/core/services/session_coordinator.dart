@@ -66,6 +66,8 @@ class SessionCoordinator {
         final intentExplicitlySet =
             data['intent_explicitly_set'] as bool? ?? false;
         final sunnahEnabled = data['sunnah_enabled'] as bool?;
+        final style = data['style'] as String? ?? 'soft';
+        final nudgeIntensity = data['nudge_intensity'] as String? ?? 'light';
 
         if (intent != null && intentExplicitlySet) {
           settingsBloc.add(LoadIntentFromBackend(intent));
@@ -77,6 +79,10 @@ class SessionCoordinator {
         if (sunnahEnabled != null) {
           settingsBloc.add(LoadSunnahEnabledFromBackend(sunnahEnabled));
         }
+        settingsBloc.add(LoadBehaviorConfigFromBackend(
+          style: style,
+          nudgeIntensity: nudgeIntensity,
+        ));
         return; // Success, exit retry loop
       } catch (e) {
         bool shouldRetry = false;

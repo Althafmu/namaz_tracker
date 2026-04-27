@@ -247,11 +247,13 @@ class PrayerRepositoryImpl implements PrayerRepository {
   Future<List<Prayer>> setExcusedDay({
     required String date,
     String? reason,
+    Set<String>? prayerNames,
   }) async {
     try {
       final data = await remoteDataSource.setExcusedDay(
         date: date,
         reason: reason,
+        prayerNames: prayerNames,
       );
       return PrayerModel.fromApiResponse(data);
     } on DioException catch (e) {
@@ -339,6 +341,20 @@ class PrayerRepositoryImpl implements PrayerRepository {
     } catch (e) {
       throw NetworkException(
         'Unexpected error during getNotificationsPauseStatus',
+        originalError: e,
+      );
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> resumeNotificationsForToday() async {
+    try {
+      return await remoteDataSource.resumeNotificationsForToday();
+    } on DioException catch (e) {
+      _handleDioError(e, 'resumeNotificationsForToday');
+    } catch (e) {
+      throw NetworkException(
+        'Unexpected error during resumeNotificationsForToday',
         originalError: e,
       );
     }

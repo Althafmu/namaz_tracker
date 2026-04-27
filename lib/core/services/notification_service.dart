@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:intl/intl.dart';
+import 'package:namaz_tracker/features/prayer/presentation/bloc/settings/settings_state.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'prayer_time_service.dart';
+import 'spiritual_messages.dart';
 import '../../features/prayer/domain/entities/prayer_notification_config.dart';
 import 'notification_service_interface.dart';
 
@@ -360,7 +362,8 @@ class NotificationService implements NotificationServiceInterface {
     Map<String, int>? manualOffsets,
     int alarmDurationMinutes = 1,
     Set<String>? excusedDays,
-    String? intentLevel,
+    Map<String, Set<String>>? excusedPrayers,
+    IntentLevel? intentLevel,
   }) async {
     await cancelAllNotifications();
 
@@ -370,12 +373,21 @@ class NotificationService implements NotificationServiceInterface {
     final now = DateTime.now();
     final dateFormat = DateFormat('yyyy-MM-dd');
 
+    // Build a map of dateKey -> Set<prayerName> for quick lookup
+    final prayerNameMap = {
+      'Fajr': 'fajr',
+      'Dhuhr': 'dhuhr',
+      'Asr': 'asr',
+      'Maghrib': 'maghrib',
+      'Isha': 'isha',
+    };
+
     // Schedule for 3 days ahead to prevent hitting Android exact alarm limits (50 alarms)
     for (int dayOffset = 0; dayOffset < 3; dayOffset++) {
       final date = now.add(Duration(days: dayOffset));
       final dateKey = dateFormat.format(date);
 
-      // Skip entire day if marked as excused
+      // Skip entire day if marked as fully excused
       if (excusedDays != null && excusedDays.contains(dateKey)) {
         continue;
       }
@@ -411,28 +423,36 @@ class NotificationService implements NotificationServiceInterface {
         'Isha': ishaEnd,
       };
 
+      final dayExcusedPrayers = excusedPrayers?[dateKey] ?? {};
+
       int prayerIndex = 1;
       for (final entry in prayerTimesMap.entries) {
         final prayerName = entry.key;
         final prayerTime = entry.value;
+        final backendName = prayerNameMap[prayerName]!;
+
+        if (dayExcusedPrayers.contains(backendName)) {
+          prayerIndex++;
+          continue;
+        }
+
         final config =
             prayerConfigs[prayerName] ?? const PrayerNotificationConfig();
 
-        // Only schedule if the time is in the future
         if (prayerTime.isAfter(now)) {
-          // 1. Schedule Adhan Alert (standard notification)
           if (config.adhanAlerts) {
             final adhanId = (dayOffset * 100) + (prayerIndex * 10) + 1;
+            final intent = intentLevel ?? IntentLevel.foundation;
+            final body = SpiritualMessages.buildNotificationBody(prayerName, intent);
             final result = await _scheduleAlarm(
               id: adhanId,
               title: "Time for $prayerName",
-              body: "It's time to pray $prayerName.",
+              body: body,
               scheduledTime: prayerTime,
             );
             if (result == null) scheduledCount++;
           }
 
-          // 2. Schedule Reminder Alert (alarm-style with sound)
           if (config.reminderAlerts) {
             final reminderTime = config.reminderIsBefore
                 ? prayerTime.subtract(Duration(minutes: config.reminderMinutes))
@@ -458,7 +478,6 @@ class NotificationService implements NotificationServiceInterface {
           }
         }
 
-        // 3. Schedule Streak Protection (15 mins before window ends)
         if (config.streakProtection) {
           final endTime = prayerEndTimes[prayerName];
           if (endTime != null) {
@@ -468,11 +487,12 @@ class NotificationService implements NotificationServiceInterface {
             if (streakAlertTime.isAfter(now) &&
                 streakAlertTime.isAfter(prayerTime)) {
               final streakId = (dayOffset * 100) + (prayerIndex * 10) + 3;
+              final intent = intentLevel ?? IntentLevel.foundation;
+              final streakMsg = SpiritualMessages.buildStreakReminder(intent, 0);
               final result = await _scheduleAlarm(
                 id: streakId,
                 title: "⏰ $prayerName time ending soon!",
-                body:
-                    "Only 15 mins left — don't miss $prayerName and keep your streak!",
+                body: streakMsg,
                 scheduledTime: streakAlertTime,
                 isAlarmStyle: true,
                 alarmSound: alarmSound,
@@ -493,6 +513,7 @@ class NotificationService implements NotificationServiceInterface {
     final reminderCount = await _scheduleDailyReminders(
       now: now,
       excusedDays: excusedDays,
+      intentLevel: intentLevel,
     );
     scheduledCount += reminderCount;
 
@@ -502,9 +523,11 @@ class NotificationService implements NotificationServiceInterface {
   Future<int> _scheduleDailyReminders({
     required DateTime now,
     Set<String>? excusedDays,
+    IntentLevel? intentLevel,
   }) async {
     int count = 0;
     final dateFormat = DateFormat('yyyy-MM-dd');
+    final intent = intentLevel ?? IntentLevel.foundation;
 
     for (int dayOffset = 0; dayOffset < 3; dayOffset++) {
       final date = now.add(Duration(days: dayOffset));
@@ -520,11 +543,11 @@ class NotificationService implements NotificationServiceInterface {
       }
 
       final reminderId = 9000 + dayOffset;
+      final streakMsg = SpiritualMessages.buildStreakReminder(intent, 0);
       final result = await _scheduleAlarm(
         id: reminderId,
         title: '🌙 Daily Prayer Reminder',
-        body:
-            "Have you completed all your prayers today? Don't break your streak!",
+        body: streakMsg,
         scheduledTime: reminderTime,
       );
       if (result == null) count++;

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../../../core/services/status_helper.dart';
 import '../../../../../core/services/time_service.dart';
@@ -22,6 +21,7 @@ import '../../bloc/streak/streak_state.dart';
 import '../../bloc/sunnah/sunnah_bloc.dart';
 import '../../bloc/sunnah/sunnah_event.dart';
 import '../../bloc/sunnah/sunnah_state.dart';
+import '../streak/widgets/share_streak_modal.dart';
 import 'widgets/monthly_calendar.dart';
 import 'widgets/top_reasons.dart';
 import 'widgets/badges_grid.dart';
@@ -117,12 +117,13 @@ class ProgressPage extends StatelessWidget {
                                         .copyWith(color: c.textPrimary),
                                   ),
                                   GestureDetector(
-                                    onTap: () => _shareProgress(
-                                      context,
-                                      streakState,
-                                      historyState,
-                                      prayerState,
-                                    ),
+                                    onTap: () {
+                                      final streak = streakState.streak.displayStreak;
+                                      ShareStreakModal.show(
+                                        context,
+                                        streakCount: streak,
+                                      );
+                                    },
                                     child: Container(
                                       width: 40,
                                       height: 40,
@@ -775,30 +776,6 @@ class ProgressPage extends StatelessWidget {
       openRecoveryCount: openRecoveryCount,
       topPrayerName: topPrayerName,
     );
-  }
-
-  void _shareProgress(
-    BuildContext context,
-    StreakState streakState,
-    HistoryState historyState,
-    PrayerState prayerState,
-  ) {
-    final streak = streakState.streak.displayStreak;
-    final weeklyCount = historyState.weeklyPrayerCount;
-    final todayCount = prayerState.prayers
-        .where((p) => p.isCompleted && !p.isExcused)
-        .length;
-
-    final message = StringBuffer();
-    message.writeln('🕌 Falah Prayer Tracker Progress');
-    message.writeln('');
-    message.writeln('🔥 Current Streak: $streak day${streak == 1 ? '' : 's'}');
-    message.writeln('📅 This Week: $weeklyCount/35 prayers');
-    message.writeln('✅ Today: $todayCount/5 prayers completed');
-    message.writeln('');
-    message.writeln('Keep up the consistency! 💪');
-
-    SharePlus.instance.share(ShareParams(text: message.toString()));
   }
 
   Widget _buildQuickStat(

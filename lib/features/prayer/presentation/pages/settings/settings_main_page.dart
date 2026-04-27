@@ -10,6 +10,7 @@ import '../../bloc/settings/settings_bloc.dart';
 import '../../bloc/settings/settings_event.dart';
 import '../../bloc/settings/settings_state.dart';
 import '../profile/widgets/theme_selection_sheet.dart';
+import 'widgets/sunna_progress_overlay.dart';
 
 /// Full-screen settings hub — accessed via gear icon on the Profile page.
 class SettingsMainPage extends StatelessWidget {
@@ -158,6 +159,10 @@ class SettingsMainPage extends StatelessWidget {
                               context.read<SettingsBloc>().add(
                                 const PauseNotificationsForToday(),
                               );
+                            } else {
+                              context.read<SettingsBloc>().add(
+                                const ResumeNotificationsForToday(),
+                              );
                             }
                           },
                   ),
@@ -180,34 +185,32 @@ class SettingsMainPage extends StatelessWidget {
                     onTap: () => context.push('/settings/calculation'),
                   ),
                   const SizedBox(height: 16),
-                  if (settingsState.intentLevel == IntentLevel.growth) ...[
-                    NeoSettingsTile(
-                      title: 'Sunna Tracker',
-                      subtitle: settingsState.sunnahEnabled
-                          ? 'Enabled for your Growth plan and shown on Home.'
-                          : 'Enable optional Sunna tracking for your Growth plan.',
-                      icon: Icons.auto_awesome,
-                      iconColor: c.jamaat,
-                      iconBg: c.jamaatLight,
-                      isToggle: true,
-                      toggleValue: settingsState.sunnahEnabled,
-                      onToggleChanged: (val) {
-                        context.read<SettingsBloc>().add(
-                          UpdateSunnahEnabled(val),
-                        );
-                      },
-                    ),
-                  ] else ...[
-                    NeoSettingsTile(
-                      title: 'Sunna Tracker',
-                      subtitle:
-                          'Visible in Growth mode. Tap to switch your path and unlock it.',
-                      icon: Icons.auto_awesome,
-                      iconColor: c.jamaat,
-                      iconBg: c.jamaatLight,
-                      onTap: () => context.go('/intent-setup'),
-                    ),
-                  ],
+                  NeoSettingsTile(
+                    title: 'Sunna Tracker',
+                    subtitle: settingsState.intentLevel == IntentLevel.growth
+                        ? settingsState.sunnahEnabled
+                            ? 'Enabled for your Growth plan and shown on Home.'
+                            : 'Enable optional Sunna tracking for your Growth plan.'
+                        : 'Tap to see your progress toward unlocking.',
+                    icon: Icons.auto_awesome,
+                    iconColor: c.jamaat,
+                    iconBg: c.jamaatLight,
+                    isToggle: settingsState.intentLevel == IntentLevel.growth,
+                    toggleValue: settingsState.sunnahEnabled,
+                    onToggleChanged: settingsState.intentLevel == IntentLevel.growth
+                        ? (val) {
+                            context.read<SettingsBloc>().add(
+                              UpdateSunnahEnabled(val),
+                            );
+                          }
+                        : null,
+                    onTap: () {
+                      if (settingsState.intentLevel == IntentLevel.growth) {
+                        return;
+                      }
+                      SunnaProgressOverlay.show(context);
+                    },
+                  ),
                   const SizedBox(height: 16),
                   NeoSettingsTile(
                     title: 'Qada Tracking',

@@ -128,7 +128,8 @@ class PrayerSchedulerService {
         manualOffsets: settings.manualOffsets,
         alarmDurationMinutes: settings.alarmDurationMinutes,
         excusedDays: settings.excusedDays,
-        intentLevel: settings.intentLevel.name,
+        excusedPrayers: settings.excusedPrayers,
+        intentLevel: settings.intentLevel,
       );
     } catch (e) {
       debugPrint('[PrayerScheduler] Failed to schedule notifications: $e');

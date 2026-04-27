@@ -74,12 +74,16 @@ class SetExcusedDay extends StreakEvent {
   final String date;
   /// Optional reason (travel, sickness, period, etc.).
   final String? reason;
+  /// Optional set of prayer names to mark as excused.
+  /// If null, all remaining prayers are marked as excused.
+  final Set<String>? prayerNames;
 
   const SetExcusedDay({
     required this.date,
     this.reason,
+    this.prayerNames,
   });
 
   @override
-  List<Object?> get props => [date, reason];
+  List<Object?> get props => [date, reason, prayerNames];
 }

@@ -193,6 +193,10 @@ class SettingsPage extends StatelessWidget {
                                       context.read<SettingsBloc>().add(
                                         const PauseNotificationsForToday(),
                                       );
+                                    } else {
+                                      context.read<SettingsBloc>().add(
+                                        const ResumeNotificationsForToday(),
+                                      );
                                     }
                                   },
                           ),

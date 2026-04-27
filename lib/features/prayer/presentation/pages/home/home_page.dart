@@ -43,31 +43,28 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late String _lastKnownTodayKey;
   StreamSubscription<PrayerState>? _actionMessageSubscription;
+  bool _actionMessageShown = false;
   bool _welcomeBannerQueued = false;
 
-  @override
+@override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _lastKnownTodayKey = HistoryState.todayKey;
-    Future.microtask(() {
-      if (mounted) {
-        GetIt.I<StreakBloc>().add(const LoadStreak());
-        context.read<PrayerBloc>().add(const LoadDailyStatus());
-        _maybeShowFirstRunSetup();
-        _maybeShowLoginNotificationPrompt();
-        _checkMilestones();
-        _checkUpgradePrompt();
-        _listenForActionMessages();
-      }
-    });
+    WidgetsBinding.instance.addObserver(this);
+    _listenForActionMessages();
+    _maybeShowFirstRunSetup();
+    _maybeShowLoginNotificationPrompt();
+    _checkMilestones();
   }
 
   void _listenForActionMessages() {
+    _actionMessageShown = false;
+    _actionMessageSubscription?.cancel();
     _actionMessageSubscription = context.read<PrayerBloc>().stream.listen((
       state,
     ) {
-      if (state.lastActionMessage != null && mounted) {
+      if (state.lastActionMessage != null && mounted && !_actionMessageShown) {
+        _actionMessageShown = true;
         final isError = state.undoStatus == UndoStatus.error;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -78,6 +75,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             duration: const Duration(seconds: 3),
           ),
         );
+        context.read<PrayerBloc>().add(const ClearActionMessage());
       }
     });
   }
@@ -93,6 +91,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkNewDayAndRefresh();
+      _checkUpgradePrompt();
     }
   }
 
@@ -176,6 +175,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         providers: [
           BlocProvider.value(value: GetIt.I<StreakBloc>()),
           BlocProvider.value(value: context.read<PrayerBloc>()),
+          BlocProvider.value(value: GetIt.I<SettingsBloc>()),
         ],
         child: ExcusedDayDialog(date: HistoryState.todayKey),
       ),
@@ -188,27 +188,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   void _showUpgradePromptBanner(BuildContext context) {
     final settingsState = GetIt.I<SettingsBloc>().state;
-    String message;
-    if (settingsState.intentLevel == IntentLevel.foundation) {
-      message = "You've been consistent. Want to take the next step?";
-    } else {
-      message = "You're growing strong. Ready to push further?";
-    }
+    final message = MilestoneService.getUpgradePromptMessage(
+      settingsState,
+      settingsState.lastStreak,
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Theme.of(context).colorScheme.primary,
         action: SnackBarAction(
-          label: 'Upgrade',
+          label: 'Change Path',
           textColor: Colors.white,
           onPressed: () {
             GetIt.I<SettingsBloc>().add(const DismissUpgradePrompt());
-            // Navigate to intent onboarding to upgrade
-            GoRouter.of(context).go('/intent-setup');
+            context.go('/intent-setup');
           },
         ),
-        duration: const Duration(seconds: 5),
+        duration: const Duration(seconds: 6),
       ),
     );
   }

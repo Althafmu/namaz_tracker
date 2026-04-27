@@ -190,7 +190,6 @@ class AuthRemoteDataSource {
     if (token == null || token.isEmpty) return false;
     try {
       final response = await dio.get('/api/auth/verify-email/', queryParameters: {'token': token});
-      // If we get tokens back, the email was verified successfully
       return response.data['access'] != null;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -199,6 +198,18 @@ class AuthRemoteDataSource {
         message = data['error']?.toString() ?? data['detail']?.toString() ?? message;
       }
       throw Exception(message);
+    }
+  }
+
+  Future<Map<String, dynamic>> googleSignIn({required String idToken}) async {
+    try {
+      final response = await dio.post(
+        '/api/auth/google/',
+        data: {'id_token': idToken},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(_parseDioError(e, 'Google sign-in failed'));
     }
   }
 }

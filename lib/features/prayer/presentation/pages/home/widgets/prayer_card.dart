@@ -87,12 +87,13 @@ class _BasePrayerView extends StatelessWidget {
     return NeoCard(
       color: cardColor,
       onTap: onTap,
-      child: SizedBox(
-        height: warningMessage != null ? 130 : 100,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      child: Container(
+        constraints: BoxConstraints(minHeight: warningMessage != null ? 130 : 100),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -177,7 +178,7 @@ class _BasePrayerView extends StatelessWidget {
             ],
           ),
         ),
-      ),
+      
     );
   }
 }

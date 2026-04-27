@@ -23,7 +23,6 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
 import '../../features/auth/presentation/pages/password_reset_request_page.dart';
 import '../../features/auth/presentation/pages/password_reset_confirm_page.dart';
-import '../../features/auth/presentation/pages/email_verification_pending_page.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 
@@ -71,7 +70,6 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
       final splash = state.uri.path == '/splash';
       final onboarding = state.uri.path.startsWith('/onboarding');
       final intentSetup = state.uri.path == '/intent-setup';
-      final emailVerifying = state.uri.path == '/email-verification';
 
       // While bootstrapping from storage, ensure we stay on splash.
       if (status == AuthStatus.unknown) {
@@ -100,35 +98,26 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
         return '/splash';
       }
 
-      // If authenticated, don't allow login/signup/onboarding/splash/intent-setup
+      // If authenticated, don't allow login/signup/onboarding/splash
       if (status == AuthStatus.authenticated) {
         final isIntentSet = settingsBloc.state.isIntentSet;
 
         if (!isIntentSet && !intentSetup) {
           return '/intent-setup';
-        } else if (isIntentSet && intentSetup) {
-          return '/';
         }
 
-        if (loggingIn || signingUp || onboarding || splash || emailVerifying) {
+        if (isIntentSet && (loggingIn || signingUp || splash)) {
           return '/';
         }
         return null;
       }
 
-      if (status == AuthStatus.emailVerificationPending) {
-        if (emailVerifying) {
-          return null;
-        }
-        return '/email-verification';
-      }
-
-      // If unauthenticated, redirect to login unless on signup/onboarding/password-reset
+      // If unauthenticated, redirect to login unless on signup/onboarding/intent-setup/password-reset
       if (status == AuthStatus.unauthenticated) {
         if (splash) {
           return authState.hasSeenOnboarding ? '/login' : '/onboarding1';
         }
-        if (loggingIn || signingUp || onboarding || passwordResetting) {
+        if (loggingIn || signingUp || onboarding || intentSetup || passwordResetting) {
           return null;
         }
         return '/login';
@@ -152,7 +141,6 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(path: '/signup', builder: (context, state) => const SignupPage()),
-      GoRoute(path: '/email-verification', builder: (context, state) => const EmailVerificationPendingPage()),
       GoRoute(path: '/password-reset', builder: (context, state) => const PasswordResetRequestPage()),
       GoRoute(
         path: '/password-reset/confirm',

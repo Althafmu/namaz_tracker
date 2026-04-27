@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:namaz_tracker/core/services/notification_service.dart';
 import 'package:namaz_tracker/features/prayer/domain/entities/prayer_notification_config.dart';
+import 'package:namaz_tracker/features/prayer/presentation/bloc/settings/settings_state.dart';
 import 'package:timezone/timezone.dart';
 
 class MockFlutterLocalNotificationsPlugin extends Mock
@@ -86,7 +87,7 @@ void main() {
           methodName: 'MWL',
           useHanafi: false,
           prayerConfigs: _allPrayerConfigs(const PrayerNotificationConfig()),
-          intentLevel: 'foundation',
+          intentLevel: IntentLevel.foundation,
         );
 
         expect(count, greaterThan(0));
@@ -172,7 +173,7 @@ void main() {
             'Maghrib': const PrayerNotificationConfig(adhanAlerts: false),
             'Isha': const PrayerNotificationConfig(adhanAlerts: false),
           },
-          intentLevel: 'foundation',
+          intentLevel: IntentLevel.foundation,
         );
 
         expect(count, 3); // nightly reminders

@@ -65,10 +65,11 @@ class _FirstRunSetupDialogState extends State<FirstRunSetupDialog> {
           boxShadow: [BoxShadow(color: c.border, offset: const Offset(4, 4))],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.max,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // PageView of tip cards
-            Expanded(
+            SizedBox(
+              height: compactWidth ? 290 : 320,
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _cards.length,

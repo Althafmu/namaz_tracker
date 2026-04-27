@@ -112,6 +112,36 @@ class _LoginPageState extends State<LoginPage> {
                     );
                   },
                 ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: AppColors.of(context).textSecondary)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('or', style: AppTextStyles.bodySmall.copyWith(color: AppColors.of(context).textSecondary)),
+                    ),
+                    Expanded(child: Divider(color: AppColors.of(context).textSecondary)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      context.read<AuthBloc>().add(const GoogleSignInRequested());
+                    },
+                    icon: Image.asset(
+                          'assets/icons8-google-logo-100.png',
+                          height: 20,
+                          width: 20,
+                        ),
+                    label: const Text('Continue with Google'),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.of(context).textSecondary),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 Center(
                   child: GestureDetector(

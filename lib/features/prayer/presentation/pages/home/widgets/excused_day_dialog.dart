@@ -217,7 +217,16 @@ class _ExcusedDayDialogState extends State<ExcusedDayDialog> {
     final prayerBloc = context.read<PrayerBloc>();
     final navigator = Navigator.of(context);
 
-    streakBloc.add(SetExcusedDay(date: widget.date, reason: _selectedReason));
+    final pendingPrayers = prayerBloc.state.prayers
+        .where((p) => p.status == 'pending')
+        .map((p) => p.name.toLowerCase())
+        .toSet();
+
+    streakBloc.add(SetExcusedDay(
+      date: widget.date,
+      reason: _selectedReason,
+      prayerNames: pendingPrayers.isNotEmpty ? pendingPrayers : null,
+    ));
 
     await streakBloc.stream.firstWhere((state) => !state.isLoading);
 

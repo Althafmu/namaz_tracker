@@ -91,13 +91,17 @@ class PrayerRemoteDataSource {
 
   /// POST /api/prayers/excused/
   /// Mark a day as excused (travel, sickness, women's period).
-  /// Body: { "date": "2026-04-15", "reason": "travel" }
+  /// Body: { "date": "2026-04-15", "reason": "travel", "prayer_names": ["dhuhr", "asr", "maghrib", "isha"] }
   Future<Map<String, dynamic>> setExcusedDay({
     required String date,
     String? reason,
+    Set<String>? prayerNames,
   }) async {
     final Map<String, dynamic> data = {'date': date};
     if (reason != null) data['reason'] = reason;
+    if (prayerNames != null && prayerNames.isNotEmpty) {
+      data['prayer_names'] = prayerNames.toList();
+    }
     final response = await dio.post('/api/prayers/excused/', data: data);
     return response.data as Map<String, dynamic>;
   }
@@ -149,6 +153,13 @@ class PrayerRemoteDataSource {
   /// Check if notifications are paused for today.
   Future<Map<String, dynamic>> getNotificationsPauseStatus() async {
     final response = await dio.get('/api/notifications/pause-today/');
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// DELETE /api/notifications/pause-today/
+  /// Resume (unpause) notifications for today.
+  Future<Map<String, dynamic>> resumeNotificationsForToday() async {
+    final response = await dio.delete('/api/notifications/pause-today/');
     return response.data as Map<String, dynamic>;
   }
 }

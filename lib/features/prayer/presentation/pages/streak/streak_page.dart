@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/theme/app_text_styles.dart';
@@ -11,6 +10,7 @@ import '../../bloc/history/history_state.dart';
 import '../../bloc/streak/streak_bloc.dart';
 import '../../bloc/streak/streak_state.dart';
 import '../progress/widgets/monthly_calendar.dart';
+import 'widgets/share_streak_modal.dart';
 
 /// Full-screen Streak Detail Page.
 /// Accessible by tapping the streak badge on the home page.
@@ -54,93 +54,110 @@ class StreakPage extends StatelessWidget {
                   ),
                 ),
                 centerTitle: true,
+                actions: [
+                  IconButton(
+                    icon: Icon(Icons.share, color: c.textPrimary),
+                    onPressed: () => ShareStreakModal.show(
+                      context,
+                      streakCount: streak,
+                    ),
+                  ),
+                ],
               ),
               body: SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
+                child: Stack(
+                  children: [
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 100),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 16),
 
-                      // ── Hero: fire icon + big streak number ──
-                      _buildHeroSection(context, c, streak),
+                          // ── Hero: fire icon + big streak number ──
+                          _StreakCard(streak: streak, color: c),
 
-                      const SizedBox(height: 32),
+                          const SizedBox(height: 32),
 
-                      // ── Next Milestone ──
-                      _buildMilestoneSection(context, c, streak),
+                          // ── Next Milestone ──
+                          _buildMilestoneSection(context, c, streak),
 
-                      const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                      // ── Best Streak chip ──
-                      _buildBestStreakRow(context, c, streak, best),
+                          // ── Best Streak chip ──
+                          _buildBestStreakRow(context, c, streak, best),
 
-                      const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                      // ── Monthly Calendar ──
-                      MonthlyCalendar(
-                        historicalLog: historyState.historicalLog,
-                        year: historyState.calendarYear,
-                        month: historyState.calendarMonth,
-                        bloc: GetIt.I<HistoryBloc>(),
+                          // ── Monthly Calendar ──
+                          MonthlyCalendar(
+                            historicalLog: historyState.historicalLog,
+                            year: historyState.calendarYear,
+                            month: historyState.calendarMonth,
+                            bloc: GetIt.I<HistoryBloc>(),
+                          ),
+
+                          const SizedBox(height: 32),
+                        ],
                       ),
-
-                      const SizedBox(height: 32),
-
-                      // ── Share Streak button ──
-                      _buildShareButton(context, c, streak, best),
-
-                      const SizedBox(height: 32),
-                    ],
-                  ),
+                    ),
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: 16,
+                      child: GestureDetector(
+                        onTap: () => ShareStreakModal.show(
+                          context,
+                          streakCount: streak,
+                        ),
+                        child: NeoCard(
+                          color: c.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                          child: Row(
+                            children: [
+                              Icon(Icons.share, color: c.onAccent, size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Share Streak Card',
+                                  style: AppTextStyles.bodyLarge.copyWith(
+                                    color: c.onAccent,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: c.surface,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: c.border, width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: c.border,
+                                      offset: const Offset(2, 2),
+                                      blurRadius: 0,
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.share,
+                                  color: c.primary,
+                                  size: 22,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             );
           },
         );
       },
-    );
-  }
-
-  Widget _buildHeroSection(BuildContext context, AppColorPalette c, int streak) {
-    return NeoCard(
-      color: c.streak,
-      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(
-              Icons.local_fire_department,
-              color: c.onAccent,
-              size: 64,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '$streak',
-              style: AppTextStyles.streakNumber.copyWith(
-                fontSize: 80,
-                color: c.onAccent,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            Text(
-              'Day Streak',
-              style: AppTextStyles.headlineMedium.copyWith(
-                color: c.onAccent,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Complete all 5 daily prayers to build your streak.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: c.onAccent.withValues(alpha: 0.8),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -272,48 +289,57 @@ class StreakPage extends StatelessWidget {
             ),
           ),
         ),
-      ],
+],
     );
   }
+}
 
-  Widget _buildShareButton(
-    BuildContext context,
-    AppColorPalette c,
-    int streak,
-    int best,
-  ) {
-    return GestureDetector(
-      onTap: () => _shareStreak(streak, best),
-      child: NeoCard(
-        color: c.primary,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+class _StreakCard extends StatelessWidget {
+  final int streak;
+  final AppColorPalette color;
+
+  const _StreakCard({required this.streak, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return NeoCard(
+      color: color.streak,
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
+      child: Center(
+        child: Column(
           children: [
-            Icon(Icons.share, color: c.onAccent, size: 22),
-            const SizedBox(width: 10),
+            Icon(
+              Icons.local_fire_department,
+              color: color.onAccent,
+              size: 64,
+            ),
+            const SizedBox(height: 12),
             Text(
-              'Share Streak',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: c.onAccent,
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
+              '$streak',
+              style: AppTextStyles.streakNumber.copyWith(
+                fontSize: 80,
+                color: color.onAccent,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            Text(
+              'Day Streak',
+              style: AppTextStyles.headlineMedium.copyWith(
+                color: color.onAccent,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Complete all 5 daily prayers to build your streak.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: color.onAccent.withValues(alpha: 0.8),
               ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  void _shareStreak(int streak, int best) {
-    final message = StringBuffer();
-    message.writeln('🕌 Falah Prayer Tracker');
-    message.writeln('');
-    message.writeln('🔥 Current Streak: $streak day${streak == 1 ? '' : 's'}');
-    message.writeln('🏆 Best Streak: $best day${best == 1 ? '' : 's'}');
-    message.writeln('');
-    message.writeln('Stay consistent and keep the streak alive! 💪');
-    SharePlus.instance.share(ShareParams(text: message.toString()));
   }
 }

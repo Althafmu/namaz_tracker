@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../data/models/user_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../../../core/network/token_provider.dart';
@@ -8,6 +10,9 @@ import 'auth_state.dart';
 class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
   final TokenProvider tokenProvider;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '888527789566-32vrq7gp7lg3ilaor5porqu2p5jfktc4.apps.googleusercontent.com',
+  );
 
   /// Strip the 'Exception: ' prefix from error messages for cleaner display.
   static String _cleanError(Object e) {
@@ -26,7 +31,7 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     on<OnboardingCompleted>(_onOnboardingCompleted);
     on<PasswordResetRequested>(_onPasswordResetRequested);
     on<PasswordResetConfirmed>(_onPasswordResetConfirmed);
-    on<EmailVerificationRequested>(_onEmailVerificationRequested);
+    on<GoogleSignInRequested>(_onGoogleSignInRequested);
   }
 
   Future<void> _onLoginRequested(
@@ -70,10 +75,10 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
-      // Wait for email verification before loading config
+      // Bypass email verification for now since the backend does not support SMTP yet.
       emit(
         state.copyWith(
-          status: AuthStatus.emailVerificationPending,
+          status: AuthStatus.loadingConfig,
           user: response.user,
           errorMessage: null,
           hasSeenOnboarding: true,
@@ -204,20 +209,49 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onEmailVerificationRequested(
-    EmailVerificationRequested event,
+  Future<void> _onGoogleSignInRequested(
+    GoogleSignInRequested event,
     Emitter<AuthState> emit,
   ) async {
-    if (event.token == null || event.token!.isEmpty) return;
     emit(state.copyWith(status: AuthStatus.loading, errorMessage: null));
     try {
-      final success = await authRepository.verifyEmail(token: event.token);
-      if (success) {
-        emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null));
+      final account = await _googleSignIn.signIn();
+      debugPrint('[AuthBloc] Google account: ${account?.email}');
+      if (account == null) {
+        emit(state.copyWith(status: AuthStatus.unauthenticated));
+        return;
       }
+
+      final auth = await account.authentication;
+      debugPrint('[AuthBloc] auth.idToken: ${auth.idToken != null ? "present" : "NULL"}');
+      final idToken = auth.idToken;
+      if (idToken == null) {
+        debugPrint('[AuthBloc] Google auth.idToken is null');
+        emit(state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: 'Google sign-in failed. No ID token received.',
+        ));
+        emit(state.copyWith(status: AuthStatus.unauthenticated));
+        return;
+      }
+
+      debugPrint('[AuthBloc] Google idToken received, calling repository...');
+      final response = await authRepository.googleSignIn(idToken: idToken);
+      debugPrint('[AuthBloc] Repository response: ${response.user.email}');
+
+      emit(state.copyWith(
+        status: AuthStatus.loadingConfig,
+        user: response.user,
+        errorMessage: null,
+        hasSeenOnboarding: true,
+      ));
     } catch (e) {
-      emit(state.copyWith(status: AuthStatus.error, errorMessage: _cleanError(e)));
-      emit(state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null));
+      debugPrint('[AuthBloc] Google sign-in error: $e');
+      emit(state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: _cleanError(e),
+      ));
+      emit(state.copyWith(status: AuthStatus.unauthenticated));
     }
   }
 

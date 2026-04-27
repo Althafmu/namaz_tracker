@@ -33,10 +33,11 @@ class AuthRepositoryImpl implements AuthRepository {
       lastName: lastName,
     );
 
-    final token = responseData['access'] as String?;
-    final refreshToken = responseData['refresh'] as String?;
-    if (token == null) {
-      throw Exception('Server response missing access token');
+    final token = responseData['access'] as String? ?? responseData['token'] as String?;
+    final refreshToken = responseData['refresh'] as String? ?? responseData['refresh_token'] as String?;
+
+    if (token == null || refreshToken == null) {
+      throw Exception('Server response missing tokens');
     }
 
     await tokenProvider.updateTokens(access: token, refresh: refreshToken);
@@ -48,7 +49,7 @@ class AuthRepositoryImpl implements AuthRepository {
       user = UserModel.fromJson(responseData);
     }
 
-    return AuthResponse(token: token, user: user);
+    return AuthResponse(access: token, refresh: refreshToken, user: user);
   }
 
   @override
@@ -60,10 +61,13 @@ class AuthRepositoryImpl implements AuthRepository {
       username: email,
       password: password,
     );
-    final token = responseData['access'] as String?;
-    final refreshToken = responseData['refresh'] as String?;
+    final token = responseData['access'] as String? ?? responseData['token'] as String?;
+    final refreshToken = responseData['refresh'] as String? ?? responseData['refresh_token'] as String?;
     if (token == null) {
       throw Exception('Server response missing access token');
+    }
+    if (refreshToken == null) {
+      throw Exception('Server response missing refresh token');
     }
 
     // Persist both tokens atomically via single write path
@@ -82,7 +86,30 @@ class AuthRepositoryImpl implements AuthRepository {
       );
     }
 
-    return AuthResponse(token: token, user: user);
+    return AuthResponse(access: token!, refresh: refreshToken!, user: user);
+  }
+
+  @override
+  Future<AuthResponse> googleSignIn({required String idToken}) async {
+    final responseData = await remoteDataSource.googleSignIn(idToken: idToken);
+
+    final access = responseData['access'] as String?;
+    final refreshToken = responseData['refresh'] as String?;
+
+    if (access == null || refreshToken == null) {
+      throw Exception('Server response missing tokens');
+    }
+
+    await tokenProvider.updateTokens(access: access, refresh: refreshToken);
+
+    User user;
+    if (responseData['user'] != null) {
+      user = UserModel.fromJson(responseData['user']);
+    } else {
+      user = UserModel.fromJson(responseData);
+    }
+
+    return AuthResponse(access: access, refresh: refreshToken, user: user);
   }
 
   @override

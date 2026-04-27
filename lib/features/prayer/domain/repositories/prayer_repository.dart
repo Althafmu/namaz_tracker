@@ -42,8 +42,9 @@ abstract class PrayerRepository {
   Future<Streak> consumeProtectorToken({String? date});
 
   /// Mark a day as excused (travel, sickness, women's period).
+  /// [prayerNames] - Optional set of specific prayers to excuse (partial day).
   /// Returns the updated prayer log.
-  Future<List<Prayer>> setExcusedDay({required String date, String? reason});
+  Future<List<Prayer>> setExcusedDay({required String date, String? reason, Set<String>? prayerNames});
 
   /// Clear a day's excused state and restore excused prayers to pending.
   Future<List<Prayer>> clearExcusedDay({required String date});
@@ -61,4 +62,7 @@ abstract class PrayerRepository {
 
   /// Check if notifications are paused for today.
   Future<Map<String, dynamic>> getNotificationsPauseStatus();
+
+  /// Resume (unpause) notifications for today.
+  Future<Map<String, dynamic>> resumeNotificationsForToday();
 }

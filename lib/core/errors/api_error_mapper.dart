@@ -65,12 +65,14 @@ class ApiErrorMapper {
       return fieldSummary;
     }
 
+    // Server-provided detail (most helpful when present)
+    if (error.detail.isNotEmpty) {
+      return error.detail;
+    }
+
     // Known code mapping
     final mapped = _codeMessages[error.code];
     if (mapped != null) return mapped;
-
-    // Server-provided detail
-    if (error.detail.isNotEmpty) return error.detail;
 
     // Absolute fallback
     return 'An unexpected error occurred. Please try again.';

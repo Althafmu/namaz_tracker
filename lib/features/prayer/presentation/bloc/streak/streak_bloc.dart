@@ -226,15 +226,19 @@ class StreakBloc extends HydratedBloc<StreakEvent, StreakState> {
     emit(state.copyWith(isLoading: true));
 
     try {
-      await setExcusedDayUseCase(date: event.date, reason: event.reason);
+      await setExcusedDayUseCase(
+        date: event.date,
+        reason: event.reason,
+        prayerNames: event.prayerNames,
+      );
       final updatedStreak = await getStreakUseCase();
 
-      // Add the excused date to SettingsBloc to sync state
-      try {
+      if (event.prayerNames != null && event.prayerNames!.isNotEmpty) {
+        final settingsBloc = GetIt.instance<SettingsBloc>();
+        settingsBloc.add(AddExcusedDay(event.date, prayerNames: event.prayerNames));
+      } else {
         final settingsBloc = GetIt.instance<SettingsBloc>();
         settingsBloc.add(AddExcusedDay(event.date));
-      } catch (e) {
-        debugPrint('[StreakBloc] Failed to update settings bloc with excused day: $e');
       }
 
       emit(

@@ -74,11 +74,7 @@ class PasswordResetConfirmed extends AuthEvent {
   List<Object?> get props => [token, newPassword];
 }
 
-class EmailVerificationRequested extends AuthEvent {
-  final String? token;
-
-  const EmailVerificationRequested({this.token});
-
-  @override
-  List<Object?> get props => [token];
+class GoogleSignInRequested extends AuthEvent {
+  const GoogleSignInRequested();
 }
+

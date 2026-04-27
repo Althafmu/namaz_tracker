@@ -14,11 +14,14 @@ class SetExcusedDayUseCase {
   ///
   /// [date] - The date to mark as excused (required).
   /// [reason] - Optional reason (travel, sickness, period, etc.).
+  /// [prayerNames] - Optional set of prayer names to mark as excused.
+  ///                 If null, all remaining (non-logged) prayers are marked excused.
   /// Returns the updated prayer logs for that day.
   Future<List<Prayer>> call({
     required String date,
     String? reason,
+    Set<String>? prayerNames,
   }) {
-    return repository.setExcusedDay(date: date, reason: reason);
+    return repository.setExcusedDay(date: date, reason: reason, prayerNames: prayerNames);
   }
 }

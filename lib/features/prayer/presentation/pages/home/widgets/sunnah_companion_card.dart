@@ -53,10 +53,7 @@ class _SunnahCompanionCardState extends State<SunnahCompanionCard> {
   void _toggle(String type) {
     HapticFeedback.lightImpact();
     _sunnahBloc.add(
-      ToggleSunnahPrayer(
-        prayerType: type,
-        dateKey: widget.dateKey,
-      ),
+      ToggleSunnahPrayer(prayerType: type, dateKey: widget.dateKey),
     );
   }
 
@@ -119,61 +116,61 @@ class _SunnahCompanionCardState extends State<SunnahCompanionCard> {
     required String label,
     required String type,
   }) {
-    return Material(
-      color: completed ? c.jamaatLight : c.surface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: () => _toggle(type),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        color: completed ? c.jamaatLight : c.surface,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: completed ? c.jamaat : c.border,
-              width: 2,
+        border: Border.all(color: completed ? c.jamaat : c.border, width: 2),
+        boxShadow: completed
+            ? []
+            : [BoxShadow(color: c.border, offset: const Offset(2, 2))],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _toggle(type),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: completed ? c.jamaat : c.background,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: c.border, width: 2),
+                  ),
+                  child: Icon(
+                    completed ? Icons.check_circle : Icons.add_circle_outline,
+                    size: 16,
+                    color: completed ? c.background : c.jamaat,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: completed ? c.jamaat : c.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (widget.prayerName != 'Dhuhr' && widget.prayerName != 'Jum\'ah')
+                  Text(
+                    completed ? 'Done' : 'Tap to log',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: completed ? c.jamaat : c.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
             ),
-            boxShadow: completed
-                ? []
-                : [BoxShadow(color: c.border, offset: const Offset(2, 2))],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: completed ? c.jamaat : c.background,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: c.border, width: 2),
-                ),
-                child: Icon(
-                  completed ? Icons.check_circle : Icons.add_circle_outline,
-                  size: 16,
-                  color: completed ? c.background : c.jamaat,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: completed ? c.jamaat : c.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (widget.prayerName != 'Dhuhr')
-                Text(
-                  completed ? 'Done' : 'Tap to log',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: completed ? c.jamaat : c.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-            ],
           ),
         ),
       ),

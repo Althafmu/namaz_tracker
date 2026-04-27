@@ -6,6 +6,7 @@ import '../../../../auth/domain/repositories/auth_repository.dart';
 import '../../../domain/entities/prayer_notification_config.dart';
 import '../../../domain/usecases/pause_notifications_for_today_usecase.dart';
 import '../../../domain/usecases/get_notifications_pause_status_usecase.dart';
+import '../../../domain/usecases/resume_notifications_for_today_usecase.dart';
 import 'settings_event.dart';
 import 'settings_state.dart';
 
@@ -14,12 +15,14 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
   final AuthRepository? authRepository;
   final PauseNotificationsForTodayUseCase? pauseNotificationsForTodayUseCase;
   final GetNotificationsPauseStatusUseCase? getNotificationsPauseStatusUseCase;
+  final ResumeNotificationsForTodayUseCase? resumeNotificationsForTodayUseCase;
 
   SettingsBloc({
     required this.notificationService,
     this.authRepository,
     this.pauseNotificationsForTodayUseCase,
     this.getNotificationsPauseStatusUseCase,
+    this.resumeNotificationsForTodayUseCase,
   }) : super(const SettingsState()) {
     on<UpdateCalculationSettings>(_onUpdateCalculationSettings);
     on<UpdatePrayerNotificationConfig>(_onUpdatePrayerNotificationConfig);
@@ -33,7 +36,9 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     on<SyncSettingsToCloud>(_onSyncSettingsToCloud);
     on<LoadSettingsFromCloud>(_onLoadSettingsFromCloud);
     on<AddExcusedDay>(_onAddExcusedDay);
+    on<AddExcusedPrayer>(_onAddExcusedPrayer);
     on<ClearExcusedDay>(_onClearExcusedDay);
+    on<ClearExcusedPrayer>(_onClearExcusedPrayer);
     on<UpdateIntentLevel>(_onUpdateIntentLevel);
     on<LoadIntentFromBackend>(_onLoadIntentFromBackend);
     on<UpdateSunnahEnabled>(_onUpdateSunnahEnabled);
@@ -45,9 +50,11 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     on<MarkHomeWelcomeSeen>(_onMarkHomeWelcomeSeen);
     on<CompleteFirstRunSetup>(_onCompleteFirstRunSetup);
     on<PauseNotificationsForToday>(_onPauseNotificationsForToday);
+    on<ResumeNotificationsForToday>(_onResumeNotificationsForToday);
     on<LoadNotificationsPauseStatus>(_onLoadNotificationsPauseStatus);
     on<ResetSessionScopedSettings>(_onResetSessionScopedSettings);
     on<MarkLoginNotificationPromptSeen>(_onMarkLoginNotificationPromptSeen);
+    on<LoadBehaviorConfigFromBackend>(_onLoadBehaviorConfigFromBackend);
   }
 
   void _emitInitialized(Emitter<SettingsState> emit, SettingsState nextState) {
@@ -190,13 +197,41 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
   }
 
   void _onAddExcusedDay(AddExcusedDay event, Emitter<SettingsState> emit) {
-    final newExcused = Set<String>.from(state.excusedDays)..add(event.date);
-    _emitInitialized(emit, state.copyWith(excusedDays: newExcused));
+    if (event.prayerNames != null && event.prayerNames!.isNotEmpty) {
+      final newMap = Map<String, Set<String>>.from(state.excusedPrayers);
+      final existing = newMap[event.date] ?? {};
+      newMap[event.date] = {...existing, ...event.prayerNames!};
+      _emitInitialized(emit, state.copyWith(excusedPrayers: newMap));
+    } else {
+      final newExcused = Set<String>.from(state.excusedDays)..add(event.date);
+      _emitInitialized(emit, state.copyWith(excusedDays: newExcused));
+    }
+  }
+
+  void _onAddExcusedPrayer(AddExcusedPrayer event, Emitter<SettingsState> emit) {
+    final newMap = Map<String, Set<String>>.from(state.excusedPrayers);
+    final existing = newMap[event.date] ?? {};
+    newMap[event.date] = {...existing, ...event.prayerNames};
+    _emitInitialized(emit, state.copyWith(excusedPrayers: newMap));
   }
 
   void _onClearExcusedDay(ClearExcusedDay event, Emitter<SettingsState> emit) {
     final newExcused = Set<String>.from(state.excusedDays)..remove(event.date);
-    _emitInitialized(emit, state.copyWith(excusedDays: newExcused));
+    final newMap = Map<String, Set<String>>.from(state.excusedPrayers)..remove(event.date);
+    _emitInitialized(emit, state.copyWith(excusedDays: newExcused, excusedPrayers: newMap));
+  }
+
+  void _onClearExcusedPrayer(ClearExcusedPrayer event, Emitter<SettingsState> emit) {
+    final newMap = Map<String, Set<String>>.from(state.excusedPrayers);
+    if (newMap.containsKey(event.date)) {
+      final remaining = newMap[event.date]!.difference(event.prayerNames);
+      if (remaining.isEmpty) {
+        newMap.remove(event.date);
+      } else {
+        newMap[event.date] = remaining;
+      }
+    }
+    _emitInitialized(emit, state.copyWith(excusedPrayers: newMap));
   }
 
   void _onUpdateIntentLevel(
@@ -204,6 +239,7 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     Emitter<SettingsState> emit,
   ) {
     final intent = IntentLevel.fromString(event.intentLevel);
+    final (style, nudge) = _styleForIntent(intent);
     _emitInitialized(
       emit,
       state.copyWith(
@@ -213,9 +249,19 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
         sunnahEnabled: intent == IntentLevel.growth
             ? state.sunnahEnabled
             : false,
+        behaviorStyle: style,
+        nudgeIntensity: nudge,
       ),
     );
     add(const SyncSettingsToCloud());
+  }
+
+  (String, String) _styleForIntent(IntentLevel intent) {
+    return switch (intent) {
+      IntentLevel.foundation => ('soft', 'light'),
+      IntentLevel.strengthening => ('balanced', 'medium'),
+      IntentLevel.growth => ('direct', 'strong'),
+    };
   }
 
   void _onLoadIntentFromBackend(
@@ -254,6 +300,19 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     _emitInitialized(
       emit,
       state.copyWith(sunnahEnabled: isGrowth ? event.enabled : false),
+    );
+  }
+
+  void _onLoadBehaviorConfigFromBackend(
+    LoadBehaviorConfigFromBackend event,
+    Emitter<SettingsState> emit,
+  ) {
+    _emitInitialized(
+      emit,
+      state.copyWith(
+        behaviorStyle: event.style,
+        nudgeIntensity: event.nudgeIntensity,
+      ),
     );
   }
 
@@ -344,6 +403,7 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     );
 
     try {
+      await notificationService.cancelAllNotifications();
       await pauseNotificationsForTodayUseCase!();
       _emitInitialized(
         emit,
@@ -382,6 +442,68 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
         ),
       );
       debugPrint('[SettingsBloc] Unexpected error pausing notifications: $e');
+    }
+  }
+
+  Future<void> _onResumeNotificationsForToday(
+    ResumeNotificationsForToday event,
+    Emitter<SettingsState> emit,
+  ) async {
+    if (resumeNotificationsForTodayUseCase == null) {
+      _emitInitialized(
+        emit,
+        state.copyWith(
+          pauseActionStatus: PauseActionStatus.error,
+          lastSettingsActionMessage: 'Resume notifications is not available.',
+        ),
+      );
+      return;
+    }
+
+    _emitInitialized(
+      emit,
+      state.copyWith(pauseActionStatus: PauseActionStatus.loading),
+    );
+
+    try {
+      await resumeNotificationsForTodayUseCase!();
+      _emitInitialized(
+        emit,
+        state.copyWith(
+          notificationsPausedToday: false,
+          pauseActionStatus: PauseActionStatus.success,
+          lastSettingsActionMessage: 'Notifications resumed.',
+        ),
+      );
+    } on ServerException catch (e) {
+      _emitInitialized(
+        emit,
+        state.copyWith(
+          pauseActionStatus: PauseActionStatus.error,
+          lastSettingsActionMessage: e.userMessage,
+        ),
+      );
+    } on NetworkException catch (e) {
+      _emitInitialized(
+        emit,
+        state.copyWith(
+          pauseActionStatus: PauseActionStatus.error,
+          lastSettingsActionMessage:
+              'Network error. Please check your connection.',
+        ),
+      );
+      debugPrint(
+        '[SettingsBloc] Network error resuming notifications: ${e.message}',
+      );
+    } catch (e) {
+      _emitInitialized(
+        emit,
+        state.copyWith(
+          pauseActionStatus: PauseActionStatus.error,
+          lastSettingsActionMessage: 'Failed to resume notifications.',
+        ),
+      );
+      debugPrint('[SettingsBloc] Unexpected error resuming notifications: $e');
     }
   }
 

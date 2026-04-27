@@ -26,6 +26,7 @@ import 'features/prayer/domain/usecases/undo_last_prayer_log_usecase.dart';
 import 'features/prayer/domain/usecases/get_sync_metadata_usecase.dart';
 import 'features/prayer/domain/usecases/pause_notifications_for_today_usecase.dart';
 import 'features/prayer/domain/usecases/get_notifications_pause_status_usecase.dart';
+import 'features/prayer/domain/usecases/resume_notifications_for_today_usecase.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'features/prayer/presentation/bloc/history/history_bloc.dart';
@@ -186,6 +187,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => GetSyncMetadataUseCase(sl()));
   sl.registerLazySingleton(() => PauseNotificationsForTodayUseCase(sl()));
   sl.registerLazySingleton(() => GetNotificationsPauseStatusUseCase(sl()));
+  sl.registerLazySingleton(() => ResumeNotificationsForTodayUseCase(sl()));
 
   // ── Domain Services ──
   sl.registerLazySingleton(
@@ -203,6 +205,7 @@ Future<void> initDependencies() async {
       authRepository: sl(),
       pauseNotificationsForTodayUseCase: sl(),
       getNotificationsPauseStatusUseCase: sl(),
+      resumeNotificationsForTodayUseCase: sl(),
     ),
   );
 

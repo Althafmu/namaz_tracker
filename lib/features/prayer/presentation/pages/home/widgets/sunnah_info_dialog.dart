@@ -29,9 +29,11 @@ class SunnahInfoDialog extends StatelessWidget {
               children: [
                 Icon(Icons.auto_awesome, color: c.jamaat, size: 24),
                 const SizedBox(width: 12),
-                Text(
-                  'Extra Prayers (Sunnah)',
-                  style: AppTextStyles.headlineMedium.copyWith(color: c.textPrimary),
+                Expanded(
+                  child: Text(
+                    'Extra Prayers (Sunnah)',
+                    style: AppTextStyles.headlineMedium.copyWith(color: c.textPrimary),
+                  ),
                 ),
               ],
             ),

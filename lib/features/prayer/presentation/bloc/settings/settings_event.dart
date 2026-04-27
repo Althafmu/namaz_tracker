@@ -104,11 +104,23 @@ class LoadSettingsFromCloud extends SettingsEvent {
 /// Marks a date as excused — suppresses all notifications for that day.
 class AddExcusedDay extends SettingsEvent {
   final String date; // yyyy-MM-dd
+  final Set<String>? prayerNames; // Optional: specific prayers to excuse (partial day)
 
-  const AddExcusedDay(this.date);
+  const AddExcusedDay(this.date, {this.prayerNames});
 
   @override
-  List<Object?> get props => [date];
+  List<Object?> get props => [date, prayerNames];
+}
+
+/// Marks specific prayers as excused for a date (partial excuse).
+class AddExcusedPrayer extends SettingsEvent {
+  final String date; // yyyy-MM-dd
+  final Set<String> prayerNames;
+
+  const AddExcusedPrayer(this.date, this.prayerNames);
+
+  @override
+  List<Object?> get props => [date, prayerNames];
 }
 
 /// Removes a date from the excused list — re-enables notifications.
@@ -119,6 +131,17 @@ class ClearExcusedDay extends SettingsEvent {
 
   @override
   List<Object?> get props => [date];
+}
+
+/// Removes specific prayers from excused state for a date.
+class ClearExcusedPrayer extends SettingsEvent {
+  final String date; // yyyy-MM-dd
+  final Set<String> prayerNames;
+
+  const ClearExcusedPrayer(this.date, this.prayerNames);
+
+  @override
+  List<Object?> get props => [date, prayerNames];
 }
 
 /// Phase 3.1: Intent level selection
@@ -211,6 +234,11 @@ class PauseNotificationsForToday extends SettingsEvent {
   const PauseNotificationsForToday();
 }
 
+/// Resume (unpause) notifications that were paused for today.
+class ResumeNotificationsForToday extends SettingsEvent {
+  const ResumeNotificationsForToday();
+}
+
 /// Load the current pause-notifications-for-today status from the backend.
 class LoadNotificationsPauseStatus extends SettingsEvent {
   const LoadNotificationsPauseStatus();
@@ -224,4 +252,18 @@ class ResetSessionScopedSettings extends SettingsEvent {
 /// Marks the login notification-permission overlay as shown.
 class MarkLoginNotificationPromptSeen extends SettingsEvent {
   const MarkLoginNotificationPromptSeen();
+}
+
+/// Hydrates behavior style and nudge intensity from backend.
+class LoadBehaviorConfigFromBackend extends SettingsEvent {
+  final String style;
+  final String nudgeIntensity;
+
+  const LoadBehaviorConfigFromBackend({
+    required this.style,
+    required this.nudgeIntensity,
+  });
+
+  @override
+  List<Object?> get props => [style, nudgeIntensity];
 }

@@ -1,5 +1,6 @@
 import 'package:adhan/adhan.dart';
 import '../../features/prayer/domain/entities/prayer_notification_config.dart';
+import '../../features/prayer/presentation/bloc/settings/settings_state.dart';
 
 /// Interface for NotificationService allowing test mocking.
 /// Implement this interface to create test doubles.
@@ -25,6 +26,7 @@ abstract class NotificationServiceInterface {
     Map<String, int>? manualOffsets,
     int alarmDurationMinutes,
     Set<String>? excusedDays,
-    String? intentLevel,
+    Map<String, Set<String>>? excusedPrayers,
+    IntentLevel? intentLevel,
   });
 }

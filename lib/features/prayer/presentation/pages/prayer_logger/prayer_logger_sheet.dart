@@ -185,9 +185,10 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
             ),
 
           // ── Content ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: AbsorbPointer(
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: AbsorbPointer(
               absorbing: !canEdit,
               child: Opacity(
                 opacity: canEdit ? 1.0 : 0.6,
@@ -348,48 +349,56 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
+                    Column(
                       children: [
-                        StatusButton(
-                          icon: Icons.schedule,
-                          label: StatusHelper.label('on_time'),
-                          color: c.streak,
-                          isSelected: _status == 'on_time',
-                          onTap: () => setState(() {
-                            _status = 'on_time';
-                          }),
+                        Row(
+                          children: [
+                            StatusButton(
+                              icon: Icons.schedule,
+                              label: StatusHelper.label('on_time'),
+                              color: c.streak,
+                              isSelected: _status == 'on_time',
+                              onTap: () => setState(() {
+                                _status = 'on_time';
+                              }),
+                            ),
+                            const SizedBox(width: 12),
+                            StatusButton(
+                              icon: Icons.history,
+                              label: StatusHelper.label('late'),
+                              color: c.statusLate,
+                              isSelected: _status == 'late',
+                              onTap: () => setState(() {
+                                _status = 'late';
+                              }),
+                            ),
+                          ],
                         ),
-                        StatusButton(
-                          icon: Icons.history,
-                          label: StatusHelper.label('late'),
-                          color: c.statusLate,
-                          isSelected: _status == 'late',
-                          onTap: () => setState(() {
-                            _status = 'late';
-                          }),
-                        ),
-                        StatusButton(
-                          icon: Icons.cancel,
-                          label: StatusHelper.label('missed'),
-                          color: c.statusMissed,
-                          isSelected: _status == 'missed',
-                          onTap: () => setState(() {
-                            _status = 'missed';
-                            _inJamaat =
-                                false; // Cannot pray in jamaat if missed
-                          }),
-                        ),
-                        // Phase 2: Qada status option
-                        StatusButton(
-                          icon: Icons.autorenew,
-                          label: StatusHelper.label('qada'),
-                          color: c.statusQada,
-                          isSelected: _status == 'qada',
-                          onTap: () => setState(() {
-                            _status = 'qada';
-                          }),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            StatusButton(
+                              icon: Icons.cancel,
+                              label: StatusHelper.label('missed'),
+                              color: c.statusMissed,
+                              isSelected: _status == 'missed',
+                              onTap: () => setState(() {
+                                _status = 'missed';
+                                _inJamaat = false; // Cannot pray in jamaat if missed
+                              }),
+                            ),
+                            const SizedBox(width: 12),
+                            // Phase 2: Qada status option
+                            StatusButton(
+                              icon: Icons.autorenew,
+                              label: StatusHelper.label('qada'),
+                              color: c.statusQada,
+                              isSelected: _status == 'qada',
+                              onTap: () => setState(() {
+                                _status = 'qada';
+                              }),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -533,8 +542,9 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
               ),
             ),
           ),
+        ),
 
-          // ── Action Buttons ──
+        // ── Action Buttons ──
           if (canEdit)
             Padding(
               padding: const EdgeInsets.all(24),
