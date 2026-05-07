@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +14,7 @@ import 'core/services/offline_sync_service.dart';
 import 'core/services/session_coordinator.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/groups/data/datasources/group_dashboard_cache.dart';
 import 'features/prayer/data/repositories/offline_queue_repository.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/history/history_bloc.dart';
@@ -79,6 +81,14 @@ void main() async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(kStorageCorruptionFlag, true);
     } catch (_) {}
+  }
+
+  // Initialize Hive for dashboard cache
+  try {
+    await Hive.initFlutter();
+    await GroupDashboardCache.init();
+  } catch (e) {
+    debugPrint('GroupDashboardCache init failed: $e');
   }
 
   // Initialize dependency injection

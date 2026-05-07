@@ -51,6 +51,7 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
               onRetry: () {
                 context.read<GroupDashboardBloc>().add(LoadGroupDashboard(widget.groupId));
               },
+              hasCachedData: false,
             );
           }
           if (state is GroupDashboardLoaded || state is GroupDashboardRefreshing) {
