@@ -4,16 +4,38 @@ import '../../data/models/group_dashboard_model.dart';
 class LeaderboardPreviewWidget extends StatelessWidget {
   final List<LeaderboardEntry> streaks;
   final int? currentUserId;
+  final String? currentUserName;
 
   const LeaderboardPreviewWidget({
     super.key,
     required this.streaks,
     this.currentUserId,
+    this.currentUserName,
   });
 
   @override
   Widget build(BuildContext context) {
     final displayEntries = streaks.take(5).toList();
+    final currentUserInTop5 = displayEntries.any(
+      (e) => e.username == currentUserName,
+    );
+
+    final entriesWithCurrentUser = [
+      ...displayEntries.map((e) => e.copyWith(
+            isCurrentUser: e.username == currentUserName,
+          )),
+    ];
+
+    if (!currentUserInTop5 && currentUserName != null) {
+      entriesWithCurrentUser.add(
+        LeaderboardEntry(
+          rank: displayEntries.length + 1,
+          username: currentUserName!,
+          streak: 0,
+          isCurrentUser: true,
+        ),
+      );
+    }
 
     return Card(
       child: Padding(
@@ -39,7 +61,7 @@ class LeaderboardPreviewWidget extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            if (displayEntries.isEmpty)
+            if (entriesWithCurrentUser.isEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -52,9 +74,10 @@ class LeaderboardPreviewWidget extends StatelessWidget {
                 ),
               )
             else
-              ...displayEntries.asMap().entries.map((entry) {
+              ...entriesWithCurrentUser.asMap().entries.map((entry) {
                 final index = entry.key;
                 final item = entry.value;
+                if (index >= 5) return const SizedBox.shrink();
                 return _LeaderboardRow(
                   rank: index + 1,
                   username: item.username,

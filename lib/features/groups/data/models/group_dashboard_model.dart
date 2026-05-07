@@ -75,6 +75,7 @@ class GroupSummary extends Equatable {
 
 class CurrentUserStats extends Equatable {
   final int? userId;
+  final String? username;
   final String role;
   final DateTime joinedAt;
   final int currentStreak;
@@ -82,6 +83,7 @@ class CurrentUserStats extends Equatable {
 
   const CurrentUserStats({
     this.userId,
+    this.username,
     required this.role,
     required this.joinedAt,
     required this.currentStreak,
@@ -91,6 +93,7 @@ class CurrentUserStats extends Equatable {
   factory CurrentUserStats.fromJson(Map<String, dynamic> json) {
     return CurrentUserStats(
       userId: json['user_id'] as int?,
+      username: json['username'] as String?,
       role: json['role'] as String,
       joinedAt: DateTime.parse(json['joined_at'] as String),
       currentStreak: json['current_streak'] as int,
@@ -99,7 +102,7 @@ class CurrentUserStats extends Equatable {
   }
 
   @override
-  List<Object?> get props => [userId, role, joinedAt, currentStreak, rank];
+  List<Object?> get props => [userId, username, role, joinedAt, currentStreak, rank];
 }
 
 class LeaderboardEntry extends Equatable {
