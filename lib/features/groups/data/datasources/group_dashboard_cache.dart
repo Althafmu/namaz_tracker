@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class GroupDashboardCache {
@@ -12,26 +13,56 @@ class GroupDashboardCache {
     }
   }
 
-  static Box<Map> get box {
+  static Box<Map>? _safeBox() {
     if (_box == null || !_box!.isOpen) {
-      throw StateError('GroupDashboardCache not initialized. Call init() first.');
+      try {
+        if (Hive.isBoxOpen(_boxName)) {
+          _box = Hive.box<Map>(_boxName);
+        }
+      } catch (_) {
+        return null;
+      }
     }
-    return _box!;
+    return _box;
   }
 
   static Future<void> cacheDashboard(int groupId, Map<String, dynamic> data) async {
-    await box.put('group_$groupId', data);
+    final b = _safeBox();
+    if (b == null) {
+      debugPrint('[Cache] Box not available, skipping cache');
+      return;
+    }
+    try {
+      await b.put('group_$groupId', data);
+    } catch (e) {
+      debugPrint('[Cache] Failed to cache dashboard: $e');
+    }
   }
 
   static Map<String, dynamic>? getCachedDashboard(int groupId) {
-    final data = box.get('group_$groupId');
-    if (data != null) {
-      return Map<String, dynamic>.from(data);
+    final b = _safeBox();
+    if (b == null) {
+      debugPrint('[Cache] Box not available, returning null');
+      return null;
+    }
+    try {
+      final data = b.get('group_$groupId');
+      if (data != null) {
+        return Map<String, dynamic>.from(data);
+      }
+    } catch (e) {
+      debugPrint('[Cache] Failed to read cache: $e');
     }
     return null;
   }
 
   static Future<void> clearCache(int groupId) async {
-    await box.delete('group_$groupId');
+    final b = _safeBox();
+    if (b == null) return;
+    try {
+      await b.delete('group_$groupId');
+    } catch (e) {
+      debugPrint('[Cache] Failed to clear cache: $e');
+    }
   }
 }

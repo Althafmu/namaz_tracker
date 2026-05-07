@@ -349,6 +349,45 @@ class NotificationService implements NotificationServiceInterface {
     }
   }
 
+  /// Shows a local notification for group activity (e.g., streak milestone, new member).
+  @override
+  Future<void> showGroupActivityNotification({
+    required String title,
+    required String body,
+  }) async {
+    final granted = await checkPermissions();
+    if (!granted) {
+      debugPrint('[Notification] Permissions not granted, skipping group notification');
+      return;
+    }
+
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        'group_activity',
+        'Group Activity',
+        channelDescription: 'Notifications for group updates like streaks and new members',
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+      await _plugin.show(
+        id: 0,
+        title: title,
+        body: body,
+        notificationDetails: details,
+      );
+    } catch (e) {
+      debugPrint('[Notification] Group activity notification failed: $e');
+    }
+  }
+
   /// Schedule prayer notifications for the next 7 days.
   ///
   /// ID scheme: (dayOffset * 100) + (prayerIndex * 10) + alertType

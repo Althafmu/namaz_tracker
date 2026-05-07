@@ -1,26 +1,59 @@
 import 'package:flutter/foundation.dart';
+import 'package:get_it/get_it.dart';
+import '../../../core/services/notification_service_interface.dart';
 import '../data/datasources/group_remote_datasource.dart';
 
 class GroupActivityNotificationService {
   final GroupRemoteDataSource _dataSource;
+  NotificationServiceInterface? _notificationService;
   
   DateTime? _lastCheckTime;
   DateTime? _lastNotificationTime;
+  final Set<String> _seenActivityKeys = {};
   
   static const _notificationDebounceMinutes = 60;
 
   GroupActivityNotificationService({
     required GroupRemoteDataSource dataSource,
-  }) : _dataSource = dataSource;
+    NotificationServiceInterface? notificationService,
+  }) : _dataSource = dataSource,
+       _notificationService = notificationService;
 
-  Future<void> checkNewActivity(int groupId, {bool silent = false}) async {
+  NotificationServiceInterface get _notifications {
+    _notificationService ??= GetIt.instance<NotificationServiceInterface>();
+    return _notificationService!;
+  }
+
+  String _generateActivityKey(Map<String, dynamic> activity) {
+    final type = activity['type'] as String? ?? '';
+    final username = activity['username'] as String? ?? '';
+    final createdAt = activity['created_at'] as String? ?? '';
+    return '${type}_${username}_$createdAt';
+  }
+
+  Future<void> checkNewActivity(int groupId, {bool silent = false, String? currentUsername}) async {
     try {
       final activities = await _dataSource.fetchGroupActivity(groupId);
       
       final newActivities = activities.where((activity) {
+        final activityKey = _generateActivityKey(activity);
+        
+        if (_seenActivityKeys.contains(activityKey)) {
+          return false;
+        }
+        
         final timestamp = DateTime.tryParse(activity['created_at'] as String? ?? '');
-        return timestamp != null && 
-            (_lastCheckTime == null || timestamp.isAfter(_lastCheckTime!));
+        if (timestamp == null || (_lastCheckTime != null && !timestamp.isAfter(_lastCheckTime!))) {
+          return false;
+        }
+        
+        final activityUsername = activity['username'] as String?;
+        if (activityUsername != null && activityUsername == currentUsername) {
+          return false;
+        }
+        
+        _seenActivityKeys.add(activityKey);
+        return true;
       }).toList();
 
       if (newActivities.isEmpty) {
@@ -30,7 +63,7 @@ class GroupActivityNotificationService {
 
       for (final activity in newActivities) {
         if (!silent) {
-          await _sendNotification(activity);
+          await _sendNotification(activity, groupId);
         }
       }
       
@@ -40,7 +73,7 @@ class GroupActivityNotificationService {
     }
   }
 
-  Future<void> _sendNotification(Map<String, dynamic> activity) async {
+  Future<void> _sendNotification(Map<String, dynamic> activity, int groupId) async {
     final type = activity['type'] as String?;
     final message = activity['message'] as String?;
 
@@ -50,7 +83,11 @@ class GroupActivityNotificationService {
       if (_shouldDebounce()) return;
 
       try {
-        debugPrint('[GroupActivityNotification] Would show: $message');
+        final title = type == 'join' ? 'New member joined' : 'Streak milestone!';
+        await _notifications.showGroupActivityNotification(
+          title: title,
+          body: message,
+        );
         _lastNotificationTime = DateTime.now();
       } catch (e) {
         debugPrint('[GroupActivityNotification] Error: $e');
@@ -67,5 +104,9 @@ class GroupActivityNotificationService {
 
   void resetCheckTime() {
     _lastCheckTime = DateTime.now();
+  }
+  
+  void clearSeenActivities() {
+    _seenActivityKeys.clear();
   }
 }

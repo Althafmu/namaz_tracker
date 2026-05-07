@@ -30,7 +30,7 @@ class CurrentUserCardWidget extends StatelessWidget {
               const Text('🔥', style: TextStyle(fontSize: 28)),
               const SizedBox(width: 8),
               Text(
-                '${stats.currentStreak}',
+                stats.currentStreak > 0 ? '${stats.currentStreak}' : '0',
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -38,7 +38,7 @@ class CurrentUserCardWidget extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'Day Streak',
+                stats.currentStreak > 0 ? 'Day Streak' : 'Day Streak — Start today!',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),

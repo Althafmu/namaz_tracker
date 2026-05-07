@@ -33,6 +33,7 @@ import 'features/groups/data/repositories/group_repository_impl.dart';
 import 'features/groups/domain/repositories/group_repository.dart';
 import 'features/groups/presentation/bloc/group_dashboard_bloc.dart';
 import 'features/groups/services/group_activity_notification_service.dart';
+import 'core/notifications/notification_coordinator.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'features/prayer/presentation/bloc/history/history_bloc.dart';
@@ -133,11 +134,20 @@ Future<void> initDependencies() async {
       onError: (error, handler) async {
         if (error.response?.statusCode == 401 &&
             !error.requestOptions.path.contains('/auth/token/refresh/')) {
+          final alreadyRetried = error.requestOptions.extra['alreadyRetried'] == true;
+          if (alreadyRetried) {
+            debugPrint('[Auth] Already retried once — triggering logout');
+            try {
+              sl<AuthBloc>().add(LogoutRequested());
+            } catch (_) {}
+            return handler.next(error);
+          }
           debugPrint('[Auth] 401 received — attempting token refresh');
           try {
             final authRepo = sl<AuthRepository>() as AuthRepositoryImpl;
             final newToken = await authRepo.refreshAccessToken();
             if (newToken != null) {
+              error.requestOptions.extra['alreadyRetried'] = true;
               error.requestOptions.headers['Authorization'] =
                   'Bearer $newToken';
               final retryResponse = await dio.fetch(error.requestOptions);
@@ -175,6 +185,12 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<GroupActivityNotificationService>(
     () => GroupActivityNotificationService(
       dataSource: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton<NotificationCoordinator>(
+    () => NotificationCoordinator(
+      activityService: sl(),
     ),
   );
 

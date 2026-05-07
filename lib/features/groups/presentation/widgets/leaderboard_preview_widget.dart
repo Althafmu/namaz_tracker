@@ -6,6 +6,7 @@ class LeaderboardPreviewWidget extends StatelessWidget {
   final String? currentUserName;
   final int? currentUserRank;
   final int? currentUserStreak;
+  final int memberCount;
 
   const LeaderboardPreviewWidget({
     super.key,
@@ -13,6 +14,7 @@ class LeaderboardPreviewWidget extends StatelessWidget {
     this.currentUserName,
     this.currentUserRank,
     this.currentUserStreak,
+    this.memberCount = 0,
   });
 
   @override
@@ -67,11 +69,26 @@ class LeaderboardPreviewWidget extends StatelessWidget {
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'No streaks yet',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  child: Column(
+                    children: [
+                      Text(
+                        memberCount <= 1 
+                            ? 'Invite friends to make this group active'
+                            : 'No streaks yet',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      if (memberCount > 1) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Complete prayers to appear on the leaderboard',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                              ),
                         ),
+                      ],
+                    ],
                   ),
                 ),
               )

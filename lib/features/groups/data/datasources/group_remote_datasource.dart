@@ -5,6 +5,8 @@ class GroupRemoteDataSource {
 
   GroupRemoteDataSource({required this.dio});
 
+  Dio get dioInstance => dio;
+
   Future<Map<String, dynamic>> fetchDashboard(int groupId) async {
     final response = await dio.get('/api/v1/groups/$groupId/dashboard/');
     return response.data as Map<String, dynamic>;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import '../bloc/group_dashboard_bloc.dart';
 import '../bloc/group_dashboard_event.dart';
 import '../bloc/group_dashboard_state.dart';
@@ -11,6 +12,7 @@ import '../widgets/recent_activity_widget.dart';
 import '../widgets/loading_view_widget.dart';
 import '../widgets/error_view_widget.dart';
 import '../../data/datasources/group_dashboard_cache.dart';
+import '../../../../core/notifications/notification_coordinator.dart';
 
 class GroupDashboardPage extends StatefulWidget {
   final int groupId;
@@ -27,12 +29,28 @@ class GroupDashboardPage extends StatefulWidget {
 }
 
 class _GroupDashboardPageState extends State<GroupDashboardPage> {
+  late final NotificationCoordinator _notificationCoordinator;
+
   @override
   void initState() {
     super.initState();
+    _notificationCoordinator = GetIt.instance<NotificationCoordinator>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GroupDashboardBloc>().add(LoadGroupDashboard(widget.groupId));
     });
+  }
+
+  @override
+  void dispose() {
+    _notificationCoordinator.dispose();
+    super.dispose();
+  }
+
+  void _startPolling(String? currentUsername) {
+    _notificationCoordinator.startPolling(
+      groupId: widget.groupId,
+      currentUsername: currentUsername,
+    );
   }
 
   @override
@@ -61,6 +79,13 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
                 ? state.dashboard
                 : (state as GroupDashboardRefreshing).dashboard;
             final isRefreshing = state is GroupDashboardRefreshing;
+            
+            if (state is GroupDashboardLoaded && !state.isCached) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _startPolling(dashboard.currentUser?.username);
+              });
+            }
+            
             return RefreshIndicator(
               onRefresh: () async {
                 context.read<GroupDashboardBloc>().add(RefreshGroupDashboard(widget.groupId));
@@ -81,6 +106,7 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
                       currentUserName: dashboard.currentUser?.username,
                       currentUserRank: dashboard.currentUser?.rank,
                       currentUserStreak: dashboard.currentUser?.currentStreak,
+                      memberCount: dashboard.group.memberCount,
                     ),
                     const SizedBox(height: 16),
                     TodayCompletionWidget(

@@ -27,11 +27,22 @@ class RecentActivityWidget extends StatelessWidget {
               Center(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'No recent activity',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'No activity yet',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Invite members to start building streaks together',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            ),
+                      ),
+                    ],
                   ),
                 ),
               )
