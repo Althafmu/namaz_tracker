@@ -37,6 +37,15 @@ class GroupDashboardModel extends Equatable {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'group': group.toJson(),
+    'current_user': currentUser?.toJson(),
+    'top_streaks': topStreaks.map((e) => e.toJson()).toList(),
+    'today_completion': todayCompletion.toJson(),
+    'recent_activity': recentActivity.map((e) => e.toJson()).toList(),
+    'stats': {'weekly_completion': weeklyCompletion},
+  };
+
   @override
   List<Object?> get props => [group, currentUser, topStreaks, todayCompletion, recentActivity, weeklyCompletion];
 }
@@ -68,6 +77,15 @@ class GroupSummary extends Equatable {
       createdBy: json['created_by'] as String,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'description': description,
+    'privacy_level': privacyLevel,
+    'member_count': memberCount,
+    'created_by': createdBy,
+  };
 
   @override
   List<Object?> get props => [id, name, description, privacyLevel, memberCount, createdBy];
@@ -101,6 +119,15 @@ class CurrentUserStats extends Equatable {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'user_id': userId,
+    'username': username,
+    'role': role,
+    'joined_at': joinedAt.toIso8601String(),
+    'current_streak': currentStreak,
+    'rank': rank,
+  };
+
   @override
   List<Object?> get props => [userId, username, role, joinedAt, currentStreak, rank];
 }
@@ -125,6 +152,12 @@ class LeaderboardEntry extends Equatable {
       streak: json['streak'] as int? ?? 0,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'rank': rank,
+    'username': username,
+    'streak': streak,
+  };
 
   LeaderboardEntry copyWith({bool? isCurrentUser}) {
     return LeaderboardEntry(
@@ -164,6 +197,14 @@ class TodayCompletionStats extends Equatable {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'fajr': fajr,
+    'dhuhr': dhuhr,
+    'asr': asr,
+    'maghrib': maghrib,
+    'isha': isha,
+  };
+
   int get total => fajr + dhuhr + asr + maghrib + isha;
 
   @override
@@ -196,6 +237,14 @@ class ActivityItem extends Equatable {
           : DateTime.now(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type,
+    'message': message,
+    'username': username,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
   @override
   List<Object?> get props => [id, type, message, username, timestamp];

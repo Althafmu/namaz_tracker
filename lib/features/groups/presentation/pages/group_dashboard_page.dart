@@ -10,6 +10,7 @@ import '../widgets/today_completion_widget.dart';
 import '../widgets/recent_activity_widget.dart';
 import '../widgets/loading_view_widget.dart';
 import '../widgets/error_view_widget.dart';
+import '../../data/datasources/group_dashboard_cache.dart';
 
 class GroupDashboardPage extends StatefulWidget {
   final int groupId;
@@ -46,12 +47,13 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
             return const LoadingViewWidget();
           }
           if (state is GroupDashboardError) {
+            final hasCachedData = GroupDashboardCache.getCachedDashboard(widget.groupId) != null;
             return ErrorViewWidget(
               message: state.message,
               onRetry: () {
                 context.read<GroupDashboardBloc>().add(LoadGroupDashboard(widget.groupId));
               },
-              hasCachedData: false,
+              hasCachedData: hasCachedData,
             );
           }
           if (state is GroupDashboardLoaded || state is GroupDashboardRefreshing) {

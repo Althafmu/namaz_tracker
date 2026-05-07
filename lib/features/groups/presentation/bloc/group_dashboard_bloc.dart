@@ -24,7 +24,7 @@ class GroupDashboardBloc extends Bloc<GroupDashboardEvent, GroupDashboardState> 
     if (cached != null) {
       try {
         final dashboard = GroupDashboardModel.fromJson(cached);
-        emit(GroupDashboardLoaded(dashboard: dashboard, groupId: event.groupId));
+        emit(GroupDashboardLoaded(dashboard: dashboard, groupId: event.groupId, isCached: true));
       } catch (_) {
         emit(GroupDashboardLoading());
       }
@@ -38,14 +38,14 @@ class GroupDashboardBloc extends Bloc<GroupDashboardEvent, GroupDashboardState> 
       // Cache for next time
       await GroupDashboardCache.cacheDashboard(
         event.groupId,
-        _modelToJson(dashboard),
+        dashboard.toJson(),
       );
-      emit(GroupDashboardLoaded(dashboard: dashboard, groupId: event.groupId));
+      emit(GroupDashboardLoaded(dashboard: dashboard, groupId: event.groupId, isCached: false));
     } catch (e) {
       // If we have cached data, keep showing it; otherwise show error
       if (cached != null) {
         final dashboard = GroupDashboardModel.fromJson(cached);
-        emit(GroupDashboardLoaded(dashboard: dashboard, groupId: event.groupId));
+        emit(GroupDashboardLoaded(dashboard: dashboard, groupId: event.groupId, isCached: true));
       } else {
         emit(GroupDashboardError(message: e.toString(), groupId: event.groupId));
       }
@@ -67,9 +67,9 @@ class GroupDashboardBloc extends Bloc<GroupDashboardEvent, GroupDashboardState> 
       final dashboard = await repository.getDashboard(event.groupId);
       await GroupDashboardCache.cacheDashboard(
         event.groupId,
-        _modelToJson(dashboard),
+        dashboard.toJson(),
       );
-      emit(GroupDashboardLoaded(dashboard: dashboard, groupId: event.groupId));
+      emit(GroupDashboardLoaded(dashboard: dashboard, groupId: event.groupId, isCached: false));
     } catch (e) {
       if (currentState is GroupDashboardLoaded) {
         emit(GroupDashboardError(
@@ -80,47 +80,5 @@ class GroupDashboardBloc extends Bloc<GroupDashboardEvent, GroupDashboardState> 
         emit(GroupDashboardError(message: e.toString(), groupId: event.groupId));
       }
     }
-  }
-
-  Map<String, dynamic> _modelToJson(GroupDashboardModel model) {
-    return {
-      'group': {
-        'id': model.group.id,
-        'name': model.group.name,
-        'description': model.group.description,
-        'privacy_level': model.group.privacyLevel,
-        'member_count': model.group.memberCount,
-        'created_by': model.group.createdBy,
-      },
-      'current_user': model.currentUser != null
-          ? {
-              'role': model.currentUser!.role,
-              'joined_at': model.currentUser!.joinedAt.toIso8601String(),
-              'current_streak': model.currentUser!.currentStreak,
-              'rank': model.currentUser!.rank,
-              'user_id': model.currentUser!.userId,
-              'username': model.currentUser!.username,
-            }
-          : null,
-      'top_streaks': model.topStreaks
-          .map((e) => {'rank': e.rank, 'username': e.username, 'streak': e.streak})
-          .toList(),
-      'today_completion': {
-        'fajr': model.todayCompletion.fajr,
-        'dhuhr': model.todayCompletion.dhuhr,
-        'asr': model.todayCompletion.asr,
-        'maghrib': model.todayCompletion.maghrib,
-        'isha': model.todayCompletion.isha,
-      },
-      'recent_activity': model.recentActivity
-          .map((e) => {
-                'type': e.type,
-                'username': e.username,
-                'created_at': e.timestamp.toIso8601String(),
-                'message': e.message,
-              })
-          .toList(),
-      'stats': {'weekly_completion': model.weeklyCompletion},
-    };
   }
 }
