@@ -10,7 +10,6 @@ import '../widgets/today_completion_widget.dart';
 import '../widgets/recent_activity_widget.dart';
 import '../widgets/loading_view_widget.dart';
 import '../widgets/error_view_widget.dart';
-import '../widgets/skeleton_widget.dart';
 
 class GroupDashboardPage extends StatefulWidget {
   final int groupId;
@@ -76,8 +75,9 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
                     const SizedBox(height: 16),
                     LeaderboardPreviewWidget(
                       streaks: dashboard.topStreaks,
-                      currentUserId: dashboard.currentUser?.userId,
                       currentUserName: dashboard.currentUser?.username,
+                      currentUserRank: dashboard.currentUser?.rank,
+                      currentUserStreak: dashboard.currentUser?.currentStreak,
                     ),
                     const SizedBox(height: 16),
                     TodayCompletionWidget(

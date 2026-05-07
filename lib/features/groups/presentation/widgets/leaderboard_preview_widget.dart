@@ -3,14 +3,16 @@ import '../../data/models/group_dashboard_model.dart';
 
 class LeaderboardPreviewWidget extends StatelessWidget {
   final List<LeaderboardEntry> streaks;
-  final int? currentUserId;
   final String? currentUserName;
+  final int? currentUserRank;
+  final int? currentUserStreak;
 
   const LeaderboardPreviewWidget({
     super.key,
     required this.streaks,
-    this.currentUserId,
     this.currentUserName,
+    this.currentUserRank,
+    this.currentUserStreak,
   });
 
   @override
@@ -29,9 +31,9 @@ class LeaderboardPreviewWidget extends StatelessWidget {
     if (!currentUserInTop5 && currentUserName != null) {
       entriesWithCurrentUser.add(
         LeaderboardEntry(
-          rank: displayEntries.length + 1,
+          rank: currentUserRank ?? displayEntries.length + 1,
           username: currentUserName!,
-          streak: 0,
+          streak: currentUserStreak ?? 0,
           isCurrentUser: true,
         ),
       );
@@ -77,9 +79,9 @@ class LeaderboardPreviewWidget extends StatelessWidget {
               ...entriesWithCurrentUser.asMap().entries.map((entry) {
                 final index = entry.key;
                 final item = entry.value;
-                if (index >= 5) return const SizedBox.shrink();
+                if (index >= 5 && !item.isCurrentUser) return const SizedBox.shrink();
                 return _LeaderboardRow(
-                  rank: index + 1,
+                  rank: item.rank,
                   username: item.username,
                   streak: item.streak,
                   isCurrentUser: item.isCurrentUser,
@@ -147,8 +149,10 @@ class _LeaderboardRow extends StatelessWidget {
           ),
           Row(
             children: [
-              const Text('🔥', style: TextStyle(fontSize: 14)),
-              const SizedBox(width: 4),
+              if (streak > 0) ...[
+                const Text('🔥', style: TextStyle(fontSize: 14)),
+                const SizedBox(width: 4),
+              ],
               Text(
                 '$streak',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
