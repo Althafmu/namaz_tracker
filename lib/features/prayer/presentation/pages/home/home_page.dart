@@ -146,6 +146,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
       if (!mounted) return;
       settingsBloc.add(const CompleteFirstRunSetup());
+      GetIt.I<PrayerBloc>().add(const LoadDailyStatus());
     });
   }
 
@@ -762,12 +763,26 @@ class _HomeTopBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Falah',
-                style: AppTextStyles.headlineMedium.copyWith(
-                  color: c.textPrimary,
-                  fontSize: 22,
-                ),
+              Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      "assets/falah_icon.png",
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Falah',
+                    style: AppTextStyles.headlineMedium.copyWith(
+                      color: c.textPrimary,
+                      fontSize: 22,
+                    ),
+                  ),
+                ],
               ),
               Text(
                 subtitle,

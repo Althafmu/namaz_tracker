@@ -57,10 +57,8 @@ class StreakPage extends StatelessWidget {
                 actions: [
                   IconButton(
                     icon: Icon(Icons.share, color: c.textPrimary),
-                    onPressed: () => ShareStreakModal.show(
-                      context,
-                      streakCount: streak,
-                    ),
+                    onPressed: () =>
+                        ShareStreakModal.show(context, streakCount: streak),
                   ),
                 ],
               ),
@@ -68,7 +66,12 @@ class StreakPage extends StatelessWidget {
                 child: Stack(
                   children: [
                     SingleChildScrollView(
-                      padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 100),
+                      padding: const EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        top: 8,
+                        bottom: 100,
+                      ),
                       child: Column(
                         children: [
                           const SizedBox(height: 16),
@@ -105,13 +108,14 @@ class StreakPage extends StatelessWidget {
                       right: 20,
                       bottom: 16,
                       child: GestureDetector(
-                        onTap: () => ShareStreakModal.show(
-                          context,
-                          streakCount: streak,
-                        ),
+                        onTap: () =>
+                            ShareStreakModal.show(context, streakCount: streak),
                         child: NeoCard(
-                          color: c.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                          color: c.success,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 20,
+                          ),
                           child: Row(
                             children: [
                               Icon(Icons.share, color: c.onAccent, size: 24),
@@ -161,7 +165,11 @@ class StreakPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMilestoneSection(BuildContext context, AppColorPalette c, int streak) {
+  Widget _buildMilestoneSection(
+    BuildContext context,
+    AppColorPalette c,
+    int streak,
+  ) {
     // Determine next milestone
     final milestones = [7, 14, 30, 60, 100, 200, 365];
     int nextMilestone = milestones.firstWhere(
@@ -194,7 +202,10 @@ class StreakPage extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: c.streak.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
@@ -225,9 +236,7 @@ class StreakPage extends StatelessWidget {
             daysToGo > 0
                 ? '$daysToGo day${daysToGo == 1 ? '' : 's'} to go'
                 : 'Milestone reached! 🎉',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: c.textSecondary,
-            ),
+            style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
           ),
         ],
       ),
@@ -259,7 +268,9 @@ class StreakPage extends StatelessWidget {
                 ),
                 Text(
                   'Current',
-                  style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: c.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -283,13 +294,15 @@ class StreakPage extends StatelessWidget {
                 ),
                 Text(
                   'Best',
-                  style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: c.textSecondary,
+                  ),
                 ),
               ],
             ),
           ),
         ),
-],
+      ],
     );
   }
 }
@@ -308,11 +321,7 @@ class _StreakCard extends StatelessWidget {
       child: Center(
         child: Column(
           children: [
-            Icon(
-              Icons.local_fire_department,
-              color: color.onAccent,
-              size: 64,
-            ),
+            Icon(Icons.local_fire_department, color: color.onAccent, size: 64),
             const SizedBox(height: 12),
             Text(
               '$streak',

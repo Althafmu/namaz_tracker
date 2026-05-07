@@ -475,9 +475,9 @@ class SettingsState extends Equatable {
       hasSeenHomeWelcomeBanner: json.containsKey('hasSeenHomeWelcomeBanner')
           ? (json['hasSeenHomeWelcomeBanner'] as bool? ?? false)
           : true,
-      hasCompletedFirstRunSetup: json.containsKey('hasCompletedFirstRunSetup')
-          ? (json['hasCompletedFirstRunSetup'] as bool? ?? false)
-          : true,
+hasCompletedFirstRunSetup: json.containsKey('hasCompletedFirstRunSetup')
+            ? (json['hasCompletedFirstRunSetup'] as bool? ?? false)
+            : false,
       notificationsPausedToday:
           json['notificationsPausedToday'] as bool? ?? false,
       sunnahEnabled: json['sunnahEnabled'] as bool? ?? false,

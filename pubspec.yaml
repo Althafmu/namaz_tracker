@@ -34,6 +34,7 @@ dependencies:
   audioplayers: ^6.6.0
   file_picker: ^11.0.2
   fl_chart: ^0.69.0
+  flutter_svg: ^2.0.9
 
 dev_dependencies:
   flutter_test:
@@ -52,6 +53,7 @@ flutter:
   assets:
     - assets/app_icon.png
     - assets/falah_icon.png
+    - assets/falah_logo.svg
     - assets/hayya_ala_salat.mp3
     - assets/namaz_reminder.mp3
     - assets/icons8-google-logo-100.png

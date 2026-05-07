@@ -33,6 +33,13 @@ class _FirstRunSetupDialogState extends State<FirstRunSetupDialog> {
           'Use excused mode when you\'re travelling, unwell, or on your period. Your streak stays safe, and you can resume logging later.',
       highlights: ['Streak preserved', 'Notifications pause automatically'],
     ),
+    _TipCard(
+      icon: Icons.location_on_outlined,
+      title: 'Accurate prayer times for your location',
+      body:
+          'Falah uses your location to calculate prayer times specific to your area. Your location is never stored or shared — used only to determine your timezone and coordinates.',
+      highlights: ['Never stored or shared', 'Used locally only'],
+    ),
   ];
 
   @override

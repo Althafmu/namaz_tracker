@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../../../../../../core/services/time_service.dart';
+import '../../../../../../core/theme/app_colors.dart';
+import '../../../../../../core/theme/app_text_styles.dart';
+import '../../../../../../core/widgets/neo_card.dart';
 
 class FalahStreakCard extends StatelessWidget {
   final int streak;
@@ -8,9 +13,8 @@ class FalahStreakCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 360,
-      height: 440,
-      padding: const EdgeInsets.fromLTRB(24, 22, 24, 26),
+      clipBehavior: Clip.none,
+      padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
@@ -18,65 +22,58 @@ class FalahStreakCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        "I'm on a",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF0B3D2E),
-                        ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "I'm on a",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0B3D2E),
                       ),
-                    ],
-                  ),
-
-                  Text(
-                    "$streak",
-                    style: const TextStyle(
-                      fontSize: 90,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1,
-                      color: Color(0xFF0B3D2E),
-                      height: 1,
                     ),
-                  ),
-
-                  const SizedBox(height: 2),
-
-                  const Text(
-                    "day prayer\nstreak",
-                    style: TextStyle(
-                      fontSize: 18,
-                      height: 1.3,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF0B3D2E),
+                    Text(
+                      "$streak",
+                      style: const TextStyle(
+                        fontSize: 80,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
+                        color: Color(0xFF0B3D2E),
+                        height: 1,
+                      ),
                     ),
-                  ),
-                ],
+                    const Text(
+                      "day prayer\nstreak",
+                      style: TextStyle(
+                        fontSize: 16,
+                        height: 1.2,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF0B3D2E),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              Positioned(
-                top: 10,
-                right: -30,
-                child: SizedBox(
-                  height: 170,
-                  width: 220,
-                  child: Image.asset(
-                    "assets/falah_icon.png",
-                    fit: BoxFit.contain,
-                  ),
+              SizedBox(
+                width: 140,
+                height: 140,
+                child: SvgPicture.asset(
+                  "assets/falah_logo.svg",
+                  fit: BoxFit.contain,
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 4),
           Row(
             children: const [
-              Expanded(child: Divider()),
+              Expanded(child: Divider(color: Color(0xFF0B3D2E))),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Icon(
@@ -85,21 +82,21 @@ class FalahStreakCard extends StatelessWidget {
                   color: Color(0xFFF4A825),
                 ),
               ),
-              Expanded(child: Divider()),
+              Expanded(child: Divider(color: Color(0xFF0B3D2E))),
             ],
           ),
           const SizedBox(height: 4),
           _QuoteSection(),
-          const Spacer(),
+          const SizedBox(height: 8),
           Row(
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
                   "assets/app_icon.png",
-                  height: 44,
-                  width: 44,
-                  fit: BoxFit.cover,
+                  height: 38,
+                  width: 38,
+                  fit: BoxFit.contain,
                 ),
               ),
               const SizedBox(width: 12),
@@ -110,13 +107,13 @@ class FalahStreakCard extends StatelessWidget {
                     "Falah",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 14,
                       color: Color(0xFF0B3D2E),
                     ),
                   ),
                   Text(
                     "Prayer Tracker",
-                    style: TextStyle(fontSize: 13, color: Color(0xFFF4A825)),
+                    style: TextStyle(fontSize: 11, color: Color(0xFFF4A825)),
                   ),
                 ],
               ),
@@ -149,7 +146,7 @@ class _QuoteSection extends StatelessWidget {
     _ReminderQuote(
       text:
           'The most beloved deeds to Allah are those done consistently, even if they are small.',
-      source: 'Sahih al-Bukhari and Sahih Muslim',
+      source: 'Sahih al-Bukhari',
     ),
     _ReminderQuote(
       text:
@@ -160,7 +157,7 @@ class _QuoteSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
+    final today = TimeService.effectiveNow();
     final index =
         today.difference(DateTime(2024, 1, 1)).inDays % _quotes.length;
     final quote = _quotes[index];
@@ -170,20 +167,23 @@ class _QuoteSection extends StatelessWidget {
       children: [
         Text(
           '"${quote.text}"',
+          textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 14,
-            height: 1.5,
+            fontSize: 11,
+            height: 1.35,
             color: Colors.black87,
             fontStyle: FontStyle.italic,
           ),
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
+          softWrap: true,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           '— ${quote.source}',
+          textAlign: TextAlign.right,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 10,
             color: Color(0xFFF4A825),
             fontWeight: FontWeight.w600,
           ),

@@ -27,6 +27,11 @@ import 'features/prayer/domain/usecases/get_sync_metadata_usecase.dart';
 import 'features/prayer/domain/usecases/pause_notifications_for_today_usecase.dart';
 import 'features/prayer/domain/usecases/get_notifications_pause_status_usecase.dart';
 import 'features/prayer/domain/usecases/resume_notifications_for_today_usecase.dart';
+
+import 'features/groups/data/datasources/group_remote_datasource.dart';
+import 'features/groups/data/repositories/group_repository_impl.dart';
+import 'features/groups/domain/repositories/group_repository.dart';
+import 'features/groups/presentation/bloc/group_dashboard_bloc.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
 import 'features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import 'features/prayer/presentation/bloc/history/history_bloc.dart';
@@ -162,6 +167,9 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSource(dio: sl()),
   );
+  sl.registerLazySingleton<GroupRemoteDataSource>(
+    () => GroupRemoteDataSource(dio: sl()),
+  );
 
   // ── Repositories ──
   sl.registerLazySingleton<PrayerRepository>(
@@ -169,6 +177,9 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl(), tokenProvider: sl()),
+  );
+  sl.registerLazySingleton<GroupRepository>(
+    () => GroupRepositoryImpl(sl()),
   );
 
   // ── Use Cases ──
@@ -252,5 +263,9 @@ Future<void> initDependencies() async {
       authRepository: sl(),
       prayerSchedulerService: sl(),
     ),
+  );
+
+  sl.registerFactory(
+    () => GroupDashboardBloc(repository: sl()),
   );
 }
