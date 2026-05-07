@@ -378,7 +378,7 @@ class NotificationService implements NotificationServiceInterface {
       const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
       await _plugin.show(
-        id: 0,
+        id: title.hashCode.abs() % 100000,
         title: title,
         body: body,
         notificationDetails: details,

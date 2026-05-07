@@ -30,6 +30,7 @@ class GroupDashboardPage extends StatefulWidget {
 
 class _GroupDashboardPageState extends State<GroupDashboardPage> {
   late final NotificationCoordinator _notificationCoordinator;
+  bool _pollingStarted = false;
 
   @override
   void initState() {
@@ -42,11 +43,13 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
 
   @override
   void dispose() {
-    _notificationCoordinator.dispose();
+    _notificationCoordinator.stopPolling();
     super.dispose();
   }
 
   void _startPolling(String? currentUsername) {
+    if (_pollingStarted) return;
+    _pollingStarted = true;
     _notificationCoordinator.startPolling(
       groupId: widget.groupId,
       currentUsername: currentUsername,

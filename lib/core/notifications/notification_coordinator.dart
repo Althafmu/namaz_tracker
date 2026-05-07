@@ -52,6 +52,5 @@ class NotificationCoordinator {
 
   void dispose() {
     stopPolling();
-    _activityService.clearSeenActivities();
   }
 }
