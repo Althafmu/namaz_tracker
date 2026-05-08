@@ -56,7 +56,8 @@ class GroupSummary extends Equatable {
   final String? description;
   final String privacyLevel;
   final int memberCount;
-  final String createdBy;
+  final String? createdBy;
+  final String? userRole;
 
   const GroupSummary({
     required this.id,
@@ -64,7 +65,8 @@ class GroupSummary extends Equatable {
     this.description,
     required this.privacyLevel,
     required this.memberCount,
-    required this.createdBy,
+    this.createdBy,
+    this.userRole,
   });
 
   factory GroupSummary.fromJson(Map<String, dynamic> json) {
@@ -74,7 +76,8 @@ class GroupSummary extends Equatable {
       description: json['description'] as String?,
       privacyLevel: json['privacy_level'] as String,
       memberCount: json['member_count'] as int,
-      createdBy: json['created_by'] as String,
+      createdBy: json['created_by'] as String?,
+      userRole: json['user_role'] as String?,
     );
   }
 
@@ -85,10 +88,11 @@ class GroupSummary extends Equatable {
     'privacy_level': privacyLevel,
     'member_count': memberCount,
     'created_by': createdBy,
+    'user_role': userRole,
   };
 
   @override
-  List<Object?> get props => [id, name, description, privacyLevel, memberCount, createdBy];
+  List<Object?> get props => [id, name, description, privacyLevel, memberCount, createdBy, userRole];
 }
 
 class CurrentUserStats extends Equatable {

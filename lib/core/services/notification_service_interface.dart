@@ -32,5 +32,6 @@ abstract class NotificationServiceInterface {
   Future<void> showGroupActivityNotification({
     required String title,
     required String body,
+    int? activityHashCode,
   });
 }

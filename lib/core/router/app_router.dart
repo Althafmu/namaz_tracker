@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';  
 import 'package:get_it/get_it.dart';
 
 import '../../features/prayer/presentation/bloc/settings/settings_state.dart';
@@ -25,6 +26,10 @@ import '../../features/auth/presentation/pages/password_reset_request_page.dart'
 import '../../features/auth/presentation/pages/password_reset_confirm_page.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
+
+import '../../features/groups/presentation/pages/groups_page.dart';
+import '../../features/groups/presentation/pages/group_dashboard_page.dart';
+import '../../features/groups/presentation/bloc/group_dashboard_bloc.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -171,6 +176,18 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const ReasonsSettingsPage(),
       ),
+      GoRoute(
+        path: '/groups/:id',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final groupId = int.parse(state.pathParameters['id']!);
+          final groupName = state.extra as String? ?? 'Group';
+          return BlocProvider(
+            create: (_) => GetIt.I<GroupDashboardBloc>(),
+            child: GroupDashboardPage(groupId: groupId, groupName: groupName),
+          );
+        },
+      ),
       ShellRoute(
         navigatorKey: shellNavigatorKey,
         builder: (context, state, child) => _AppShell(child: child),
@@ -189,6 +206,11 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
             path: '/profile',
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: SettingsPage()),
+          ),
+          GoRoute(
+            path: '/groups',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: GroupsPage()),
           ),
         ],
       ),
@@ -240,8 +262,11 @@ class _AppShellState extends State<_AppShell> {
     if (location.startsWith('/progress')) {
       return 1;
     }
-    if (location.startsWith('/profile')) {
+    if (location.startsWith('/groups')) {
       return 2;
+    }
+    if (location.startsWith('/profile')) {
+      return 3;
     }
     return 0;
   }
@@ -337,9 +362,17 @@ class _AppShellState extends State<_AppShell> {
                   ),
                   Expanded(
                     child: _NavItem(
+                      icon: Icons.groups,
+                      label: 'GROUPS',
+                      isActive: index == 2,
+                      onTap: () => context.go('/groups'),
+                    ),
+                  ),
+                  Expanded(
+                    child: _NavItem(
                       icon: Icons.person,
                       label: 'PROFILE',
-                      isActive: index == 2,
+                      isActive: index == 3,
                       onTap: () => context.go('/profile'),
                     ),
                   ),

@@ -43,7 +43,7 @@ class AuthRemoteDataSource {
   }) async {
     try {
       final response = await dio.post(
-        '/api/auth/register/',
+        '/api/v1/auth/register/',
         data: {
           'username': username,
           'email': email,
@@ -64,7 +64,7 @@ class AuthRemoteDataSource {
   }) async {
     try {
       final response = await dio.post(
-        '/api/auth/login/',
+        '/api/v1/auth/login/',
         data: {'username': username, 'password': password},
       );
       // Response now contains 'access', 'refresh', and 'user' info
@@ -80,7 +80,7 @@ class AuthRemoteDataSource {
   }) async {
     try {
       final response = await dio.put(
-        '/api/auth/profile/',
+        '/api/v1/auth/profile/',
         data: {'first_name': firstName, 'last_name': lastName},
       );
       return UserModel.fromJson(response.data);
@@ -99,7 +99,7 @@ class AuthRemoteDataSource {
   Future<String> refreshToken({required String refreshToken}) async {
     try {
       final response = await dio.post(
-        '/api/auth/token/refresh/',
+        '/api/v1/auth/token/refresh/',
         data: {'refresh': refreshToken},
       );
       return response.data['access'] as String;
@@ -116,7 +116,7 @@ class AuthRemoteDataSource {
   /// Logout and blacklist the refresh token.
   Future<void> logout({required String refreshToken}) async {
     try {
-      await dio.post('/api/auth/logout/', data: {'refresh': refreshToken});
+      await dio.post('/api/v1/auth/logout/', data: {'refresh': refreshToken});
     } catch (e) {
       debugPrint(
         '[AuthRemoteDataSource] Logout failed or token already invalid: $e',
@@ -129,7 +129,7 @@ class AuthRemoteDataSource {
   /// Permanently delete the current user account.
   Future<void> deleteAccount() async {
     try {
-      await dio.delete('/api/auth/delete/');
+      await dio.delete('/api/v1/auth/delete/');
     } on DioException catch (e) {
       throw Exception(_parseDioError(e, 'Account deletion failed'));
     }
@@ -138,7 +138,7 @@ class AuthRemoteDataSource {
   /// PATCH /api/profile/offsets/ — sync manual offsets and calculation settings to cloud.
   Future<void> patchProfileOffsets(Map<String, dynamic> data) async {
     try {
-      await dio.patch('/api/profile/offsets/', data: data);
+      await dio.patch('/api/v1/profile/offsets/', data: data);
     } on DioException catch (e) {
       final data = e.response?.data;
       String message = 'Settings sync failed';
@@ -151,7 +151,7 @@ class AuthRemoteDataSource {
 
   Future<Map<String, dynamic>> getUserConfig() async {
     try {
-      final response = await dio.get('/api/user/config/');
+      final response = await dio.get('/api/v1/user/config/');
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -166,7 +166,7 @@ class AuthRemoteDataSource {
   /// Request password reset email.
   Future<void> requestPasswordReset({required String email}) async {
     try {
-      await dio.post('/api/auth/password-reset/', data: {'email': email});
+      await dio.post('/api/v1/auth/password-reset/', data: {'email': email});
     } on DioException catch (e) {
       throw Exception(_parseDioError(e, 'Password reset request failed'));
     }
@@ -175,7 +175,7 @@ class AuthRemoteDataSource {
   /// Confirm password reset with token.
   Future<void> confirmPasswordReset({required String token, required String newPassword}) async {
     try {
-      await dio.post('/api/auth/password-reset/confirm/', data: {
+      await dio.post('/api/v1/auth/password-reset/confirm/', data: {
         'token': token,
         'password': newPassword,
       });
@@ -189,7 +189,7 @@ class AuthRemoteDataSource {
   Future<bool> verifyEmail({String? token}) async {
     if (token == null || token.isEmpty) return false;
     try {
-      final response = await dio.get('/api/auth/verify-email/', queryParameters: {'token': token});
+      final response = await dio.get('/api/v1/auth/verify-email/', queryParameters: {'token': token});
       return response.data['access'] != null;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -204,7 +204,7 @@ class AuthRemoteDataSource {
   Future<Map<String, dynamic>> googleSignIn({required String idToken}) async {
     try {
       final response = await dio.post(
-        '/api/auth/google/',
+        '/api/v1/auth/google/',
         data: {'id_token': idToken},
       );
       return response.data;

@@ -8,7 +8,7 @@ class PrayerRemoteDataSource {
 
   /// GET /api/prayers/today/
   Future<Map<String, dynamic>> getTodayLog() async {
-    final response = await dio.get('/api/prayers/today/');
+    final response = await dio.get('/api/v1/prayers/today/');
     return response.data as Map<String, dynamic>;
   }
 
@@ -33,13 +33,13 @@ class PrayerRemoteDataSource {
     if (status != null) data['status'] = status;
     if (reason != null) data['reason'] = reason;
     if (dateKey != null) data['date'] = dateKey;
-    final response = await dio.post('/api/prayers/log/', data: data);
+    final response = await dio.post('/api/v1/prayers/log/', data: data);
     return response.data as Map<String, dynamic>;
   }
 
   /// GET /api/streak/
   Future<Map<String, dynamic>> getStreak() async {
-    final response = await dio.get('/api/streak/');
+    final response = await dio.get('/api/v1/streak/');
     return response.data as Map<String, dynamic>;
   }
 
@@ -50,7 +50,7 @@ class PrayerRemoteDataSource {
     int page = 1,
   }) async {
     final response = await dio.get(
-      '/api/prayers/history/',
+      '/api/v1/prayers/history/',
       queryParameters: {'days': days, 'page': page},
     );
     return response.data as Map<String, dynamic>;
@@ -64,7 +64,7 @@ class PrayerRemoteDataSource {
     int page = 1,
   }) async {
     final response = await dio.get(
-      '/api/prayers/history/detailed/',
+      '/api/v1/prayers/history/detailed/',
       queryParameters: {'year': year, 'month': month, 'page': page},
     );
     return response.data as Map<String, dynamic>;
@@ -73,7 +73,7 @@ class PrayerRemoteDataSource {
   /// GET /api/prayers/reasons/
   /// Returns pre-aggregated reason counts: { "reasons": { "Work": 5, ... } }
   Future<Map<String, dynamic>> getReasonSummary() async {
-    final response = await dio.get('/api/prayers/reasons/');
+    final response = await dio.get('/api/v1/prayers/reasons/');
     return response.data as Map<String, dynamic>;
   }
 
@@ -85,7 +85,7 @@ class PrayerRemoteDataSource {
   Future<Map<String, dynamic>> consumeProtectorToken({String? date}) async {
     final Map<String, dynamic> data = {};
     if (date != null) data['date'] = date;
-    final response = await dio.post('/api/streak/consume-token/', data: data);
+    final response = await dio.post('/api/v1/streak/consume-token/', data: data);
     return response.data as Map<String, dynamic>;
   }
 
@@ -102,7 +102,7 @@ class PrayerRemoteDataSource {
     if (prayerNames != null && prayerNames.isNotEmpty) {
       data['prayer_names'] = prayerNames.toList();
     }
-    final response = await dio.post('/api/prayers/excused/', data: data);
+    final response = await dio.post('/api/v1/prayers/excused/', data: data);
     return response.data as Map<String, dynamic>;
   }
 
@@ -110,7 +110,7 @@ class PrayerRemoteDataSource {
   /// Clear a day's excused state and restore remaining prayers to pending.
   Future<Map<String, dynamic>> clearExcusedDay({required String date}) async {
     final response = await dio.post(
-      '/api/prayers/excused/clear/',
+      '/api/v1/prayers/excused/clear/',
       data: {'date': date},
     );
     return response.data as Map<String, dynamic>;
@@ -131,35 +131,35 @@ class PrayerRemoteDataSource {
     if (dateKey != null) {
       data['date'] = dateKey;
     }
-    final response = await dio.post('/api/prayers/undo/', data: data);
+    final response = await dio.post('/api/v1/prayers/undo/', data: data);
     return response.data as Map<String, dynamic>;
   }
 
   /// GET /api/sync/metadata/
   /// Retrieve sync metadata (last sync time, source, conflict info).
   Future<Map<String, dynamic>> getSyncMetadata() async {
-    final response = await dio.get('/api/sync/metadata/');
+    final response = await dio.get('/api/v1/sync/metadata/');
     return response.data as Map<String, dynamic>;
   }
 
   /// POST /api/notifications/pause-today/
   /// Pause all notifications for the remainder of today.
   Future<Map<String, dynamic>> pauseNotificationsForToday() async {
-    final response = await dio.post('/api/notifications/pause-today/');
+    final response = await dio.post('/api/v1/notifications/pause-today/');
     return response.data as Map<String, dynamic>;
   }
 
   /// GET /api/notifications/pause-today/
   /// Check if notifications are paused for today.
   Future<Map<String, dynamic>> getNotificationsPauseStatus() async {
-    final response = await dio.get('/api/notifications/pause-today/');
+    final response = await dio.get('/api/v1/notifications/pause-today/');
     return response.data as Map<String, dynamic>;
   }
 
   /// DELETE /api/notifications/pause-today/
   /// Resume (unpause) notifications for today.
   Future<Map<String, dynamic>> resumeNotificationsForToday() async {
-    final response = await dio.delete('/api/notifications/pause-today/');
+    final response = await dio.delete('/api/v1/notifications/pause-today/');
     return response.data as Map<String, dynamic>;
   }
 }

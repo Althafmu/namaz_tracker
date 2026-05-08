@@ -17,4 +17,10 @@ class GroupRemoteDataSource {
     final data = response.data as List<dynamic>;
     return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
+
+  Future<List<Map<String, dynamic>>> fetchMyGroups() async {
+    final response = await dio.get('/api/v1/groups/my/');
+    final data = response.data as List<dynamic>;
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
 }

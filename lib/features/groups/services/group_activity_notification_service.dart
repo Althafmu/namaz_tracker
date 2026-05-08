@@ -84,9 +84,11 @@ class GroupActivityNotificationService {
 
       try {
         final title = type == 'join' ? 'New member joined' : 'Streak milestone!';
+        final activityKey = _generateActivityKey(activity);
         await _notifications.showGroupActivityNotification(
           title: title,
           body: message,
+          activityHashCode: activityKey.hashCode,
         );
         _lastNotificationTime = DateTime.now();
       } catch (e) {

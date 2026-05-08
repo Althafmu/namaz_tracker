@@ -7,6 +7,7 @@ class NotificationCoordinator {
   Timer? _pollingTimer;
   int? _currentGroupId;
   String? _currentUsername;
+  bool _pollingStarted = false;
 
   NotificationCoordinator({
     required GroupActivityNotificationService activityService,
@@ -43,14 +44,7 @@ class NotificationCoordinator {
     _pollingTimer = null;
     _currentGroupId = null;
     _currentUsername = null;
+    _pollingStarted = false;
     debugPrint('[NotificationCoordinator] Stopped polling');
-  }
-
-  void updateUser(String? username) {
-    _currentUsername = username;
-  }
-
-  void dispose() {
-    stopPolling();
   }
 }

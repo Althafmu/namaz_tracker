@@ -34,6 +34,13 @@ const String kStorageRecoveryAttempted = 'storage_recovery_attempted';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Global error handler to prevent crashes from uncaught errors
+  FlutterError.onError = (details) {
+    debugPrint('[FlutterError] ${details.exception}');
+    debugPrint('[FlutterError] ${details.stack}');
+    // In production, you would send to Crashlytics here
+  };
+
   // Initialize HydratedBloc storage for offline persistence
   // With recovery attempt and user notification support.
   bool storageWasCorrupted = false;

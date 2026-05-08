@@ -354,6 +354,7 @@ class NotificationService implements NotificationServiceInterface {
   Future<void> showGroupActivityNotification({
     required String title,
     required String body,
+    int? activityHashCode,
   }) async {
     final granted = await checkPermissions();
     if (!granted) {
@@ -378,7 +379,7 @@ class NotificationService implements NotificationServiceInterface {
       const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
       await _plugin.show(
-        id: title.hashCode.abs() % 100000,
+        id: activityHashCode ?? title.hashCode.abs() % 100000,
         title: title,
         body: body,
         notificationDetails: details,

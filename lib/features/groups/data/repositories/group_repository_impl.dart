@@ -22,4 +22,10 @@ class GroupRepositoryImpl implements GroupRepository {
     );
     return response.data['group_id'] as int;
   }
+
+  @override
+  Future<List<GroupSummary>> getMyGroups() async {
+    final json = await remoteDataSource.fetchMyGroups();
+    return json.map((e) => GroupSummary.fromJson(e)).toList();
+  }
 }

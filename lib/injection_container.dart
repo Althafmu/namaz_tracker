@@ -32,6 +32,7 @@ import 'features/groups/data/datasources/group_remote_datasource.dart';
 import 'features/groups/data/repositories/group_repository_impl.dart';
 import 'features/groups/domain/repositories/group_repository.dart';
 import 'features/groups/presentation/bloc/group_dashboard_bloc.dart';
+import 'features/groups/presentation/bloc/groups_bloc.dart';
 import 'features/groups/services/group_activity_notification_service.dart';
 import 'core/notifications/notification_coordinator.dart';
 import 'features/prayer/presentation/bloc/prayer/prayer_bloc.dart';
@@ -290,5 +291,9 @@ Future<void> initDependencies() async {
 
   sl.registerFactory(
     () => GroupDashboardBloc(repository: sl()),
+  );
+
+  sl.registerFactory(
+    () => GroupsBloc(repository: sl()),
   );
 }
