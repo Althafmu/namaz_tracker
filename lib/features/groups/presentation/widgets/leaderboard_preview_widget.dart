@@ -84,7 +84,7 @@ class LeaderboardPreviewWidget extends StatelessWidget {
                         Text(
                           'Complete prayers to appear on the leaderboard',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity( 0.7),
                               ),
                         ),
                       ],
@@ -135,7 +135,7 @@ class _LeaderboardRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: isCurrentUser
-            ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+            ? Theme.of(context).colorScheme.primaryContainer.withOpacity( 0.3)
             : null,
         borderRadius: BorderRadius.circular(8),
       ),

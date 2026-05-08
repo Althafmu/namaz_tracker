@@ -18,3 +18,11 @@ class JoinGroup extends GroupsEvent {
   @override
   List<Object> get props => [inviteCode];
 }
+
+class CreateGroup extends GroupsEvent {
+  final String name;
+  const CreateGroup(this.name);
+
+  @override
+  List<Object> get props => [name];
+}

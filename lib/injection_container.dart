@@ -107,20 +107,23 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // Certificate pinning — reject self-signed certs
+// Certificate pinning — reject self-signed certs
   if (!kIsWeb) {
     (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
       final client = HttpClient();
       client.badCertificateCallback =
           (X509Certificate cert, String host, int port) {
-            debugPrint(
-              '[CertPin] Rejected untrusted certificate for $host:$port',
-            );
-            return false;
-          };
+        debugPrint(
+          '[CertPin] Rejected untrusted certificate for $host:$port',
+        );
+        return false;
+      };
       return client;
     };
   }
+
+  // Register Dio IMMEDIATELY (eager registration to avoid lazy init issues)
+  sl.registerSingleton<Dio>(dio);
 
   // ── Data Sources ──
   sl.registerLazySingleton<PrayerRemoteDataSource>(
@@ -167,8 +170,6 @@ Future<void> initDependencies() async {
     coordinator: sl<TokenRefreshCoordinator>(),
     dio: dio,
   ));
-
-  sl.registerLazySingleton<Dio>(() => dio);
 
   sl.registerLazySingleton<GroupRepository>(
     () => GroupRepositoryImpl(sl()),

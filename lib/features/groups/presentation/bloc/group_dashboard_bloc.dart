@@ -71,10 +71,13 @@ class GroupDashboardBloc extends Bloc<GroupDashboardEvent, GroupDashboardState> 
       );
       emit(GroupDashboardLoaded(dashboard: dashboard, groupId: event.groupId, isCached: false));
     } catch (e) {
+      // Keep showing current data instead of losing it on refresh error
       if (currentState is GroupDashboardLoaded) {
-        emit(GroupDashboardError(
-          message: e.toString(),
-          groupId: event.groupId,
+        emit(GroupDashboardLoaded(
+          dashboard: currentState.dashboard,
+          groupId: currentState.groupId,
+          isCached: currentState.isCached,
+          errorMessage: e.toString(),
         ));
       } else {
         emit(GroupDashboardError(message: e.toString(), groupId: event.groupId));

@@ -50,7 +50,7 @@ class CurrentUserCardWidget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.surface.withOpacity( 0.3),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -68,7 +68,7 @@ class CurrentUserCardWidget extends StatelessWidget {
                   color: Theme.of(context)
                       .colorScheme
                       .onPrimaryContainer
-                      .withValues(alpha: 0.7),
+                      .withOpacity( 0.7),
                 ),
           ),
         ],

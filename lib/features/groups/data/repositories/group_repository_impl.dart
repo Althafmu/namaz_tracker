@@ -28,4 +28,13 @@ class GroupRepositoryImpl implements GroupRepository {
     final json = await remoteDataSource.fetchMyGroups();
     return json.map((e) => GroupSummary.fromJson(e)).toList();
   }
+
+  @override
+  Future<Map<String, dynamic>> createGroup(String name) async {
+    final response = await remoteDataSource.dioInstance.post(
+      '/api/v1/groups/create/',
+      data: {'name': name},
+    );
+    return response.data as Map<String, dynamic>;
+  }
 }

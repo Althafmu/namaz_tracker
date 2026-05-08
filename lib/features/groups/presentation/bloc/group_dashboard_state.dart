@@ -16,15 +16,17 @@ class GroupDashboardLoaded extends GroupDashboardState {
   final GroupDashboardModel dashboard;
   final int groupId;
   final bool isCached;
+  final String? errorMessage;
 
   const GroupDashboardLoaded({
     required this.dashboard,
     required this.groupId,
     required this.isCached,
+    this.errorMessage,
   });
 
   @override
-  List<Object?> get props => [dashboard, groupId, isCached];
+  List<Object?> get props => [dashboard, groupId, isCached, errorMessage];
 }
 
 class GroupDashboardError extends GroupDashboardState {

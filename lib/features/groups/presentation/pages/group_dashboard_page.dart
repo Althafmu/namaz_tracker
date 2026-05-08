@@ -58,11 +58,23 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.groupName),
-      ),
-      body: BlocBuilder<GroupDashboardBloc, GroupDashboardState>(
+    return BlocListener<GroupDashboardBloc, GroupDashboardState>(
+      listener: (context, state) {
+        if (state is GroupDashboardLoaded && state.errorMessage != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Refresh failed: ${state.errorMessage}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.groupName),
+        ),
+        body: BlocBuilder<GroupDashboardBloc, GroupDashboardState>(
         builder: (context, state) {
           if (state is GroupDashboardLoading) {
             return const LoadingViewWidget();
@@ -132,6 +144,7 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
           }
           return const LoadingViewWidget();
         },
+      ),
       ),
     );
   }

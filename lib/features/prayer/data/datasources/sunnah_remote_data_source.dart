@@ -10,7 +10,7 @@ class SunnahRemoteDataSource {
 
   Future<SunnahDaySummary> getDailySummary({String? dateKey}) async {
     final response = await dio.get(
-      '/api/v2/sunnah/daily/',
+      '/api/v1/sunnah/daily/',
       queryParameters: {
         ...?dateKey == null ? null : {'date': dateKey},
       },
@@ -24,7 +24,7 @@ class SunnahRemoteDataSource {
     String? dateKey,
   }) async {
     await dio.post(
-      '/api/v2/sunnah/log/',
+      '/api/v1/sunnah/log/',
       data: {
         'prayer_type': prayerType,
         'completed': completed,
@@ -36,7 +36,7 @@ class SunnahRemoteDataSource {
 
   Future<SunnahWeekSummary> getWeeklySummary({String? startDateKey}) async {
     final response = await dio.get(
-      '/api/v2/sunnah/weekly/',
+      '/api/v1/sunnah/weekly/',
       queryParameters: {
         ...?startDateKey == null ? null : {'start_date': startDateKey},
       },

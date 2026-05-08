@@ -10,6 +10,7 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
     on<LoadGroups>(_onLoadGroups);
     on<RefreshGroups>(_onRefreshGroups);
     on<JoinGroup>(_onJoinGroup);
+    on<CreateGroup>(_onCreateGroup);
   }
 
   Future<void> _onLoadGroups(LoadGroups event, Emitter<GroupsState> emit) async {
@@ -40,6 +41,19 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
       add(LoadGroups());
     } catch (e) {
       emit(GroupsJoinFailure(e.toString()));
+    }
+  }
+
+  Future<void> _onCreateGroup(CreateGroup event, Emitter<GroupsState> emit) async {
+    emit(const GroupsCreating());
+    try {
+      final data = await repository.createGroup(event.name);
+      final groupId = data['id'] as int;
+      final inviteCode = data['invite_code'] as String;
+      emit(GroupsCreateSuccess(groupId, inviteCode));
+      add(LoadGroups());
+    } catch (e) {
+      emit(GroupsCreateFailure(e.toString()));
     }
   }
 }

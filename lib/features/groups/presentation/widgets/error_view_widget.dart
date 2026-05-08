@@ -53,7 +53,7 @@ class ErrorViewWidget extends StatelessWidget {
             Icon(
               hasCachedData ? Icons.cloud_off_outlined : Icons.wifi_off,
               size: 64,
-              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.error.withOpacity(0.7),
             ),
             const SizedBox(height: 16),
             Text(
@@ -88,7 +88,7 @@ class ErrorViewWidget extends StatelessWidget {
                       color: Theme.of(context)
                           .colorScheme
                           .onSurfaceVariant
-                          .withValues(alpha: 0.7),
+                          .withOpacity(0.7),
                     ),
               ),
               const SizedBox(height: 16),

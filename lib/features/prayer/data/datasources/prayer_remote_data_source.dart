@@ -24,7 +24,7 @@ class PrayerRemoteDataSource {
     bool prayedJumah = false,
   }) async {
     final Map<String, dynamic> data = {
-      'prayer': prayerName.toLowerCase(),
+      'prayer_name': prayerName.toLowerCase(),
       'completed': completed,
       'in_jamaat': inJamaat,
       'location': location,
