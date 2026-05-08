@@ -33,3 +33,23 @@ class GroupsError extends GroupsState {
   @override
   List<Object> get props => [message];
 }
+
+class GroupsJoining extends GroupsState {
+  const GroupsJoining();
+}
+
+class GroupsJoinSuccess extends GroupsState {
+  final int groupId;
+  const GroupsJoinSuccess(this.groupId);
+
+  @override
+  List<Object> get props => [groupId];
+}
+
+class GroupsJoinFailure extends GroupsState {
+  final String message;
+  const GroupsJoinFailure(this.message);
+
+  @override
+  List<Object> get props => [message];
+}

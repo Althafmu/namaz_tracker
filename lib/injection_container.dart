@@ -44,6 +44,8 @@ import 'features/prayer/presentation/bloc/sunnah/sunnah_bloc.dart';
 import 'core/services/session_coordinator.dart';
 
 import 'core/network/token_provider.dart';
+import 'core/auth/token_refresh_coordinator.dart';
+import 'core/auth/auth_interceptor.dart';
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
@@ -120,55 +122,6 @@ Future<void> initDependencies() async {
     };
   }
 
-  // Auth interceptor: attach token + 401 refresh + logout
-  dio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) {
-        final token = sl<TokenProvider>().token;
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-        } else {
-          options.headers.remove('Authorization');
-        }
-        return handler.next(options);
-      },
-      onError: (error, handler) async {
-        if (error.response?.statusCode == 401 &&
-            !error.requestOptions.path.contains('/auth/token/refresh/')) {
-          final alreadyRetried = error.requestOptions.extra['alreadyRetried'] == true;
-          if (alreadyRetried) {
-            debugPrint('[Auth] Already retried once — triggering logout');
-            try {
-              sl<AuthBloc>().add(LogoutRequested());
-            } catch (_) {}
-            return handler.next(error);
-          }
-          debugPrint('[Auth] 401 received — attempting token refresh');
-          try {
-            final authRepo = sl<AuthRepository>() as AuthRepositoryImpl;
-            final newToken = await authRepo.refreshAccessToken();
-            if (newToken != null) {
-              error.requestOptions.extra['alreadyRetried'] = true;
-              error.requestOptions.headers['Authorization'] =
-                  'Bearer $newToken';
-              final retryResponse = await dio.fetch(error.requestOptions);
-              return handler.resolve(retryResponse);
-            }
-          } catch (e) {
-            debugPrint('[Auth] Token refresh failed: $e');
-          }
-          debugPrint('[Auth] Refresh failed — triggering logout');
-          try {
-            sl<AuthBloc>().add(LogoutRequested());
-          } catch (_) {}
-        }
-        return handler.next(error);
-      },
-    ),
-  );
-
-  sl.registerLazySingleton<Dio>(() => dio);
-
   // ── Data Sources ──
   sl.registerLazySingleton<PrayerRemoteDataSource>(
     () => PrayerRemoteDataSource(dio: sl()),
@@ -202,6 +155,21 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl(), tokenProvider: sl()),
   );
+
+  // Token refresh coordinator - registered after AuthRepository
+  sl.registerLazySingleton(() => TokenRefreshCoordinator(
+    authRepo: sl<AuthRepository>() as AuthRepositoryImpl,
+    tokenProvider: sl<TokenProvider>(),
+  ));
+
+  // Auth interceptor
+  dio.interceptors.add(AuthInterceptor(
+    coordinator: sl<TokenRefreshCoordinator>(),
+    dio: dio,
+  ));
+
+  sl.registerLazySingleton<Dio>(() => dio);
+
   sl.registerLazySingleton<GroupRepository>(
     () => GroupRepositoryImpl(sl()),
   );

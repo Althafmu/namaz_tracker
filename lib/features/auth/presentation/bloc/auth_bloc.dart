@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
+import 'package:get_it/get_it.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../data/models/user_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../../../core/network/token_provider.dart';
+import '../../../../core/notifications/notification_coordinator.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -96,6 +98,11 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
+    // 0. Stop notification polling to prevent orphan timers
+    try {
+      GetIt.I<NotificationCoordinator>().stopPolling();
+    } catch (_) {}
+
     // 1. Tell backend to blacklist the token
     await authRepository.logout();
 

@@ -18,10 +18,12 @@ class NotificationCoordinator {
     required String? currentUsername,
     Duration interval = const Duration(minutes: 5),
   }) {
+    if (_pollingStarted) return;
     stopPolling();
+    _pollingStarted = true;
     _currentGroupId = groupId;
     _currentUsername = currentUsername;
-    
+
     _pollingTimer = Timer.periodic(interval, (_) async {
       if (_currentGroupId != null) {
         await _activityService.checkNewActivity(
@@ -30,9 +32,9 @@ class NotificationCoordinator {
         );
       }
     });
-    
+
     debugPrint('[NotificationCoordinator] Started polling every ${interval.inMinutes} min');
-    
+
     _activityService.checkNewActivity(
       groupId,
       currentUsername: currentUsername,
@@ -46,5 +48,27 @@ class NotificationCoordinator {
     _currentUsername = null;
     _pollingStarted = false;
     debugPrint('[NotificationCoordinator] Stopped polling');
+  }
+
+  void dispose() {
+    stopPolling();
+  }
+
+  void updateUser(String? newUsername) {
+    if (_currentUsername == newUsername) return;
+
+    final groupId = _currentGroupId;
+    final wasPolling = _pollingStarted;
+
+    stopPolling();
+
+    _currentUsername = newUsername;
+
+    if (wasPolling && groupId != null) {
+      startPolling(
+        groupId: groupId,
+        currentUsername: newUsername,
+      );
+    }
   }
 }

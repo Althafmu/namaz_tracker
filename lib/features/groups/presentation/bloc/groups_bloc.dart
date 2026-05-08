@@ -9,6 +9,7 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
   GroupsBloc({required this.repository}) : super(const GroupsInitial()) {
     on<LoadGroups>(_onLoadGroups);
     on<RefreshGroups>(_onRefreshGroups);
+    on<JoinGroup>(_onJoinGroup);
   }
 
   Future<void> _onLoadGroups(LoadGroups event, Emitter<GroupsState> emit) async {
@@ -27,6 +28,18 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
       emit(GroupsLoaded(groups));
     } catch (e) {
       // Keep current state on refresh error - don't disrupt UX
+    }
+  }
+
+  Future<void> _onJoinGroup(JoinGroup event, Emitter<GroupsState> emit) async {
+    emit(const GroupsJoining());
+    try {
+      final groupId = await repository.joinGroup(event.inviteCode);
+      emit(GroupsJoinSuccess(groupId));
+      // Reload groups list in background
+      add(LoadGroups());
+    } catch (e) {
+      emit(GroupsJoinFailure(e.toString()));
     }
   }
 }
