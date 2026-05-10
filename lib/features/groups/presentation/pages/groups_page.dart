@@ -74,22 +74,46 @@ class GroupsPage extends StatelessWidget {
             if (state is GroupsLoaded) {
               if (state.groups.isEmpty) {
                 return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.group_off, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No groups yet',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Join a group to connect with others\nand stay motivated on your prayer journey',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.group_off, size: 64, color: Colors.grey),
+                        const SizedBox(height: 24),
+                        Text(
+                          'No groups yet',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Create a group and share your invite code with friends and family.\n\nOR\n\nJoin a group using an invite code.',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            FilledButton.icon(
+                              onPressed: () => _showCreateGroupDialog(context),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Create Group'),
+                            ),
+                            const SizedBox(width: 16),
+                            OutlinedButton.icon(
+                              onPressed: () => _showJoinGroupDialog(context),
+                              icon: const Icon(Icons.group_add),
+                              label: const Text('Join Group'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }
@@ -182,46 +206,52 @@ class GroupsPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<GroupsBloc>(),
-        child: BlocBuilder<GroupsBloc, GroupsState>(
-          builder: (context, state) {
-            final isJoining = state is GroupsJoining;
-            return AlertDialog(
-              title: const Text('Join a Group'),
-              content: TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  hintText: 'Enter invite code',
-                  border: OutlineInputBorder(),
-                ),
-                textCapitalization: TextCapitalization.characters,
-                enabled: !isJoining,
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: isJoining
-                      ? null
-                      : () {
-                          final code = controller.text.trim().toUpperCase();
-                          if (code.isNotEmpty) {
-                            context.read<GroupsBloc>().add(JoinGroup(code));
-                            Navigator.pop(dialogContext);
-                          }
-                        },
-                  child: isJoining
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Join'),
-                ),
-              ],
-            );
+        child: BlocListener<GroupsBloc, GroupsState>(
+          listener: (context, state) {
+            if (state is GroupsJoinSuccess || state is GroupsJoinFailure) {
+              Navigator.pop(dialogContext);
+            }
           },
+          child: BlocBuilder<GroupsBloc, GroupsState>(
+            builder: (context, state) {
+              final isJoining = state is GroupsJoining;
+              return AlertDialog(
+                title: const Text('Join a Group'),
+                content: TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter invite code',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.characters,
+                  enabled: !isJoining,
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: isJoining
+                        ? null
+                        : () {
+                            final code = controller.text.trim().toUpperCase();
+                            if (code.isNotEmpty) {
+                              context.read<GroupsBloc>().add(JoinGroup(code));
+                            }
+                          },
+                    child: isJoining
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Join'),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -233,47 +263,53 @@ class GroupsPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) => BlocProvider.value(
         value: context.read<GroupsBloc>(),
-        child: BlocBuilder<GroupsBloc, GroupsState>(
-          builder: (context, state) {
-            final isCreating = state is GroupsCreating;
-            return AlertDialog(
-              title: const Text('Create a Group'),
-              content: TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  hintText: 'Group name',
-                  border: OutlineInputBorder(),
-                ),
-                textCapitalization: TextCapitalization.words,
-                enabled: !isCreating,
-                autofocus: true,
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: isCreating
-                      ? null
-                      : () {
-                          final name = controller.text.trim();
-                          if (name.isNotEmpty) {
-                            context.read<GroupsBloc>().add(CreateGroup(name));
-                            Navigator.pop(dialogContext);
-                          }
-                        },
-                  child: isCreating
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Create'),
-                ),
-              ],
-            );
+        child: BlocListener<GroupsBloc, GroupsState>(
+          listener: (context, state) {
+            if (state is GroupsCreateSuccess || state is GroupsCreateFailure) {
+              Navigator.pop(dialogContext);
+            }
           },
+          child: BlocBuilder<GroupsBloc, GroupsState>(
+            builder: (context, state) {
+              final isCreating = state is GroupsCreating;
+              return AlertDialog(
+                title: const Text('Create a Group'),
+                content: TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(
+                    hintText: 'Group name',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                  enabled: !isCreating,
+                  autofocus: true,
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: isCreating
+                        ? null
+                        : () {
+                            final name = controller.text.trim();
+                            if (name.isNotEmpty) {
+                              context.read<GroupsBloc>().add(CreateGroup(name));
+                            }
+                          },
+                    child: isCreating
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Create'),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

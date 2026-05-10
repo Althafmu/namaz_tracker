@@ -16,11 +16,18 @@ class GroupRepositoryImpl implements GroupRepository {
 
   @override
   Future<int> joinGroup(String inviteCode) async {
-    final response = await remoteDataSource.dioInstance.post(
-      '/api/v1/groups/join/',
-      data: {'invite_code': inviteCode.toUpperCase()},
-    );
-    return response.data['group_id'] as int;
+    try {
+      final response = await remoteDataSource.dioInstance.post(
+        '/api/v1/groups/join/',
+        data: {'invite_code': inviteCode.toUpperCase()},
+      );
+      return response.data['group_id'] as int;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        return e.response?.data['group_id'] as int;
+      }
+      rethrow;
+    }
   }
 
   @override

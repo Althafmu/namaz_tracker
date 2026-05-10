@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import '../bloc/group_dashboard_bloc.dart';
@@ -13,6 +14,9 @@ import '../widgets/loading_view_widget.dart';
 import '../widgets/error_view_widget.dart';
 import '../../data/datasources/group_dashboard_cache.dart';
 import '../../../../core/notifications/notification_coordinator.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/neo_card.dart';
 
 class GroupDashboardPage extends StatefulWidget {
   final int groupId;
@@ -73,6 +77,33 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.groupName),
+          actions: [
+            Builder(
+              builder: (context) {
+                return BlocBuilder<GroupDashboardBloc, GroupDashboardState>(
+                  builder: (context, state) {
+                    if (state is! GroupDashboardLoaded && state is! GroupDashboardRefreshing) {
+                      return const SizedBox.shrink();
+                    }
+                    final dashboard = state is GroupDashboardLoaded
+                        ? state.dashboard
+                        : (state as GroupDashboardRefreshing).dashboard;
+                    final inviteCode = dashboard.group.inviteCode;
+                    return IconButton(
+                      icon: const Icon(Icons.share),
+                      tooltip: 'Share Invite Code',
+                      onPressed: inviteCode != null
+                          ? () => showDialog(
+                                context: context,
+                                builder: (context) => _InviteCodeDialog(inviteCode: inviteCode),
+                              )
+                          : null,
+                    );
+                  },
+                );
+              },
+            ),
+          ],
         ),
         body: BlocBuilder<GroupDashboardBloc, GroupDashboardState>(
         builder: (context, state) {
@@ -146,6 +177,71 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
         },
       ),
       ),
+    );
+  }
+}
+
+class _InviteCodeDialog extends StatelessWidget {
+  final String inviteCode;
+
+  const _InviteCodeDialog({required this.inviteCode});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
+    return AlertDialog(
+      backgroundColor: c.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: c.border, width: 2),
+      ),
+      title: Text(
+        'Invite Code',
+        style: AppTextStyles.headlineSmall.copyWith(color: c.textPrimary),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Share this code to invite members:',
+            style: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          NeoCard(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  inviteCode,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: c.primary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2.0,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.copy),
+                  tooltip: 'Copy',
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: inviteCode));
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Invite code copied!')),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }

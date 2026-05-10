@@ -95,7 +95,7 @@ class _ActivityRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  activity.message,
+                  activity.message ?? activity.type,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 if (activity.username != null)

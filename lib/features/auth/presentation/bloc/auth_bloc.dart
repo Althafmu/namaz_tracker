@@ -109,7 +109,10 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
     // 2. Erase local tokens permanently
     await tokenProvider.clearAll();
 
-    // 3. Emit unauthenticated state immediately so router reacts
+    // 3. Clear ALL HydratedBloc persisted state (prayers, settings, streaks, etc.)
+    await HydratedBloc.storage.clear();
+
+    // 4. Emit unauthenticated state immediately so router reacts
     emit(
       const AuthState(
         status: AuthStatus.unauthenticated,

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 class GroupRemoteDataSource {
   final Dio dio;
@@ -9,6 +10,7 @@ class GroupRemoteDataSource {
 
   Future<Map<String, dynamic>> fetchDashboard(int groupId) async {
     final response = await dio.get('/api/v1/groups/$groupId/dashboard/');
+    debugPrint('DASHBOARD RESPONSE: ${response.data}');
     return response.data as Map<String, dynamic>;
   }
 

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 
 class GroupDashboardModel extends Equatable {
   final GroupSummary group;
@@ -18,23 +19,30 @@ class GroupDashboardModel extends Equatable {
   });
 
   factory GroupDashboardModel.fromJson(Map<String, dynamic> json) {
-    return GroupDashboardModel(
-      group: GroupSummary.fromJson(json['group'] as Map<String, dynamic>),
-      currentUser: json['current_user'] != null
-          ? CurrentUserStats.fromJson(json['current_user'] as Map<String, dynamic>)
-          : null,
-      topStreaks: (json['top_streaks'] as List<dynamic>)
-          .map((e) => LeaderboardEntry.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      todayCompletion:
-          TodayCompletionStats.fromJson(json['today_completion'] as Map<String, dynamic>),
-      recentActivity: json['recent_activity'] != null
-          ? (json['recent_activity'] as List<dynamic>)
-              .map((e) => ActivityItem.fromJson(e as Map<String, dynamic>))
-              .toList()
-          : [],
-      weeklyCompletion: json['stats']?['weekly_completion'] as int? ?? 0,
-    );
+    try {
+      return GroupDashboardModel(
+        group: GroupSummary.fromJson(json['group'] as Map<String, dynamic>),
+        currentUser: json['current_user'] != null
+            ? CurrentUserStats.fromJson(json['current_user'] as Map<String, dynamic>)
+            : null,
+        topStreaks: (json['top_streaks'] as List<dynamic>)
+            .map((e) => LeaderboardEntry.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        todayCompletion:
+            TodayCompletionStats.fromJson(json['today_completion'] as Map<String, dynamic>),
+        recentActivity: json['recent_activity'] != null
+            ? (json['recent_activity'] as List<dynamic>)
+                .map((e) => ActivityItem.fromJson(e as Map<String, dynamic>))
+                .toList()
+            : [],
+        weeklyCompletion: json['stats']?['weekly_completion'] as int? ?? 0,
+      );
+    } catch (e, stack) {
+      debugPrint('PARSE ERROR in GroupDashboardModel.fromJson: $e');
+      debugPrint('JSON: $json');
+      debugPrintStack(stackTrace: stack);
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() => {
@@ -58,6 +66,7 @@ class GroupSummary extends Equatable {
   final int memberCount;
   final String? createdBy;
   final String? userRole;
+  final String? inviteCode;
 
   const GroupSummary({
     required this.id,
@@ -67,6 +76,7 @@ class GroupSummary extends Equatable {
     required this.memberCount,
     this.createdBy,
     this.userRole,
+    this.inviteCode,
   });
 
   factory GroupSummary.fromJson(Map<String, dynamic> json) {
@@ -78,18 +88,20 @@ class GroupSummary extends Equatable {
       memberCount: json['member_count'] as int,
       createdBy: json['created_by'] as String?,
       userRole: json['user_role'] as String?,
+      inviteCode: json['invite_code'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'description': description,
-    'privacy_level': privacyLevel,
-    'member_count': memberCount,
-    'created_by': createdBy,
-    'user_role': userRole,
-  };
+        'id': id,
+        'name': name,
+        'description': description,
+        'privacy_level': privacyLevel,
+        'member_count': memberCount,
+        'created_by': createdBy,
+        'user_role': userRole,
+        'invite_code': inviteCode,
+      };
 
   @override
   List<Object?> get props => [id, name, description, privacyLevel, memberCount, createdBy, userRole];
@@ -117,8 +129,10 @@ class CurrentUserStats extends Equatable {
       userId: json['user_id'] as int?,
       username: json['username'] as String?,
       role: json['role'] as String,
-      joinedAt: DateTime.parse(json['joined_at'] as String),
-      currentStreak: json['current_streak'] as int,
+      joinedAt: json['joined_at'] != null
+          ? DateTime.parse(json['joined_at'] as String)
+          : DateTime.now(),
+      currentStreak: json['current_streak'] as int? ?? 0,
       rank: json['rank'] as int?,
     );
   }
@@ -216,39 +230,41 @@ class TodayCompletionStats extends Equatable {
 }
 
 class ActivityItem extends Equatable {
-  final String id;
+  final String? id;
   final String type;
-  final String message;
+  final String? message;
   final String? username;
-  final DateTime timestamp;
+  final DateTime? timestamp;
 
   const ActivityItem({
-    required this.id,
+    this.id,
     required this.type,
-    required this.message,
+    this.message,
     this.username,
-    required this.timestamp,
+    this.timestamp,
   });
 
   factory ActivityItem.fromJson(Map<String, dynamic> json) {
     return ActivityItem(
-      id: json['id'] as String? ?? '',
+      id: json['id'] as String?,
       type: json['type'] as String,
-      message: json['message'] as String,
+      message: json['message'] as String?,
       username: json['username'] as String?,
-      timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp'] as String)
-          : DateTime.now(),
+      timestamp: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : json['timestamp'] != null
+              ? DateTime.parse(json['timestamp'] as String)
+              : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': type,
-    'message': message,
-    'username': username,
-    'timestamp': timestamp.toIso8601String(),
-  };
+        'id': id,
+        'type': type,
+        'message': message,
+        'username': username,
+        'timestamp': timestamp?.toIso8601String(),
+      };
 
   @override
   List<Object?> get props => [id, type, message, username, timestamp];

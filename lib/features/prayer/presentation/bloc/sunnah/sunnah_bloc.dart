@@ -8,6 +8,8 @@ import 'sunnah_state.dart';
 
 class SunnahBloc extends HydratedBloc<SunnahEvent, SunnahState> {
   final SunnahRemoteDataSource? _remoteDataSource;
+  final Set<String> _loadingDaily = {};
+  final Set<String> _loadingWeekly = {};
 
   SunnahBloc({SunnahRemoteDataSource? remoteDataSource})
     : _remoteDataSource = remoteDataSource,
@@ -22,8 +24,9 @@ class SunnahBloc extends HydratedBloc<SunnahEvent, SunnahState> {
     LoadDailySunnah event,
     Emitter<SunnahState> emit,
   ) async {
-    // Emit cached data immediately (already in state from hydration).
-    // Then try to refresh from remote.
+    if (_loadingDaily.contains(event.dateKey)) return;
+    _loadingDaily.add(event.dateKey);
+
     try {
       final remote = _remoteDataSource;
       if (remote == null) return;
@@ -34,7 +37,8 @@ class SunnahBloc extends HydratedBloc<SunnahEvent, SunnahState> {
       emit(state.copyWith(dailyCache: updated));
     } catch (e) {
       debugPrint('[SunnahBloc] Remote daily fetch failed: $e');
-      // Cached data remains — offline-first.
+    } finally {
+      _loadingDaily.remove(event.dateKey);
     }
   }
 
@@ -118,6 +122,9 @@ class SunnahBloc extends HydratedBloc<SunnahEvent, SunnahState> {
     LoadWeeklySunnah event,
     Emitter<SunnahState> emit,
   ) async {
+    if (_loadingWeekly.contains(event.startDateKey)) return;
+    _loadingWeekly.add(event.startDateKey);
+
     try {
       final remote = _remoteDataSource;
       if (remote == null) return;
@@ -135,6 +142,8 @@ class SunnahBloc extends HydratedBloc<SunnahEvent, SunnahState> {
       emit(state.copyWith(dailyCache: updated));
     } catch (e) {
       debugPrint('[SunnahBloc] Remote weekly fetch failed: $e');
+    } finally {
+      _loadingWeekly.remove(event.startDateKey);
     }
   }
 

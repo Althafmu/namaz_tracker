@@ -118,20 +118,19 @@ class PrayerRemoteDataSource {
 
   // ── Phase 3: New Backend Features ──
 
-  /// POST /api/prayers/undo/
-  /// Undo the last prayer log. Returns the updated daily prayer log.
+  /// GET /api/v1/prayers/undo/ — undo last prayer log
   Future<Map<String, dynamic>> undoLastPrayerLog({
     String? prayerName,
     String? dateKey,
   }) async {
-    final data = <String, dynamic>{};
+    final queryParams = <String, dynamic>{};
     if (prayerName != null) {
-      data['prayer'] = prayerName.toLowerCase();
+      queryParams['prayer'] = prayerName.toLowerCase();
     }
     if (dateKey != null) {
-      data['date'] = dateKey;
+      queryParams['date'] = dateKey;
     }
-    final response = await dio.post('/api/v1/prayers/undo/', data: data);
+    final response = await dio.get('/api/v1/prayers/undo/', queryParameters: queryParams);
     return response.data as Map<String, dynamic>;
   }
 
