@@ -122,15 +122,17 @@ class SunnahBloc extends HydratedBloc<SunnahEvent, SunnahState> {
     LoadWeeklySunnah event,
     Emitter<SunnahState> emit,
   ) async {
-    if (_loadingWeekly.contains(event.startDateKey)) return;
-    _loadingWeekly.add(event.startDateKey);
+    final dateKey = event.startDateKey;
+    if (dateKey == null) return;
+    if (_loadingWeekly.contains(dateKey)) return;
+    _loadingWeekly.add(dateKey);
 
     try {
       final remote = _remoteDataSource;
       if (remote == null) return;
 
       final week = await remote.getWeeklySummary(
-        startDateKey: event.startDateKey,
+        startDateKey: dateKey,
       );
       emit(state.copyWith(weekSummary: week));
 
@@ -143,7 +145,7 @@ class SunnahBloc extends HydratedBloc<SunnahEvent, SunnahState> {
     } catch (e) {
       debugPrint('[SunnahBloc] Remote weekly fetch failed: $e');
     } finally {
-      _loadingWeekly.remove(event.startDateKey);
+      _loadingWeekly.remove(dateKey);
     }
   }
 

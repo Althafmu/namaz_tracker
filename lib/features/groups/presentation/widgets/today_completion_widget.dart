@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/neo_card.dart';
 import '../../data/models/group_dashboard_model.dart';
 
 class TodayCompletionWidget extends StatelessWidget {
@@ -13,6 +16,8 @@ class TodayCompletionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     final prayers = [
       ('Fajr', Icons.wb_sunny_outlined, stats.fajr),
       ('Dhuhr', Icons.wb_sunny_outlined, stats.dhuhr),
@@ -21,17 +26,15 @@ class TodayCompletionWidget extends StatelessWidget {
       ('Isha', Icons.nightlight_outlined, stats.isha),
     ];
 
-    return Card(
+    return NeoCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Today's Completion",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              "TODAY'S COMPLETION",
+              style: AppTextStyles.sectionHeader.copyWith(color: c.textPrimary),
             ),
             const SizedBox(height: 16),
             ...prayers.map((prayer) => _PrayerProgressRow(
@@ -62,6 +65,7 @@ class _PrayerProgressRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final progress = total > 0 ? completed / total : 0.0;
 
     return Padding(
@@ -71,24 +75,40 @@ class _PrayerProgressRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+              Icon(icon, size: 18, color: c.primary),
               const SizedBox(width: 8),
-              Expanded(child: Text(name)),
+              Expanded(
+                child: Text(
+                  name,
+                  style: AppTextStyles.bodyMedium.copyWith(color: c.textPrimary),
+                ),
+              ),
               Text(
                 '$completed/$total',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: c.textPrimary,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+          Container(
+            height: 6,
+            decoration: BoxDecoration(
+              color: c.surface,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: c.border, width: 1),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: c.primary,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
             ),
           ),
         ],

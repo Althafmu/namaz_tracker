@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/neo_button.dart';
 
 class ErrorViewWidget extends StatelessWidget {
   final String message;
@@ -42,6 +45,7 @@ class ErrorViewWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final friendlyMessage = _getFriendlyMessage(message);
 
     return Center(
@@ -53,49 +57,53 @@ class ErrorViewWidget extends StatelessWidget {
             Icon(
               hasCachedData ? Icons.cloud_off_outlined : Icons.wifi_off,
               size: 64,
-              color: Theme.of(context).colorScheme.error.withOpacity(0.7),
+              color: c.error.withValues(alpha: 0.7),
             ),
             const SizedBox(height: 16),
             Text(
               hasCachedData ? 'Offline' : "Couldn't load",
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: AppTextStyles.headlineSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: c.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               friendlyMessage,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: c.textSecondary,
+              ),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
             if (!hasCachedData) ...[
               const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Try Again'),
+              SizedBox(
+                width: 160,
+                child: NeoButton(
+                  text: 'TRY AGAIN',
+                  onPressed: onRetry,
+                ),
               ),
             ],
             if (hasCachedData) ...[
               const SizedBox(height: 16),
               Text(
                 'Showing cached data from earlier',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant
-                          .withOpacity(0.7),
-                    ),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: c.textSecondary.withValues(alpha: 0.7),
+                ),
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Refresh'),
+              SizedBox(
+                width: 160,
+                child: NeoButton(
+                  text: 'REFRESH',
+                  onPressed: onRetry,
+                  color: c.surface,
+                  textColor: c.textPrimary,
+                ),
               ),
             ],
           ],

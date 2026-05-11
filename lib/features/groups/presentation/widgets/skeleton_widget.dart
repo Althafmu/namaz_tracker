@@ -54,7 +54,7 @@ class _SkeletonBoxWidgetState extends State<SkeletonBoxWidget>
               end: Alignment(_animation.value, 0),
               colors: [
                 Theme.of(context).colorScheme.surfaceContainerHighest,
-                Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity( 0.5),
+                Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 Theme.of(context).colorScheme.surfaceContainerHighest,
               ],
             ),

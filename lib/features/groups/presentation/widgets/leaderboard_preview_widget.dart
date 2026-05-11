@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/neo_card.dart';
 import '../../data/models/group_dashboard_model.dart';
 
 class LeaderboardPreviewWidget extends StatelessWidget {
@@ -19,6 +22,7 @@ class LeaderboardPreviewWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final displayEntries = streaks.take(5).toList();
     final currentUserInTop5 = displayEntries.any(
       (e) => e.username == currentUserName,
@@ -41,7 +45,7 @@ class LeaderboardPreviewWidget extends StatelessWidget {
       );
     }
 
-    return Card(
+    return NeoCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -51,45 +55,42 @@ class LeaderboardPreviewWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Leaderboard',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  'LEADERBOARD',
+                  style: AppTextStyles.sectionHeader.copyWith(color: c.textPrimary),
                 ),
                 Text(
                   'View All',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: c.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             if (entriesWithCurrentUser.isEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Text(
-                        memberCount <= 1 
-                            ? 'Invite friends to make this group active'
-                            : 'No streaks yet',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      memberCount <= 1
+                          ? 'Invite friends to make this group active'
+                          : 'No streaks yet',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: c.textSecondary,
                       ),
-                      if (memberCount > 1) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Complete prayers to appear on the leaderboard',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity( 0.7),
-                              ),
+                    ),
+                    if (memberCount > 1) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Complete prayers to appear on the leaderboard',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: c.textSecondary.withValues(alpha: 0.7),
                         ),
-                      ],
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               )
             else
@@ -97,12 +98,7 @@ class LeaderboardPreviewWidget extends StatelessWidget {
                 final index = entry.key;
                 final item = entry.value;
                 if (index >= 5 && !item.isCurrentUser) return const SizedBox.shrink();
-                return _LeaderboardRow(
-                  rank: item.rank,
-                  username: item.username,
-                  streak: item.streak,
-                  isCurrentUser: item.isCurrentUser,
-                );
+                return _LeaderboardRow(entry: item);
               }),
           ],
         ),
@@ -112,69 +108,61 @@ class LeaderboardPreviewWidget extends StatelessWidget {
 }
 
 class _LeaderboardRow extends StatelessWidget {
-  final int rank;
-  final String username;
-  final int streak;
-  final bool isCurrentUser;
+  final LeaderboardEntry entry;
 
-  const _LeaderboardRow({
-    required this.rank,
-    required this.username,
-    required this.streak,
-    this.isCurrentUser = false,
-  });
+  const _LeaderboardRow({required this.entry});
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     String? badge;
-    if (rank == 1) badge = '🥇';
-    if (rank == 2) badge = '🥈';
-    if (rank == 3) badge = '🥉';
+    if (entry.rank == 1) badge = '🥇';
+    if (entry.rank == 2) badge = '🥈';
+    if (entry.rank == 3) badge = '🥉';
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: isCurrentUser
-            ? Theme.of(context).colorScheme.primaryContainer.withOpacity( 0.3)
-            : null,
+        color: entry.isCurrentUser ? c.primary.withValues(alpha: 0.08) : null,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
           SizedBox(
-            width: 32,
+            width: 36,
             child: badge != null
                 ? Text(badge, style: const TextStyle(fontSize: 18))
                 : Text(
-                    '#$rank',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    '#${entry.rank}',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: c.textSecondary,
+                      fontWeight: entry.isCurrentUser ? FontWeight.bold : null,
+                    ),
                   ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              isCurrentUser ? '$username (You)' : username,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: isCurrentUser ? FontWeight.bold : null,
-                    color: isCurrentUser
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-                  ),
+              entry.isCurrentUser ? '${entry.username} (You)' : entry.username,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: entry.isCurrentUser ? FontWeight.bold : FontWeight.normal,
+                color: entry.isCurrentUser ? c.primary : c.textPrimary,
+              ),
             ),
           ),
           Row(
             children: [
-              if (streak > 0) ...[
+              if (entry.streak > 0) ...[
                 const Text('🔥', style: TextStyle(fontSize: 14)),
                 const SizedBox(width: 4),
               ],
               Text(
-                '$streak',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                '${entry.streak}',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: entry.isCurrentUser ? c.primary : c.textPrimary,
+                ),
               ),
             ],
           ),

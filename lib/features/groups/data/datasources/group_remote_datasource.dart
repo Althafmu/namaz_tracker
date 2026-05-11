@@ -25,4 +25,12 @@ class GroupRemoteDataSource {
     final data = response.data as List<dynamic>;
     return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
+
+  Future<Map<String, dynamic>> validateInviteCode(String inviteCode) async {
+    final response = await dio.post(
+      '/api/v1/groups/validate-invite/',
+      data: {'invite_code': inviteCode.toUpperCase()},
+    );
+    return Map<String, dynamic>.from(response.data as Map);
+  }
 }

@@ -16,7 +16,7 @@ class NotificationCoordinator {
   void startPolling({
     required int groupId,
     required String? currentUsername,
-    Duration interval = const Duration(minutes: 5),
+    Duration interval = const Duration(seconds: 30),
   }) {
     if (_pollingStarted) return;
     stopPolling();
@@ -33,7 +33,7 @@ class NotificationCoordinator {
       }
     });
 
-    debugPrint('[NotificationCoordinator] Started polling every ${interval.inMinutes} min');
+    debugPrint('[NotificationCoordinator] Started polling every ${interval.inSeconds}s');
 
     _activityService.checkNewActivity(
       groupId,

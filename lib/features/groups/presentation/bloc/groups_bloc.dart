@@ -10,6 +10,8 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
     on<LoadGroups>(_onLoadGroups);
     on<RefreshGroups>(_onRefreshGroups);
     on<JoinGroup>(_onJoinGroup);
+    on<ConfirmGroupJoin>(_onConfirmGroupJoin);
+    on<CancelGroupJoin>(_onCancelGroupJoin);
     on<CreateGroup>(_onCreateGroup);
   }
 
@@ -33,14 +35,47 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
   }
 
   Future<void> _onJoinGroup(JoinGroup event, Emitter<GroupsState> emit) async {
+    emit(const GroupsInviteValidating());
+    try {
+      final result = await repository.validateInviteCode(event.inviteCode);
+      final groupId = result['group_id'] as int;
+      final groupName = result['group_name'] as String;
+      final isAlreadyMember = result['is_already_member'] as bool? ?? false;
+
+      if (isAlreadyMember) {
+        emit(GroupsJoinSuccess(groupId));
+        add(LoadGroups());
+      } else {
+        emit(GroupsInviteConfirmed(groupId: groupId, groupName: groupName));
+      }
+    } catch (e) {
+      final msg = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : 'Failed to validate invite code';
+      emit(GroupsInviteError(msg));
+    }
+  }
+
+  Future<void> _onConfirmGroupJoin(ConfirmGroupJoin event, Emitter<GroupsState> emit) async {
     emit(const GroupsJoining());
     try {
       final groupId = await repository.joinGroup(event.inviteCode);
       emit(GroupsJoinSuccess(groupId));
-      // Reload groups list in background
       add(LoadGroups());
     } catch (e) {
-      emit(GroupsJoinFailure(e.toString()));
+      final msg = e is Exception
+          ? e.toString().replaceFirst('Exception: ', '')
+          : 'Failed to join group';
+      emit(GroupsJoinFailure(msg));
+    }
+  }
+
+  Future<void> _onCancelGroupJoin(CancelGroupJoin event, Emitter<GroupsState> emit) async {
+    try {
+      final groups = await repository.getMyGroups();
+      emit(GroupsLoaded(groups));
+    } catch (e) {
+      emit(const GroupsLoaded([]));
     }
   }
 

@@ -16,6 +16,7 @@ import '../../data/datasources/group_dashboard_cache.dart';
 import '../../../../core/notifications/notification_coordinator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/neo_button.dart';
 import '../../../../core/widgets/neo_card.dart';
 
 class GroupDashboardPage extends StatefulWidget {
@@ -62,21 +63,32 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     return BlocListener<GroupDashboardBloc, GroupDashboardState>(
       listener: (context, state) {
         if (state is GroupDashboardLoaded && state.errorMessage != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Refresh failed: ${state.errorMessage}'),
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: c.error,
               duration: const Duration(seconds: 3),
             ),
           );
         }
       },
       child: Scaffold(
+        backgroundColor: c.background,
         appBar: AppBar(
-          title: Text(widget.groupName),
+          backgroundColor: c.background,
+          title: Text(
+            widget.groupName.toUpperCase(),
+            style: AppTextStyles.headlineSmall.copyWith(
+              color: c.textPrimary,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+            ),
+          ),
           actions: [
             Builder(
               builder: (context) {
@@ -90,13 +102,10 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
                         : (state as GroupDashboardRefreshing).dashboard;
                     final inviteCode = dashboard.group.inviteCode;
                     return IconButton(
-                      icon: const Icon(Icons.share),
+                      icon: Icon(Icons.share, color: c.textPrimary),
                       tooltip: 'Share Invite Code',
                       onPressed: inviteCode != null
-                          ? () => showDialog(
-                                context: context,
-                                builder: (context) => _InviteCodeDialog(inviteCode: inviteCode),
-                              )
+                          ? () => _showInviteCodeDialog(context, inviteCode)
                           : null,
                     );
                   },
@@ -106,142 +115,167 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
           ],
         ),
         body: BlocBuilder<GroupDashboardBloc, GroupDashboardState>(
-        builder: (context, state) {
-          if (state is GroupDashboardLoading) {
-            return const LoadingViewWidget();
-          }
-          if (state is GroupDashboardError) {
-            final hasCachedData = GroupDashboardCache.getCachedDashboard(widget.groupId) != null;
-            return ErrorViewWidget(
-              message: state.message,
-              onRetry: () {
-                context.read<GroupDashboardBloc>().add(LoadGroupDashboard(widget.groupId));
-              },
-              hasCachedData: hasCachedData,
-            );
-          }
-          if (state is GroupDashboardLoaded || state is GroupDashboardRefreshing) {
-            final dashboard = state is GroupDashboardLoaded
-                ? state.dashboard
-                : (state as GroupDashboardRefreshing).dashboard;
-            final isRefreshing = state is GroupDashboardRefreshing;
-            
-            if (state is GroupDashboardLoaded && !state.isCached) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _startPolling(dashboard.currentUser?.username);
-              });
+          builder: (context, state) {
+            if (state is GroupDashboardLoading) {
+              return const LoadingViewWidget();
             }
-            
-            return RefreshIndicator(
-              onRefresh: () async {
-                context.read<GroupDashboardBloc>().add(RefreshGroupDashboard(widget.groupId));
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GroupHeaderWidget(group: dashboard.group),
-                    const SizedBox(height: 16),
-                    if (dashboard.currentUser != null)
-                      CurrentUserCardWidget(stats: dashboard.currentUser!),
-                    const SizedBox(height: 16),
-                    LeaderboardPreviewWidget(
-                      streaks: dashboard.topStreaks,
-                      currentUserName: dashboard.currentUser?.username,
-                      currentUserRank: dashboard.currentUser?.rank,
-                      currentUserStreak: dashboard.currentUser?.currentStreak,
-                      memberCount: dashboard.group.memberCount,
-                    ),
-                    const SizedBox(height: 16),
-                    TodayCompletionWidget(
-                      stats: dashboard.todayCompletion,
-                      memberCount: dashboard.group.memberCount,
-                    ),
-                    if (dashboard.recentActivity.isNotEmpty) ...[
+            if (state is GroupDashboardError) {
+              final hasCachedData = GroupDashboardCache.getCachedDashboard(widget.groupId) != null;
+              return ErrorViewWidget(
+                message: state.message,
+                onRetry: () {
+                  context.read<GroupDashboardBloc>().add(LoadGroupDashboard(widget.groupId));
+                },
+                hasCachedData: hasCachedData,
+              );
+            }
+            if (state is GroupDashboardLoaded || state is GroupDashboardRefreshing) {
+              final dashboard = state is GroupDashboardLoaded
+                  ? state.dashboard
+                  : (state as GroupDashboardRefreshing).dashboard;
+              final isRefreshing = state is GroupDashboardRefreshing;
+
+              if (state is GroupDashboardLoaded && !state.isCached) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _startPolling(dashboard.currentUser?.username);
+                });
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  context.read<GroupDashboardBloc>().add(RefreshGroupDashboard(widget.groupId));
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GroupHeaderWidget(group: dashboard.group),
                       const SizedBox(height: 16),
-                      RecentActivityWidget(activities: dashboard.recentActivity),
-                    ],
-                    if (isRefreshing)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: LinearProgressIndicator(),
+                      if (dashboard.currentUser != null)
+                        CurrentUserCardWidget(stats: dashboard.currentUser!),
+                      const SizedBox(height: 16),
+                      LeaderboardPreviewWidget(
+                        streaks: dashboard.topStreaks,
+                        currentUserName: dashboard.currentUser?.username,
+                        currentUserRank: dashboard.currentUser?.rank,
+                        currentUserStreak: dashboard.currentUser?.currentStreak,
+                        memberCount: dashboard.group.memberCount,
                       ),
-                  ],
+                      const SizedBox(height: 16),
+                      TodayCompletionWidget(
+                        stats: dashboard.todayCompletion,
+                        memberCount: dashboard.group.memberCount,
+                      ),
+                      if (dashboard.recentActivity.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        RecentActivityWidget(activities: dashboard.recentActivity),
+                      ],
+                      if (isRefreshing)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: LinearProgressIndicator(
+                            backgroundColor: c.border.withValues(alpha: 0.3),
+                            color: c.primary,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          }
-          return const LoadingViewWidget();
-        },
-      ),
+              );
+            }
+            return const LoadingViewWidget();
+          },
+        ),
       ),
     );
   }
-}
 
-class _InviteCodeDialog extends StatelessWidget {
-  final String inviteCode;
-
-  const _InviteCodeDialog({required this.inviteCode});
-
-  @override
-  Widget build(BuildContext context) {
+  void _showInviteCodeDialog(BuildContext context, String inviteCode) {
     final c = AppColors.of(context);
 
-    return AlertDialog(
-      backgroundColor: c.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: c.border, width: 2),
-      ),
-      title: Text(
-        'Invite Code',
-        style: AppTextStyles.headlineSmall.copyWith(color: c.textPrimary),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Share this code to invite members:',
-            style: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          NeoCard(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  inviteCode,
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    color: c.primary,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.copy),
-                  tooltip: 'Copy',
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: inviteCode));
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Invite code copied!')),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Close'),
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: c.border, width: 2),
         ),
-      ],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.group_add, color: c.primary, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'INVITE CODE',
+                      style: AppTextStyles.headlineSmall.copyWith(
+                        color: c.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Share this code to invite members:',
+                style: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              NeoCard(
+                borderColor: c.primary,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      inviteCode,
+                      style: AppTextStyles.headlineSmall.copyWith(
+                        color: c.primary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.copy, color: c.primary),
+                      tooltip: 'Copy',
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: inviteCode));
+                        HapticFeedback.lightImpact();
+                        Navigator.pop(dialogContext);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Invite code copied!',
+                              style: AppTextStyles.bodyMedium.copyWith(color: c.surface),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: NeoButton(
+                  text: 'CLOSE',
+                  color: c.surface,
+                  textColor: c.textPrimary,
+                  onPressed: () => Navigator.pop(dialogContext),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

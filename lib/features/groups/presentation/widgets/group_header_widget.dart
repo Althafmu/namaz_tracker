@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/group_dashboard_model.dart';
 
 class GroupHeaderWidget extends StatelessWidget {
@@ -8,55 +10,72 @@ class GroupHeaderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final isPrivate = group.privacyLevel == 'PRIVATE';
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                group.name,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    group.name,
+                    style: AppTextStyles.headlineSmall.copyWith(
+                      color: c.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${group.memberCount} Members${isPrivate ? ' • Private' : ''}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${group.memberCount} Members${isPrivate ? ' · Private' : ''}',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: c.textSecondary,
                     ),
+                  ),
+                ],
               ),
-            ],
+            ),
+            if (isPrivate)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: c.border, width: 2),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.lock_outline,
+                      size: 16,
+                      color: c.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Private',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: c.textSecondary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          height: 3,
+          decoration: BoxDecoration(
+            color: c.border,
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
-        if (isPrivate)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.lock_outline,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Private',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ),
-          ),
       ],
     );
   }

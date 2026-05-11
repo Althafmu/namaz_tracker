@@ -5,4 +5,5 @@ abstract class GroupRepository {
   Future<int> joinGroup(String inviteCode);
   Future<List<GroupSummary>> getMyGroups();
   Future<Map<String, dynamic>> createGroup(String name);
+  Future<Map<String, dynamic>> validateInviteCode(String inviteCode);
 }

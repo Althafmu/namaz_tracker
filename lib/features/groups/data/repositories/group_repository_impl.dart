@@ -23,10 +23,19 @@ class GroupRepositoryImpl implements GroupRepository {
       );
       return response.data['group_id'] as int;
     } on DioException catch (e) {
-      if (e.response?.statusCode == 409) {
+      final status = e.response?.statusCode;
+      if (status == 409) {
         return e.response?.data['group_id'] as int;
       }
-      rethrow;
+      if (status == 403) {
+        throw Exception(
+          e.response?.data['detail'] ?? 'You cannot join this group',
+        );
+      }
+      if (status == 404) {
+        throw Exception('Invalid invite code');
+      }
+      throw Exception('Failed to join group');
     }
   }
 
@@ -43,5 +52,10 @@ class GroupRepositoryImpl implements GroupRepository {
       data: {'name': name},
     );
     return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> validateInviteCode(String inviteCode) async {
+    return await remoteDataSource.validateInviteCode(inviteCode);
   }
 }

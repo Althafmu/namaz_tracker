@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/neo_card.dart';
 import '../../data/models/group_dashboard_model.dart';
 
 class RecentActivityWidget extends StatelessWidget {
@@ -8,42 +11,39 @@ class RecentActivityWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final displayActivities = activities.take(20).toList();
 
-    return Card(
+    return NeoCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Recent Activity',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              'RECENT ACTIVITY',
+              style: AppTextStyles.sectionHeader.copyWith(color: c.textPrimary),
             ),
             const SizedBox(height: 12),
             if (displayActivities.isEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Text(
-                        'No activity yet',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      'No activity yet',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: c.textSecondary,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Invite members to start building streaks together',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
-                            ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Invite members to start building streaks together',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: c.textSecondary.withValues(alpha: 0.7),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               )
             else
@@ -64,6 +64,8 @@ class _ActivityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+
     IconData icon;
     switch (activity.type) {
       case 'streak_milestone':
@@ -84,10 +86,17 @@ class _ActivityRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            size: 18,
-            color: Theme.of(context).colorScheme.primary,
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: c.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: c.primary,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -96,14 +105,14 @@ class _ActivityRow extends StatelessWidget {
               children: [
                 Text(
                   activity.message ?? activity.type,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: AppTextStyles.bodyMedium.copyWith(color: c.textPrimary),
                 ),
                 if (activity.username != null)
                   Text(
                     activity.username!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: c.textSecondary,
+                    ),
                   ),
               ],
             ),

@@ -5,7 +5,7 @@ abstract class GroupsState extends Equatable {
   const GroupsState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class GroupsInitial extends GroupsState {
@@ -22,7 +22,7 @@ class GroupsLoaded extends GroupsState {
   const GroupsLoaded(this.groups);
 
   @override
-  List<Object> get props => [groups];
+  List<Object?> get props => [groups];
 }
 
 class GroupsError extends GroupsState {
@@ -31,7 +31,7 @@ class GroupsError extends GroupsState {
   const GroupsError(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }
 
 class GroupsJoining extends GroupsState {
@@ -43,7 +43,7 @@ class GroupsJoinSuccess extends GroupsState {
   const GroupsJoinSuccess(this.groupId);
 
   @override
-  List<Object> get props => [groupId];
+  List<Object?> get props => [groupId];
 }
 
 class GroupsJoinFailure extends GroupsState {
@@ -51,7 +51,7 @@ class GroupsJoinFailure extends GroupsState {
   const GroupsJoinFailure(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
 }
 
 class GroupsCreating extends GroupsState {
@@ -64,7 +64,7 @@ class GroupsCreateSuccess extends GroupsState {
   const GroupsCreateSuccess(this.groupId, this.inviteCode);
 
   @override
-  List<Object> get props => [groupId, inviteCode];
+  List<Object?> get props => [groupId, inviteCode];
 }
 
 class GroupsCreateFailure extends GroupsState {
@@ -72,5 +72,26 @@ class GroupsCreateFailure extends GroupsState {
   const GroupsCreateFailure(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
+}
+
+class GroupsInviteValidating extends GroupsState {
+  const GroupsInviteValidating();
+}
+
+class GroupsInviteConfirmed extends GroupsState {
+  final int groupId;
+  final String groupName;
+  const GroupsInviteConfirmed({required this.groupId, required this.groupName});
+
+  @override
+  List<Object?> get props => [groupId, groupName];
+}
+
+class GroupsInviteError extends GroupsState {
+  final String message;
+  const GroupsInviteError(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }
