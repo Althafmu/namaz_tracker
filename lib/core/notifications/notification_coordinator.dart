@@ -5,7 +5,7 @@ import '../../features/groups/services/group_activity_notification_service.dart'
 class NotificationCoordinator {
   final GroupActivityNotificationService _activityService;
   Timer? _pollingTimer;
-  int? _currentGroupId;
+  String? _currentGroupId;
   String? _currentUsername;
   bool _pollingStarted = false;
 
@@ -14,7 +14,7 @@ class NotificationCoordinator {
   }) : _activityService = activityService;
 
   void startPolling({
-    required int groupId,
+    required String groupId,
     required String? currentUsername,
     Duration interval = const Duration(seconds: 30),
   }) {

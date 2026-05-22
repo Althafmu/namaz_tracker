@@ -8,6 +8,7 @@ import '../../../../core/network/token_provider.dart';
 import '../../../../core/notifications/notification_coordinator.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
+import '../../../../core/supabase/auth_service.dart' as supabase_auth;
 
 class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
@@ -136,10 +137,18 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
       return;
     }
 
-    // Token lives in secure storage, not in HydratedBloc state
-    await tokenProvider.loadTokens();
-    if (tokenProvider.token != null) {
-      emit(state.copyWith(status: AuthStatus.loadingConfig));
+    // Supabase handles session persistence automatically.
+    // Check if there is a current user session.
+    final currentUser = supabase_auth.AuthService().currentUser;
+    if (currentUser != null) {
+      final user = UserModel(
+        id: currentUser.id,
+        username: currentUser.userMetadata?['full_name'] ?? 'User',
+        email: currentUser.email ?? '',
+        firstName: '',
+        lastName: '',
+      );
+      emit(state.copyWith(status: AuthStatus.loadingConfig, user: user));
     } else {
       emit(state.copyWith(status: AuthStatus.unauthenticated));
     }
@@ -235,18 +244,19 @@ class AuthBloc extends HydratedBloc<AuthEvent, AuthState> {
       final auth = await account.authentication;
       debugPrint('[AuthBloc] auth.idToken: ${auth.idToken != null ? "present" : "NULL"}');
       final idToken = auth.idToken;
-      if (idToken == null) {
-        debugPrint('[AuthBloc] Google auth.idToken is null');
+      final accessToken = auth.accessToken;
+      if (idToken == null || accessToken == null) {
+        debugPrint('[AuthBloc] Google auth tokens are null');
         emit(state.copyWith(
           status: AuthStatus.error,
-          errorMessage: 'Google sign-in failed. No ID token received.',
+          errorMessage: 'Google sign-in failed. No ID/Access token received.',
         ));
         emit(state.copyWith(status: AuthStatus.unauthenticated));
         return;
       }
 
-      debugPrint('[AuthBloc] Google idToken received, calling repository...');
-      final response = await authRepository.googleSignIn(idToken: idToken);
+      debugPrint('[AuthBloc] Google tokens received, calling repository...');
+      final response = await authRepository.googleSignIn(idToken: idToken, accessToken: accessToken);
       debugPrint('[AuthBloc] Repository response: ${response.user.email}');
 
       emit(state.copyWith(

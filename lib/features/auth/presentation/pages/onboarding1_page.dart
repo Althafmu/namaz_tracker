@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -192,16 +193,7 @@ class _FeaturePage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Icon
-                Container(
-                  width: iconSize,
-                  height: iconSize,
-                  decoration: BoxDecoration(
-                    color: c.primaryLight,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: c.border, width: 3),
-                  ),
-                  child: Icon(icon, size: iconSize * 0.5, color: c.primary),
-                ),
+                AnimatedOnboardingIcon(icon: icon, size: iconSize),
                 const SizedBox(height: 32),
 
                 // Title
@@ -289,19 +281,9 @@ class _NotificationPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Icon
-                Container(
-                  width: iconSize,
-                  height: iconSize,
-                  decoration: BoxDecoration(
-                    color: c.primaryLight,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: c.border, width: 3),
-                  ),
-                  child: Icon(
-                    Icons.notifications_active_rounded,
-                    size: iconSize * 0.5,
-                    color: c.primary,
-                  ),
+                AnimatedOnboardingIcon(
+                  icon: Icons.notifications_active_rounded,
+                  size: iconSize,
                 ),
                 const SizedBox(height: 32),
 
@@ -365,4 +347,128 @@ class _NotificationPage extends StatelessWidget {
       },
     );
   }
+}
+
+class AnimatedOnboardingIcon extends StatefulWidget {
+  final IconData icon;
+  final double size;
+
+  const AnimatedOnboardingIcon({
+    super.key,
+    required this.icon,
+    required this.size,
+  });
+
+  @override
+  State<AnimatedOnboardingIcon> createState() => _AnimatedOnboardingIconState();
+}
+
+class _AnimatedOnboardingIconState extends State<AnimatedOnboardingIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Rotating Star Background
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Transform.rotate(
+                angle: _controller.value * 2 * pi,
+                child: CustomPaint(
+                  size: Size(widget.size, widget.size),
+                  painter: _OnboardingStarPainter(
+                    color: c.primaryLight,
+                    borderColor: c.border,
+                  ),
+                ),
+              );
+            },
+          ),
+          // Static Icon in Center
+          Icon(
+            widget.icon,
+            size: widget.size * 0.42,
+            color: c.primary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OnboardingStarPainter extends CustomPainter {
+  final Color color;
+  final Color borderColor;
+
+  _OnboardingStarPainter({required this.color, required this.borderColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = min(size.width, size.height) / 2.2;
+    
+    final path = Path();
+    final int points = 16;
+    final double outerR = radius;
+    final double innerR = radius * 0.7653; 
+
+    for (int i = 0; i < points; i++) {
+      final double angle = i * pi / 8;
+      final double r = (i % 2 == 0) ? outerR : innerR;
+      final double x = center.dx + r * cos(angle);
+      final double y = center.dy + r * sin(angle);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+
+    final shadowPaint = Paint()
+      ..color = const Color(0xFF2B2D42)
+      ..style = PaintingStyle.fill;
+
+    final fillPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+
+    // Draw shadow first
+    canvas.drawPath(path.shift(const Offset(3, 3)), shadowPaint);
+    // Draw fill
+    canvas.drawPath(path, fillPaint);
+    // Draw border
+    canvas.drawPath(path, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _OnboardingStarPainter oldDelegate) => false;
 }

@@ -19,7 +19,6 @@ import '../../bloc/settings/settings_bloc.dart';
 import '../../bloc/settings/settings_event.dart';
 import '../../bloc/settings/settings_state.dart';
 import '../../bloc/streak/streak_bloc.dart';
-import '../../bloc/streak/streak_event.dart';
 import '../../bloc/streak/streak_state.dart';
 import '../../../domain/entities/prayer.dart';
 import '../prayer_logger/prayer_logger_sheet.dart';
@@ -31,6 +30,9 @@ import 'widgets/sunnah_tracker_card.dart';
 import 'widgets/first_run_setup_dialog.dart';
 import 'widgets/notification_permission_overlay.dart';
 import 'widgets/weekly_calendar.dart';
+import '../../../../../core/widgets/skeleton_widget.dart';
+import '../../../../../core/widgets/neo_card.dart';
+import '../../../../../core/widgets/confetti_particles_widget.dart';
 
 /// Dashboard / Home Page — matches dashboard.html Stitch mockup.
 class HomePage extends StatefulWidget {
@@ -45,11 +47,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   StreamSubscription<PrayerState>? _actionMessageSubscription;
   bool _actionMessageShown = false;
   bool _welcomeBannerQueued = false;
+  late final ConfettiController _confettiController;
 
 @override
   void initState() {
     super.initState();
     _lastKnownTodayKey = HistoryState.todayKey;
+    _confettiController = ConfettiController();
     WidgetsBinding.instance.addObserver(this);
     _listenForActionMessages();
     _maybeShowFirstRunSetup();
@@ -83,6 +87,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void dispose() {
     _actionMessageSubscription?.cancel();
+    _confettiController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -217,43 +222,51 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // left open at midnight. didChangeAppLifecycleState handles the resume case.
     _checkNewDayAndRefresh();
 
-    return BlocBuilder<PrayerBloc, PrayerState>(
-      builder: (context, prayerState) {
-        return BlocBuilder<HistoryBloc, HistoryState>(
-          builder: (context, historyState) {
-            // Determine which prayers to display
-            final selectedDate = historyState.selectedDateStr;
-            final isToday =
-                selectedDate == null || selectedDate == HistoryState.todayKey;
-            final viewedDateKey = selectedDate ?? HistoryState.todayKey;
-            final displayPrayers = isToday
-                ? prayerState.prayers
-                : (historyState.historicalLog[selectedDate] ??
-                      Prayer.defaultPrayers());
-            final isHistorical = !isToday;
-            final isFullyExcusedDay =
-                isToday &&
-                displayPrayers.isNotEmpty &&
-                displayPrayers.every((prayer) => prayer.isExcused);
-            final excusedReason = displayPrayers
-                .where((prayer) => prayer.isExcused && prayer.reason != null)
-                .map((prayer) => prayer.reason!)
-                .cast<String?>()
-                .firstWhere(
-                  (reason) => reason != null && reason.isNotEmpty,
-                  orElse: () => null,
-                );
+    return BlocListener<PrayerBloc, PrayerState>(
+      listenWhen: (prev, curr) =>
+          prev.prayers.isNotEmpty && curr.completedCount > prev.completedCount,
+      listener: (context, state) {
+        _confettiController.burst();
+      },
+      child: BlocBuilder<PrayerBloc, PrayerState>(
+        builder: (context, prayerState) {
+          return BlocBuilder<HistoryBloc, HistoryState>(
+            builder: (context, historyState) {
+              // Determine which prayers to display
+              final selectedDate = historyState.selectedDateStr;
+              final isToday =
+                  selectedDate == null || selectedDate == HistoryState.todayKey;
+              final viewedDateKey = selectedDate ?? HistoryState.todayKey;
+              final displayPrayers = isToday
+                  ? prayerState.prayers
+                  : (historyState.historicalLog[selectedDate] ??
+                        Prayer.defaultPrayers());
+              final isHistorical = !isToday;
+              final isFullyExcusedDay =
+                  isToday &&
+                  displayPrayers.isNotEmpty &&
+                  displayPrayers.every((prayer) => prayer.isExcused);
+              final excusedReason = displayPrayers
+                  .where((prayer) => prayer.isExcused && prayer.reason != null)
+                  .map((prayer) => prayer.reason!)
+                  .cast<String?>()
+                  .firstWhere(
+                    (reason) => reason != null && reason.isNotEmpty,
+                    orElse: () => null,
+                  );
 
-            final completedForViewedDay = displayPrayers
-                .where((p) => p.isCompleted && !p.isExcused)
-                .length;
-            final topBarSubtitle = isToday
-                ? '$completedForViewedDay/5 prayers today'
-                : '$completedForViewedDay/5 prayers on ${DateFormat('EEE d MMM').format(DateTime.parse(viewedDateKey))}';
+              final completedForViewedDay = displayPrayers
+                  .where((p) => p.isCompleted && !p.isExcused)
+                  .length;
+              final topBarSubtitle = isToday
+                  ? '$completedForViewedDay/5 prayers today'
+                  : '$completedForViewedDay/5 prayers on ${DateFormat('EEE d MMM').format(DateTime.parse(viewedDateKey))}';
 
-            return SafeArea(
-              child: Column(
+              return Stack(
                 children: [
+                  SafeArea(
+                    child: Column(
+                      children: [
                   // ── Top App Bar ──
                   BlocBuilder<StreakBloc, StreakState>(
                     bloc: GetIt.I<StreakBloc>(),
@@ -424,29 +437,30 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                     ),
                                     if (prayerState.isLoading &&
                                         displayPrayers.isEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 48),
-                                        child: Center(
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              CircularProgressIndicator(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Text(
-                                                'Loading prayers...',
-                                                style: TextStyle(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withValues(alpha: 0.6),
-                                                  fontSize: 14,
+                                      Column(
+                                        children: List.generate(
+                                          5,
+                                          (index) => Padding(
+                                            padding: const EdgeInsets.only(bottom: 16, right: 6),
+                                            child: NeoCard(
+                                              child: Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: const [
+                                                        SkeletonBoxWidget(height: 20, width: 80),
+                                                        SizedBox(height: 8),
+                                                        SkeletonBoxWidget(height: 14, width: 120),
+                                                      ],
+                                                    ),
+                                                    const SkeletonCircleWidget(size: 48),
+                                                  ],
                                                 ),
                                               ),
-                                            ],
+                                            ),
                                           ),
                                         ),
                                       )
@@ -535,12 +549,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
+                      ],
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: ConfettiParticlesWidget(controller: _confettiController),
+                    ),
+                  ),
                 ],
-              ),
-            );
-          },
-        );
-      },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 

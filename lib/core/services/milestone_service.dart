@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import '../../features/prayer/presentation/bloc/settings/settings_bloc.dart';
 import '../../features/prayer/presentation/bloc/settings/settings_event.dart';
 import '../../features/prayer/presentation/bloc/settings/settings_state.dart';
+import '../../features/prayer/presentation/pages/home/widgets/milestone_celebration_sheet.dart';
 import 'spiritual_messages.dart';
 
 class MilestoneService {
@@ -43,9 +44,7 @@ class MilestoneService {
 
   void _showMilestoneToast(BuildContext context, int milestone, IntentLevel intent) {
     final message = getMilestoneMessage(milestone, intent);
-    if (message == null) return;
-
-    debugPrint('[MilestoneService] Milestone reached: $milestone days - $message');
+    MilestoneCelebrationBottomSheet.show(context, milestone, message);
   }
 
   void showQadaReinforcement(BuildContext context) {

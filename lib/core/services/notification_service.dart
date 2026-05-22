@@ -404,13 +404,14 @@ class NotificationService implements NotificationServiceInterface {
     Set<String>? excusedDays,
     Map<String, Set<String>>? excusedPrayers,
     IntentLevel? intentLevel,
+    DateTime? now,
   }) async {
     await cancelAllNotifications();
 
     if (!_isInitialized) await initialize();
 
     int scheduledCount = 0;
-    final now = DateTime.now();
+    final currentNow = now ?? DateTime.now();
     final dateFormat = DateFormat('yyyy-MM-dd');
 
     // Build a map of dateKey -> Set<prayerName> for quick lookup
@@ -424,7 +425,7 @@ class NotificationService implements NotificationServiceInterface {
 
     // Schedule for 3 days ahead to prevent hitting Android exact alarm limits (50 alarms)
     for (int dayOffset = 0; dayOffset < 3; dayOffset++) {
-      final date = now.add(Duration(days: dayOffset));
+      final date = currentNow.add(Duration(days: dayOffset));
       final dateKey = dateFormat.format(date);
 
       // Skip entire day if marked as fully excused
@@ -479,7 +480,7 @@ class NotificationService implements NotificationServiceInterface {
         final config =
             prayerConfigs[prayerName] ?? const PrayerNotificationConfig();
 
-        if (prayerTime.isAfter(now)) {
+        if (prayerTime.isAfter(currentNow)) {
           if (config.adhanAlerts) {
             final adhanId = (dayOffset * 100) + (prayerIndex * 10) + 1;
             final intent = intentLevel ?? IntentLevel.foundation;
@@ -498,7 +499,7 @@ class NotificationService implements NotificationServiceInterface {
                 ? prayerTime.subtract(Duration(minutes: config.reminderMinutes))
                 : prayerTime.add(Duration(minutes: config.reminderMinutes));
 
-            if (reminderTime.isAfter(now)) {
+            if (reminderTime.isAfter(currentNow)) {
               final reminderId = (dayOffset * 100) + (prayerIndex * 10) + 2;
               final whenText = config.reminderIsBefore
                   ? "${config.reminderMinutes} mins before $prayerName"
@@ -524,7 +525,7 @@ class NotificationService implements NotificationServiceInterface {
             final streakAlertTime = endTime.subtract(
               const Duration(minutes: 15),
             );
-            if (streakAlertTime.isAfter(now) &&
+            if (streakAlertTime.isAfter(currentNow) &&
                 streakAlertTime.isAfter(prayerTime)) {
               final streakId = (dayOffset * 100) + (prayerIndex * 10) + 3;
               final intent = intentLevel ?? IntentLevel.foundation;
@@ -551,7 +552,7 @@ class NotificationService implements NotificationServiceInterface {
     );
 
     final reminderCount = await _scheduleDailyReminders(
-      now: now,
+      now: currentNow,
       excusedDays: excusedDays,
       intentLevel: intentLevel,
     );

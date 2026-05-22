@@ -7,6 +7,7 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router/app_router.dart';
 import 'core/services/notification_service.dart';
@@ -40,6 +41,11 @@ void main() async {
     debugPrint('[FlutterError] ${details.stack}');
     // In production, you would send to Crashlytics here
   };
+
+  await Supabase.initialize(
+    url: 'https://nholhoqqkmeyrzxlwmbp.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ob2xob3Fxa21leXJ6eGx3bWJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODI1MjEsImV4cCI6MjA5NDA1ODUyMX0.1ON5I6mbhNdsh0_q02m1TF-PoCqyZdqYqboXTX3eaEs',
+  );
 
   // Initialize HydratedBloc storage for offline persistence
   // With recovery attempt and user notification support.

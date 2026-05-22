@@ -88,6 +88,7 @@ void main() {
           useHanafi: false,
           prayerConfigs: _allPrayerConfigs(const PrayerNotificationConfig()),
           intentLevel: IntentLevel.foundation,
+          now: DateTime(2026, 5, 22, 9, 0),
         );
 
         expect(count, greaterThan(0));
@@ -174,6 +175,7 @@ void main() {
             'Isha': const PrayerNotificationConfig(adhanAlerts: false),
           },
           intentLevel: IntentLevel.foundation,
+          now: DateTime(2026, 5, 22, 9, 0),
         );
 
         expect(count, 3); // nightly reminders

@@ -1,7 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:math';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
@@ -11,10 +8,15 @@ import '../../features/prayer/presentation/bloc/settings/settings_event.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import 'prayer_scheduler_service.dart';
 
+/// Session coordinator.
+///
+/// Network-based config hydration from Django (_hydrateIntent) is DISABLED
+/// during Supabase migration. Intent falls back to local HydratedBloc state
+/// or the 'foundation' default.
 class SessionCoordinator {
   final AuthBloc authBloc;
   final SettingsBloc settingsBloc;
-  final AuthRepository authRepository;
+  final AuthRepository authRepository; // kept for DI compatibility
   final PrayerSchedulerService prayerSchedulerService;
   StreamSubscription? _authSub;
   StreamSubscription? _settingsSub;
@@ -29,7 +31,9 @@ class SessionCoordinator {
     _authSub?.cancel();
     _authSub = authBloc.stream.listen((state) async {
       if (state.status == AuthStatus.loadingConfig) {
-        await _hydrateIntent();
+        debugPrint('[SessionCoordinator] Starting config hydration from Supabase.');
+        settingsBloc.add(const LoadSettingsFromCloud());
+        _applyLocalFallback();
         authBloc.add(ConfigLoadComplete());
       } else if (state.status == AuthStatus.unauthenticated) {
         settingsBloc.add(const ResetSessionScopedSettings());
@@ -51,78 +55,14 @@ class SessionCoordinator {
     });
   }
 
-  Future<void> _hydrateIntent() async {
-    const int maxRetries = 3;
-    const int baseDelayMs = 1000;
-    final random = Random();
-
-    for (int attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        final config = await authRepository.getUserConfig();
-        final data = config['data'] is Map<String, dynamic>
-            ? config['data'] as Map<String, dynamic>
-            : config;
-        final intent = data['intent_level'] ?? data['intent'];
-        final intentExplicitlySet =
-            data['intent_explicitly_set'] as bool? ?? false;
-        final sunnahEnabled = data['sunnah_enabled'] as bool?;
-        final style = data['style'] as String? ?? 'soft';
-        final nudgeIntensity = data['nudge_intensity'] as String? ?? 'light';
-
-        if (intent != null && intentExplicitlySet) {
-          settingsBloc.add(LoadIntentFromBackend(intent));
-        } else if (!settingsBloc.state.isIntentSet) {
-          settingsBloc.add(
-            const LoadIntentFromBackend('foundation', isFallback: true),
-          );
-        }
-        if (sunnahEnabled != null) {
-          settingsBloc.add(LoadSunnahEnabledFromBackend(sunnahEnabled));
-        }
-        settingsBloc.add(LoadBehaviorConfigFromBackend(
-          style: style,
-          nudgeIntensity: nudgeIntensity,
-        ));
-        return; // Success, exit retry loop
-      } catch (e) {
-        bool shouldRetry = false;
-
-        if (e is DioException) {
-          final statusCode = e.response?.statusCode;
-          // Retry on network/timeout errors or 5xx server errors
-          if (e.type == DioExceptionType.connectionTimeout ||
-              e.type == DioExceptionType.sendTimeout ||
-              e.type == DioExceptionType.receiveTimeout ||
-              e.type == DioExceptionType.connectionError ||
-              (statusCode != null && statusCode >= 500)) {
-            shouldRetry = true;
-          }
-          // Do not retry 400, 401, 403, 404, etc.
-        } else if (e is SocketException || e is TimeoutException) {
-          shouldRetry = true;
-        }
-
-        if (attempt == maxRetries - 1 || !shouldRetry) {
-          debugPrint(
-            '[SessionCoordinator] Config fetch failed permanently: $e',
-          );
-          if (!settingsBloc.state.isIntentSet) {
-            settingsBloc.add(
-              const LoadIntentFromBackend('foundation', isFallback: true),
-            );
-          }
-          return;
-        }
-
-        // Exponential backoff with jitter
-        final delayMs =
-            (baseDelayMs * pow(2, attempt)).toInt() + random.nextInt(300);
-        debugPrint(
-          '[SessionCoordinator] Config fetch failed (attempt ${attempt + 1}). Retrying in ${delayMs}ms...',
-        );
-        await Future.delayed(Duration(milliseconds: delayMs));
-      }
+  /// Apply local fallback when backend config is unavailable.
+  void _applyLocalFallback() {
+    if (!settingsBloc.state.isIntentSet) {
+      settingsBloc.add(
+        const LoadIntentFromBackend('foundation', isFallback: true),
+      );
     }
+    // Behavior config uses existing HydratedBloc values — no dispatch needed.
   }
 
   void dispose() {

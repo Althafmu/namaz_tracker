@@ -8,6 +8,8 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
+import '../../../../core/widgets/neo_islamic_animation.dart';
+
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
@@ -71,12 +73,8 @@ class _SplashPageState extends State<SplashPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.nightlight_round,
-              size: 120,
-              color: AppColors.of(context).primary,
-            ),
-            const SizedBox(height: 24),
+            const NeoIslamicAnimation(size: 140),
+            const SizedBox(height: 32),
             Text('Falah', style: AppTextStyles.headlineLarge),
             Text('Prayer Tracker', style: AppTextStyles.headlineMedium),
             const SizedBox(height: 32),

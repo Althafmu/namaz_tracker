@@ -7,6 +7,12 @@ class NeoTextField extends StatefulWidget {
   final String hint;
   final bool isPassword;
   final TextEditingController controller;
+  final TextCapitalization textCapitalization;
+  final bool enabled;
+  final bool autofocus;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
+  final TextInputType? keyboardType;
 
   const NeoTextField({
     super.key,
@@ -14,6 +20,12 @@ class NeoTextField extends StatefulWidget {
     required this.hint,
     this.isPassword = false,
     required this.controller,
+    this.textCapitalization = TextCapitalization.none,
+    this.enabled = true,
+    this.autofocus = false,
+    this.textInputAction,
+    this.onSubmitted,
+    this.keyboardType,
   });
 
   @override
@@ -71,6 +83,12 @@ class _NeoTextFieldState extends State<NeoTextField> {
             focusNode: _focusNode,
             obscureText: widget.isPassword ? _obscureText : false,
             style: AppTextStyles.bodyMedium.copyWith(color: _isFocused ? c.onAccent : c.textPrimary),
+            textCapitalization: widget.textCapitalization,
+            enabled: widget.enabled,
+            autofocus: widget.autofocus,
+            textInputAction: widget.textInputAction,
+            onSubmitted: widget.onSubmitted,
+            keyboardType: widget.keyboardType,
             decoration: InputDecoration(
               hintText: widget.hint,
               hintStyle: AppTextStyles.bodyMedium.copyWith(

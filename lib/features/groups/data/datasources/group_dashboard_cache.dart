@@ -26,7 +26,7 @@ class GroupDashboardCache {
     return _box;
   }
 
-  static Future<void> cacheDashboard(int groupId, Map<String, dynamic> data) async {
+  static Future<void> cacheDashboard(String groupId, Map<String, dynamic> data) async {
     final b = _safeBox();
     if (b == null) {
       debugPrint('[Cache] Box not available, skipping cache');
@@ -39,7 +39,7 @@ class GroupDashboardCache {
     }
   }
 
-  static Map<String, dynamic>? getCachedDashboard(int groupId) {
+  static Map<String, dynamic>? getCachedDashboard(String groupId) {
     final b = _safeBox();
     if (b == null) {
       debugPrint('[Cache] Box not available, returning null');
@@ -56,7 +56,7 @@ class GroupDashboardCache {
     return null;
   }
 
-  static Future<void> clearCache(int groupId) async {
+  static Future<void> clearCache(String groupId) async {
     final b = _safeBox();
     if (b == null) return;
     try {

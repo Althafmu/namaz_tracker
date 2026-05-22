@@ -59,7 +59,7 @@ class GroupDashboardModel extends Equatable {
 }
 
 class GroupSummary extends Equatable {
-  final int id;
+  final String id;
   final String name;
   final String? description;
   final String privacyLevel;
@@ -81,11 +81,11 @@ class GroupSummary extends Equatable {
 
   factory GroupSummary.fromJson(Map<String, dynamic> json) {
     return GroupSummary(
-      id: json['id'] as int,
+      id: json['id'] is int ? json['id'].toString() : json['id'] as String,
       name: json['name'] as String,
       description: json['description'] as String?,
-      privacyLevel: json['privacy_level'] as String,
-      memberCount: json['member_count'] as int,
+      privacyLevel: json['privacy_level'] as String? ?? 'public',
+      memberCount: json['member_count'] as int? ?? 1,
       createdBy: json['created_by'] as String?,
       userRole: json['user_role'] as String?,
       inviteCode: json['invite_code'] as String?,
@@ -108,7 +108,7 @@ class GroupSummary extends Equatable {
 }
 
 class CurrentUserStats extends Equatable {
-  final int? userId;
+  final String? userId;
   final String? username;
   final String role;
   final DateTime joinedAt;
@@ -126,9 +126,9 @@ class CurrentUserStats extends Equatable {
 
   factory CurrentUserStats.fromJson(Map<String, dynamic> json) {
     return CurrentUserStats(
-      userId: json['user_id'] as int?,
+      userId: json['user_id']?.toString(),
       username: json['username'] as String?,
-      role: json['role'] as String,
+      role: json['role'] as String? ?? 'member',
       joinedAt: json['joined_at'] != null
           ? DateTime.parse(json['joined_at'] as String)
           : DateTime.now(),

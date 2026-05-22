@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/neo_button.dart';
 import '../../../../core/widgets/neo_text_field.dart';
+import '../../../../core/widgets/neo_islamic_animation.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -89,6 +90,8 @@ class _SignupPageState extends State<SignupPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 16),
+                const Center(child: NeoIslamicAnimation(size: 100)),
+                const SizedBox(height: 24),
                 Text('Join Falah', style: AppTextStyles.headlineLarge),
                 const SizedBox(height: 8),
                 Text(
@@ -151,20 +154,19 @@ class _SignupPageState extends State<SignupPage> {
                 const SizedBox(height: 16),
                 SizedBox(
                   height: 56,
-                  child: OutlinedButton.icon(
+                  child: NeoButton(
+                    text: 'Continue with Google',
+                    color: AppColors.of(context).surface,
+                    textColor: AppColors.of(context).textPrimary,
+                    borderRadius: 12.0,
+                    leading: Image.asset(
+                      'assets/icons8-google-logo-100.png',
+                      height: 20,
+                      width: 20,
+                    ),
                     onPressed: () {
                       context.read<AuthBloc>().add(const GoogleSignInRequested());
                     },
-                    icon: Image.asset(
-                          'assets/icons8-google-logo-100.png',
-                          height: 20,
-                          width: 20,
-                        ),
-                    label: const Text('Continue with Google'),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.of(context).textSecondary),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
                   ),
                 ),
                 const SizedBox(height: 24),

@@ -31,7 +31,7 @@ class GroupActivityNotificationService {
     return '${type}_${username}_$createdAt';
   }
 
-  Future<void> checkNewActivity(int groupId, {bool silent = false, String? currentUsername}) async {
+  Future<void> checkNewActivity(String groupId, {bool silent = false, String? currentUsername}) async {
     try {
       final activities = await _dataSource.fetchGroupActivity(groupId);
       
@@ -73,7 +73,7 @@ class GroupActivityNotificationService {
     }
   }
 
-  Future<void> _sendNotification(Map<String, dynamic> activity, int groupId) async {
+  Future<void> _sendNotification(Map<String, dynamic> activity, String groupId) async {
     final type = activity['type'] as String?;
     final message = activity['message'] as String?;
 

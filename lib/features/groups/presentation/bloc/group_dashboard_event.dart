@@ -8,7 +8,7 @@ abstract class GroupDashboardEvent extends Equatable {
 }
 
 class LoadGroupDashboard extends GroupDashboardEvent {
-  final int groupId;
+  final String groupId;
 
   const LoadGroupDashboard(this.groupId);
 
@@ -17,7 +17,7 @@ class LoadGroupDashboard extends GroupDashboardEvent {
 }
 
 class RefreshGroupDashboard extends GroupDashboardEvent {
-  final int groupId;
+  final String groupId;
 
   const RefreshGroupDashboard(this.groupId);
 

@@ -136,57 +136,121 @@ GoRouter buildAppRouter(AuthBloc authBloc, SettingsBloc settingsBloc) {
       GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
       GoRoute(
         path: '/onboarding1',
-        builder: (context, state) => const Onboarding1Page(),
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const Onboarding1Page(),
+        ),
       ),
       GoRoute(
         path: '/onboarding-psych',
-        builder: (context, state) => const OnboardingPsychPage(),
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const OnboardingPsychPage(),
+        ),
       ),
       GoRoute(
         path: '/intent-setup',
-        builder: (context, state) => const IntentOnboardingPage(),
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const IntentOnboardingPage(),
+        ),
       ),
-      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
-      GoRoute(path: '/signup', builder: (context, state) => const SignupPage()),
-      GoRoute(path: '/password-reset', builder: (context, state) => const PasswordResetRequestPage()),
+      GoRoute(
+        path: '/login',
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const LoginPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/signup',
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const SignupPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/password-reset',
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const PasswordResetRequestPage(),
+        ),
+      ),
       GoRoute(
         path: '/password-reset/confirm',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final token = state.uri.queryParameters['token'];
-          return PasswordResetConfirmPage(token: token);
+          return buildNeoBrutalistTransitionPage(
+            context: context,
+            state: state,
+            child: PasswordResetConfirmPage(token: token),
+          );
         },
       ),
-      GoRoute(path: '/streak', builder: (context, state) => const StreakPage()),
+      GoRoute(
+        path: '/streak',
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const StreakPage(),
+        ),
+      ),
       // ── Full-screen settings routes (outside shell — no bottom nav) ──
       GoRoute(
         path: '/settings',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const SettingsMainPage(),
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const SettingsMainPage(),
+        ),
       ),
       GoRoute(
         path: '/settings/notifications',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const NotificationsSettingsPage(),
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const NotificationsSettingsPage(),
+        ),
       ),
       GoRoute(
         path: '/settings/calculation',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const CalculationSettingsPage(),
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const CalculationSettingsPage(),
+        ),
       ),
       GoRoute(
         path: '/settings/reasons',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const ReasonsSettingsPage(),
+        pageBuilder: (context, state) => buildNeoBrutalistTransitionPage(
+          context: context,
+          state: state,
+          child: const ReasonsSettingsPage(),
+        ),
       ),
       GoRoute(
         path: '/groups/:id',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) {
-          final groupId = int.parse(state.pathParameters['id']!);
+        pageBuilder: (context, state) {
+          final groupId = state.pathParameters['id']!;
           final groupName = state.extra as String? ?? 'Group';
-          return BlocProvider(
-            create: (_) => GetIt.I<GroupDashboardBloc>(),
-            child: GroupDashboardPage(groupId: groupId, groupName: groupName),
+          return buildNeoBrutalistTransitionPage(
+            context: context,
+            state: state,
+            child: BlocProvider(
+              create: (_) => GetIt.I<GroupDashboardBloc>(),
+              child: GroupDashboardPage(groupId: groupId, groupName: groupName),
+            ),
           );
         },
       ),
@@ -445,4 +509,33 @@ class _NavItem extends StatelessWidget {
       ),
     );
   }
+}
+
+Page<T> buildNeoBrutalistTransitionPage<T>({
+  required BuildContext context,
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final slideAnimation = Tween<Offset>(
+        begin: const Offset(1.0, 0.0),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack, // springy overshoot effect!
+          reverseCurve: Curves.easeIn,
+        ),
+      );
+      return SlideTransition(
+        position: slideAnimation,
+        child: child,
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 350),
+    reverseTransitionDuration: const Duration(milliseconds: 250),
+  );
 }

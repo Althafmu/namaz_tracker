@@ -28,6 +28,7 @@ import 'widgets/badges_grid.dart';
 import 'widgets/radar_chart.dart';
 import 'widgets/sync_metadata_card.dart';
 import 'widgets/weekly_chart.dart';
+import '../../../../../core/widgets/skeleton_widget.dart';
 
 /// Progress Room — functional version with live data and share.
 class ProgressPage extends StatelessWidget {
@@ -49,19 +50,48 @@ class ProgressPage extends StatelessWidget {
                     // Show loading state while prayers are being fetched
                     if (prayerState.isLoading && prayerState.prayers.isEmpty) {
                       return SafeArea(
-                        child: Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              CircularProgressIndicator(color: c.primary),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Loading your progress...',
-                                style: TextStyle(
-                                  color: c.textSecondary,
-                                  fontSize: 14,
-                                ),
+                              // Title
+                              const SkeletonBoxWidget(height: 32, width: 200),
+                              const SizedBox(height: 24),
+                              // 3 Quick stats cards row
+                              Row(
+                                children: [
+                                  Expanded(child: SkeletonBoxWidget(height: 80, borderRadius: 14)),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: SkeletonBoxWidget(height: 80, borderRadius: 14)),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: SkeletonBoxWidget(height: 80, borderRadius: 14)),
+                                ],
                               ),
+                              const SizedBox(height: 12),
+                              // 2 Quick stats cards row
+                              Row(
+                                children: [
+                                  Expanded(child: SkeletonBoxWidget(height: 80, borderRadius: 14)),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: SkeletonBoxWidget(height: 80, borderRadius: 14)),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              // Streak cards (Daily + Best)
+                              Row(
+                                children: [
+                                  Expanded(child: SkeletonBoxWidget(height: 120)),
+                                  const SizedBox(width: 16),
+                                  Expanded(child: SkeletonBoxWidget(height: 120)),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              // Chart block skeleton
+                              const SkeletonBoxWidget(height: 200),
+                              const SizedBox(height: 24),
+                              // Calendar heatmap block skeleton
+                              const SkeletonBoxWidget(height: 180),
                             ],
                           ),
                         ),

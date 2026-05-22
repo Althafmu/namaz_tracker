@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../../../core/services/time_service.dart';
-import '../../../../../../core/theme/app_colors.dart';
-import '../../../../../../core/theme/app_text_styles.dart';
-import '../../../../../../core/widgets/neo_card.dart';
 
 class FalahStreakCard extends StatelessWidget {
   final int streak;

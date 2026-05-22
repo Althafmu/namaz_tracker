@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../../../core/theme/app_colors.dart';
 import '../../../../../../core/theme/app_text_styles.dart';
+import '../../../../../../core/widgets/neo_button.dart';
 import '../../../bloc/settings/settings_bloc.dart';
 import '../../../bloc/settings/settings_state.dart';
 
@@ -38,26 +39,22 @@ class SunnaProgressOverlay extends StatelessWidget {
     String pathDescription;
     IconData pathIcon;
     Color pathColor;
-    String nextLevelName;
 
     if (intent == IntentLevel.foundation) {
       daysToGrowth = (7 - streak).clamp(0, 7);
       pathDescription = 'You\'re on the Start Fresh path.';
       pathIcon = Icons.grass;
       pathColor = c.foundation;
-      nextLevelName = 'Build Momentum';
     } else if (intent == IntentLevel.strengthening) {
       daysToGrowth = (21 - streak).clamp(0, 21);
       pathDescription = 'You\'re on the Build Momentum path.';
       pathIcon = Icons.trending_up;
       pathColor = c.strengthening;
-      nextLevelName = 'Go All In';
     } else {
       daysToGrowth = 0;
       pathDescription = 'You\'re on the Go All In path.';
       pathIcon = Icons.bolt;
       pathColor = c.growth;
-      nextLevelName = '';
     }
 
     return Container(
@@ -269,29 +266,13 @@ class SunnaProgressOverlay extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  onDismiss();
-                  context.go('/intent-setup');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: c.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  'Change My Path',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+            NeoButton(
+              text: 'Change My Path',
+              color: c.primary,
+              onPressed: () {
+                onDismiss();
+                context.go('/intent-setup');
+              },
             ),
             const SizedBox(height: 8),
             Center(

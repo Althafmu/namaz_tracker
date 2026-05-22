@@ -9,6 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/neo_button.dart';
 import '../../../../core/widgets/neo_card.dart';
+import '../../../../core/widgets/neo_text_field.dart';
 
 class GroupsPage extends StatelessWidget {
   const GroupsPage({super.key});
@@ -68,6 +69,16 @@ class GroupsPage extends StatelessWidget {
                 }
               },
               offset: const Offset(0, 40),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: AppColors.of(context).border,
+                  width: 2.0,
+                ),
+              ),
+              color: AppColors.of(context).surface,
+              shadowColor: AppColors.of(context).border,
+              elevation: 4.0,
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -75,8 +86,14 @@ class GroupsPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: AppColors.of(context).border,
-                    width: 1.5,
+                    width: 2.0,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.of(context).border,
+                      offset: const Offset(2, 2),
+                    ),
+                  ],
                 ),
                 child: Icon(
                   Icons.add,
@@ -290,170 +307,175 @@ class GroupsPage extends StatelessWidget {
               final confirmedGroupName = confirmedGroup?.groupName ?? '';
 
               return Dialog(
-                backgroundColor: c.surface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: c.border, width: 2),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (isValidating) ...[
-                        Center(
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: CircularProgressIndicator(
-                                  color: c.primary,
-                                  strokeWidth: 2.5,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Checking invite code...',
-                                style: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ] else if (confirmedGroup != null) ...[
-                        Row(
-                          children: [
-                            Icon(Icons.group, color: c.primary, size: 28),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'JOIN $confirmedGroupName',
-                                style: AppTextStyles.headlineSmall.copyWith(
-                                  color: c.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 360,
+                        maxHeight: constraints.maxHeight,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: c.background,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: c.border, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: c.border,
+                              offset: const Offset(4, 4),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          "You're about to join this group. Your streak will be visible to other members.",
-                          style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            SizedBox(
-                              width: 100,
-                              child: NeoButton(
-                                text: 'CANCEL',
-                                color: c.surface,
-                                textColor: c.textPrimary,
-                                height: 44,
-                                onPressed: () {
-                                  context.read<GroupsBloc>().add(CancelGroupJoin());
-                                  Navigator.pop(dialogContext);
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              width: 140,
-                              child: isConfirming
-                                  ? SizedBox(
-                                      height: 44,
-                                      child: Center(
-                                        child: SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            color: c.primary,
-                                            strokeWidth: 2,
-                                          ),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (isValidating) ...[
+                                Center(
+                                  child: Column(
+                                    children: [
+                                      SizedBox(
+                                        width: 32,
+                                        height: 32,
+                                        child: CircularProgressIndicator(
+                                          color: c.primary,
+                                          strokeWidth: 2.5,
                                         ),
                                       ),
-                                    )
-                                  : NeoButton(
-                                      text: 'CONFIRM JOIN',
-                                      color: c.primary,
-                                      height: 44,
-                                      onPressed: () {
-                                        final code = controller.text.trim().toUpperCase();
-                                        context.read<GroupsBloc>().add(ConfirmGroupJoin(code));
-                                      },
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Checking invite code...',
+                                        style: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ] else if (confirmedGroup != null) ...[
+                                Row(
+                                  children: [
+                                    Icon(Icons.group, color: c.primary, size: 28),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'JOIN $confirmedGroupName',
+                                        style: AppTextStyles.headlineSmall.copyWith(
+                                          color: c.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
-                            ),
-                          ],
-                        ),
-                      ] else ...[
-                        Text(
-                          'JOIN A GROUP',
-                          style: AppTextStyles.headlineSmall.copyWith(
-                            color: c.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: c.surface,
-                            border: Border.all(color: c.border, width: 2),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(color: c.border, offset: const Offset(4, 4)),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  "You're about to join this group. Your streak will be visible to other members.",
+                                  style: AppTextStyles.bodySmall.copyWith(color: c.textSecondary),
+                                ),
+                                const SizedBox(height: 24),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    SizedBox(
+                                      width: 100,
+                                      child: NeoButton(
+                                        text: 'CANCEL',
+                                        color: c.surface,
+                                        textColor: c.textPrimary,
+                                        height: 44,
+                                        onPressed: () {
+                                          context.read<GroupsBloc>().add(CancelGroupJoin());
+                                          Navigator.pop(dialogContext);
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    SizedBox(
+                                      width: 140,
+                                      child: isConfirming
+                                          ? SizedBox(
+                                              height: 44,
+                                              child: Center(
+                                                child: SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: CircularProgressIndicator(
+                                                    color: c.primary,
+                                                    strokeWidth: 2,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : NeoButton(
+                                              text: 'CONFIRM JOIN',
+                                              color: c.primary,
+                                              height: 44,
+                                              onPressed: () {
+                                                final code = controller.text.trim().toUpperCase();
+                                                context.read<GroupsBloc>().add(ConfirmGroupJoin(code));
+                                              },
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ] else ...[
+                                Text(
+                                  'JOIN A GROUP',
+                                  style: AppTextStyles.headlineSmall.copyWith(
+                                    color: c.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                NeoTextField(
+                                  label: 'Invite Code',
+                                  hint: 'Enter invite code',
+                                  controller: controller,
+                                  textCapitalization: TextCapitalization.characters,
+                                  enabled: !isValidating,
+                                ),
+                                const SizedBox(height: 24),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    SizedBox(
+                                      width: 100,
+                                      child: NeoButton(
+                                        text: 'CANCEL',
+                                        color: c.surface,
+                                        textColor: c.textPrimary,
+                                        height: 44,
+                                        onPressed: () => Navigator.pop(dialogContext),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    SizedBox(
+                                      width: 100,
+                                      child: NeoButton(
+                                        text: 'JOIN',
+                                        color: c.primary,
+                                        height: 44,
+                                        onPressed: () {
+                                          final code = controller.text.trim().toUpperCase();
+                                          if (code.isNotEmpty) {
+                                            HapticFeedback.lightImpact();
+                                            context.read<GroupsBloc>().add(JoinGroup(code));
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
-                          child: TextField(
-                            controller: controller,
-                            style: AppTextStyles.bodyMedium.copyWith(color: c.textPrimary),
-                            textCapitalization: TextCapitalization.characters,
-                            enabled: !isValidating,
-                            decoration: InputDecoration(
-                              hintText: 'Enter invite code',
-                              hintStyle: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                            ),
-                          ),
                         ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            SizedBox(
-                              width: 100,
-                              child: NeoButton(
-                                text: 'CANCEL',
-                                color: c.surface,
-                                textColor: c.textPrimary,
-                                height: 44,
-                                onPressed: () => Navigator.pop(dialogContext),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              width: 100,
-                              child: NeoButton(
-                                text: 'JOIN',
-                                color: c.primary,
-                                height: 44,
-                                onPressed: () {
-                                  final code = controller.text.trim().toUpperCase();
-                                  if (code.isNotEmpty) {
-                                    HapticFeedback.lightImpact();
-                                    context.read<GroupsBloc>().add(JoinGroup(code));
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
+                      ),
+                    );
+                  },
                 ),
               );
             },
@@ -482,96 +504,101 @@ class GroupsPage extends StatelessWidget {
                 builder: (context, state) {
                   final isCreating = state is GroupsCreating;
                   return Dialog(
-                    backgroundColor: c.surface,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: c.border, width: 2),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'CREATE A GROUP',
-                            style: AppTextStyles.headlineSmall.copyWith(
-                              color: c.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    backgroundColor: Colors.transparent,
+                    insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: 360,
+                            maxHeight: constraints.maxHeight,
                           ),
-                          const SizedBox(height: 20),
-                          Container(
+                          child: Container(
+                            padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
-                              color: c.surface,
+                              color: c.background,
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: c.border, width: 2),
-                              borderRadius: BorderRadius.circular(12),
                               boxShadow: [
-                                BoxShadow(color: c.border, offset: const Offset(4, 4)),
+                                BoxShadow(
+                                  color: c.border,
+                                  offset: const Offset(4, 4),
+                                ),
                               ],
                             ),
-                            child: TextField(
-                              controller: controller,
-                              style: AppTextStyles.bodyMedium.copyWith(color: c.textPrimary),
-                              textCapitalization: TextCapitalization.words,
-                              enabled: !isCreating,
-                              autofocus: true,
-                              decoration: InputDecoration(
-                                hintText: 'Group name',
-                                hintStyle: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'CREATE A GROUP',
+                                    style: AppTextStyles.headlineSmall.copyWith(
+                                      color: c.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  NeoTextField(
+                                    label: 'Group Name',
+                                    hint: 'Group name',
+                                    controller: controller,
+                                    textCapitalization: TextCapitalization.words,
+                                    enabled: !isCreating,
+                                    autofocus: true,
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      SizedBox(
+                                        width: 100,
+                                        child: NeoButton(
+                                          text: 'CANCEL',
+                                          color: c.surface,
+                                          textColor: c.textPrimary,
+                                          height: 44,
+                                          onPressed: () => Navigator.pop(dialogContext),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      SizedBox(
+                                        width: 100,
+                                        child: isCreating
+                                            ? SizedBox(
+                                                height: 44,
+                                                child: Center(
+                                                  child: SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child: CircularProgressIndicator(
+                                                      color: c.primary,
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                            : NeoButton(
+                                                text: 'CREATE',
+                                                color: c.primary,
+                                                height: 44,
+                                                onPressed: () {
+                                                  final name = controller.text.trim();
+                                                  if (name.isNotEmpty) {
+                                                    HapticFeedback.lightImpact();
+                                                    context.read<GroupsBloc>().add(CreateGroup(name));
+                                                  }
+                                                },
+                                              ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                          const SizedBox(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              SizedBox(
-                                width: 100,
-                                child: NeoButton(
-                                  text: 'CANCEL',
-                                  color: c.surface,
-                                  textColor: c.textPrimary,
-                                  height: 44,
-                                  onPressed: () => Navigator.pop(dialogContext),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              SizedBox(
-                                width: 100,
-                                child: isCreating
-                                    ? SizedBox(
-                                        height: 44,
-                                        child: Center(
-                                          child: SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              color: c.primary,
-                                              strokeWidth: 2,
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                    : NeoButton(
-                                        text: 'CREATE',
-                                        color: c.primary,
-                                        height: 44,
-                                        onPressed: () {
-                                          final name = controller.text.trim();
-                                          if (name.isNotEmpty) {
-                                            HapticFeedback.lightImpact();
-                                            context.read<GroupsBloc>().add(CreateGroup(name));
-                                          }
-                                        },
-                                      ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   );
                 },

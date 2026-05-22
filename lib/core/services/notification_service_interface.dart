@@ -28,6 +28,7 @@ abstract class NotificationServiceInterface {
     Set<String>? excusedDays,
     Map<String, Set<String>>? excusedPrayers,
     IntentLevel? intentLevel,
+    DateTime? now,
   });
   Future<void> showGroupActivityNotification({
     required String title,

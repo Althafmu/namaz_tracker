@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 class GroupDashboard extends Equatable {
-  final int groupId;
+  final String groupId;
   final String groupName;
   final String privacyLevel;
   final int memberCount;

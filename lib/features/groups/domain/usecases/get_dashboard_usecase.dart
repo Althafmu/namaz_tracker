@@ -6,7 +6,7 @@ class GetDashboardUseCase {
 
   GetDashboardUseCase(this.repository);
 
-  Future<GroupDashboardModel> call(int groupId) {
+  Future<GroupDashboardModel> call(String groupId) {
     return repository.getDashboard(groupId);
   }
 }

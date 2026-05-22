@@ -171,8 +171,7 @@ class SpiritualMessages {
   }
 
   static String buildNotificationBody(String prayerName, IntentLevel intent) {
-    final spiritual = getMessageForPrayer(intent, prayerName);
-    return '${spiritual.notificationPrefix} — ${spiritual.quote}\n\n${spiritual.source}';
+    return 'It\'s time to pray $prayerName.';
   }
 
   static String buildNotificationTitle(String prayerName) {

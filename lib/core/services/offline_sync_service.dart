@@ -1,37 +1,29 @@
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../features/prayer/data/repositories/offline_queue_repository.dart';
 import '../../features/prayer/domain/usecases/log_prayer_usecase.dart';
 
-/// Coordinates offline→online sync of queued prayer logs.
+/// Offline sync service.
 ///
-/// Listens for connectivity changes and drains the [OfflineQueueRepository]
-/// when the network comes back. Does NOT own storage initialization.
+/// DISABLED during Supabase migration — no queued actions will be replayed
+/// against the old Django backend. Queue will be cleared when Supabase
+/// prayer logging is implemented.
 class OfflineSyncService {
   final OfflineQueueRepository _queueRepository;
-  final LogPrayerUseCase _logPrayerUseCase;
-  bool _isProcessing = false;
+  final LogPrayerUseCase _logPrayerUseCase; // kept for DI compatibility
 
   OfflineSyncService({
     required OfflineQueueRepository queueRepository,
     required LogPrayerUseCase logPrayerUseCase,
-  }) : _queueRepository = queueRepository,
-       _logPrayerUseCase = logPrayerUseCase;
+  })  : _queueRepository = queueRepository,
+        _logPrayerUseCase = logPrayerUseCase;
 
-  /// Start listening for connectivity changes.
+  /// No-op during migration — avoids retry storms to localhost.
   void startListening() {
-    Connectivity().onConnectivityChanged.listen((
-      List<ConnectivityResult> results,
-    ) {
-      if (results.contains(ConnectivityResult.mobile) ||
-          results.contains(ConnectivityResult.wifi)) {
-        processQueue();
-      }
-    });
+    debugPrint('[OfflineSyncService] startListening() — disabled (Django disabled)');
   }
 
-  /// Convenience: enqueue an action (delegates to repository).
+  /// No-op during migration.
   Future<void> enqueueAction({
     required String prayerName,
     required bool completed,
@@ -41,46 +33,11 @@ class OfflineSyncService {
     String? reason,
     String? dateKey,
   }) async {
-    await _queueRepository.enqueueAction(
-      prayerName: prayerName,
-      completed: completed,
-      inJamaat: inJamaat,
-      location: location,
-      status: status,
-      reason: reason,
-      dateKey: dateKey,
-    );
+    debugPrint('[OfflineSyncService] enqueueAction() — disabled (Django disabled)');
   }
 
-  /// Process all queued actions, retrying on network failure.
+  /// No-op during migration — does NOT drain queue to localhost.
   Future<void> processQueue() async {
-    if (_isProcessing) return;
-    _isProcessing = true;
-
-    try {
-      if (_queueRepository.isEmpty) return;
-
-      final actions = _queueRepository.getAllActions();
-      for (final entry in actions) {
-        final action = entry.value;
-        try {
-          await _logPrayerUseCase(
-            prayerName: action['prayerName'] as String,
-            completed: action['completed'] as bool,
-            inJamaat: action['inJamaat'] as bool,
-            location: action['location'] as String,
-            status: action['status'] as String?,
-            reason: action['reason'] as String?,
-            dateKey: action['dateKey'] as String?,
-          );
-          await _queueRepository.dequeueAction(entry.key);
-        } catch (e) {
-          debugPrint('[OfflineSync] Sync failed for queued action: $e');
-          break; // Network still down — stop this batch
-        }
-      }
-    } finally {
-      _isProcessing = false;
-    }
+    debugPrint('[OfflineSyncService] processQueue() — disabled (Django disabled)');
   }
 }

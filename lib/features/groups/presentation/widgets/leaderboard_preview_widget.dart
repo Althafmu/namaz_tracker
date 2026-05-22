@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/neo_button.dart';
 import '../../../../core/widgets/neo_card.dart';
 import '../../data/models/group_dashboard_model.dart';
 
@@ -58,11 +60,20 @@ class LeaderboardPreviewWidget extends StatelessWidget {
                   'LEADERBOARD',
                   style: AppTextStyles.sectionHeader.copyWith(color: c.textPrimary),
                 ),
-                Text(
-                  'View All',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: c.primary,
-                    fontWeight: FontWeight.bold,
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    _showFullLeaderboard(context);
+                  },
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Text(
+                      'View All',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: c.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -101,6 +112,112 @@ class LeaderboardPreviewWidget extends StatelessWidget {
                 return _LeaderboardRow(entry: item);
               }),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showFullLeaderboard(BuildContext context) {
+    final c = AppColors.of(context);
+    final currentUserInList = streaks.any((e) => e.username == currentUserName);
+    final allEntries = streaks.map((e) => e.copyWith(
+          isCurrentUser: e.username == currentUserName,
+        )).toList();
+
+    if (!currentUserInList && currentUserName != null) {
+      allEntries.add(
+        LeaderboardEntry(
+          rank: currentUserRank ?? (streaks.isNotEmpty ? streaks.last.rank + 1 : 1),
+          username: currentUserName!,
+          streak: currentUserStreak ?? 0,
+          isCurrentUser: true,
+        ),
+      );
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 360,
+                maxHeight: constraints.maxHeight * 0.8,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: c.background,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: c.border, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: c.border,
+                      offset: const Offset(4, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.emoji_events, color: c.primary, size: 28),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'LEADERBOARD',
+                            style: AppTextStyles.headlineSmall.copyWith(
+                              color: c.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (allEntries.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text(
+                            'No entries yet',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: c.textSecondary,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Flexible(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: allEntries
+                                .map((item) => _LeaderboardRow(entry: item))
+                                .toList(),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: NeoButton(
+                        text: 'CLOSE',
+                        color: c.surface,
+                        textColor: c.textPrimary,
+                        onPressed: () => Navigator.pop(dialogContext),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

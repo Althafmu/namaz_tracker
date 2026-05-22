@@ -1,11 +1,9 @@
-import 'dart:io';
-import 'package:dio/dio.dart';
-import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'features/prayer/data/datasources/prayer_remote_data_source.dart';
-import 'features/prayer/data/datasources/sunnah_remote_data_source.dart';
+import 'core/supabase/prayer_service.dart';
+import 'core/supabase/supabase_prayer_service.dart';
 import 'features/prayer/data/repositories/prayer_repository_impl.dart';
 import 'features/prayer/data/repositories/offline_queue_repository.dart';
 import 'features/prayer/domain/repositories/prayer_repository.dart';
@@ -27,6 +25,7 @@ import 'features/prayer/domain/usecases/get_sync_metadata_usecase.dart';
 import 'features/prayer/domain/usecases/pause_notifications_for_today_usecase.dart';
 import 'features/prayer/domain/usecases/get_notifications_pause_status_usecase.dart';
 import 'features/prayer/domain/usecases/resume_notifications_for_today_usecase.dart';
+import 'features/prayer/data/datasources/sunnah_remote_data_source.dart';
 
 import 'features/groups/data/datasources/group_remote_datasource.dart';
 import 'features/groups/data/repositories/group_repository_impl.dart';
@@ -44,225 +43,198 @@ import 'features/prayer/presentation/bloc/sunnah/sunnah_bloc.dart';
 import 'core/services/session_coordinator.dart';
 
 import 'core/network/token_provider.dart';
-import 'core/auth/token_refresh_coordinator.dart';
-import 'core/auth/auth_interceptor.dart';
 import 'features/auth/data/datasources/auth_remote_data_source.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
-import 'features/auth/presentation/bloc/auth_event.dart';
 
 final sl = GetIt.instance;
 
-/// API base URL from --dart-define.
-/// Build with: flutter run --dart-define=API_BASE_URL=https://your-server.com
-/// SECURITY: No default URL is provided. The API URL MUST be specified at build time.
-const _baseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: '', // Empty by default — forces explicit configuration
-);
-
-/// Validates that API_BASE_URL is configured.
-void _validateBaseUrl() {
-  if (_baseUrl.isEmpty) {
-    throw AssertionError(
-      'API_BASE_URL must be set at build time.\n'
-      'Example: flutter run --dart-define=API_BASE_URL=https://your-server.com\n'
-      'Or set it in your launch configuration or CI/CD pipeline.',
-    );
-  }
-  if (!_baseUrl.startsWith('https://') && !_baseUrl.startsWith('http://')) {
-    throw AssertionError(
-      'API_BASE_URL must start with https:// or http://\n'
-      'Got: $_baseUrl',
-    );
-  }
-}
-
 /// Initialize all dependencies.
 Future<void> initDependencies() async {
-  // Validate API URL before initializing any network dependencies
-  _validateBaseUrl();
+  debugPrint('[DI] initDependencies — Supabase mode.');
 
-  // ── Core Services ──
+  // ── Supabase ──────────────────────────────────────────────────────────────
+  sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
+
+  // ── Core Services ─────────────────────────────────────────────────────────
   final tokenProvider = TokenProvider();
   await tokenProvider.loadTokens();
-  sl.registerLazySingleton(() => tokenProvider);
+  sl.registerLazySingleton<TokenProvider>(() => tokenProvider);
 
-  sl.registerLazySingleton(() => OfflineQueueRepository());
-  // Register interface and implementation for NotificationService
+  sl.registerLazySingleton<OfflineQueueRepository>(() => OfflineQueueRepository());
+
   final notificationService = NotificationService();
-  sl.registerLazySingleton<NotificationServiceInterface>(
-    () => notificationService,
-  );
-  sl.registerLazySingleton(() => notificationService);
+  sl.registerLazySingleton<NotificationServiceInterface>(() => notificationService);
+  sl.registerLazySingleton<NotificationService>(() => notificationService);
 
-  // ── External (Dio) ──
-  final dio = Dio(
-    BaseOptions(
-      baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 60),
-      receiveTimeout: const Duration(seconds: 60),
-      headers: {'Content-Type': 'application/json'},
-    ),
+  // ── Supabase Services ─────────────────────────────────────────────────────
+  sl.registerLazySingleton<PrayerService>(
+    () => SupabasePrayerService(sl<SupabaseClient>()),
   );
 
-// Certificate pinning — reject self-signed certs
-  if (!kIsWeb) {
-    (dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
-      final client = HttpClient();
-      client.badCertificateCallback =
-          (X509Certificate cert, String host, int port) {
-        debugPrint(
-          '[CertPin] Rejected untrusted certificate for $host:$port',
-        );
-        return false;
-      };
-      return client;
-    };
-  }
-
-  // Register Dio IMMEDIATELY (eager registration to avoid lazy init issues)
-  sl.registerSingleton<Dio>(dio);
-
-  // ── Data Sources ──
-  sl.registerLazySingleton<PrayerRemoteDataSource>(
-    () => PrayerRemoteDataSource(dio: sl()),
-  );
-  sl.registerLazySingleton<SunnahRemoteDataSource>(
-    () => SunnahRemoteDataSource(dio: sl()),
-  );
+  // ── Data Sources (stubbed — no Dio/Django calls) ──────────────────────────
+  // AuthRemoteDataSource: Google Sign-In is live; everything else stubbed.
   sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSource(dio: sl()),
-  );
-  sl.registerLazySingleton<GroupRemoteDataSource>(
-    () => GroupRemoteDataSource(dio: sl()),
+    () => AuthRemoteDataSource(),
   );
 
+  sl.registerLazySingleton<GroupRemoteDataSource>(
+    () => GroupRemoteDataSource(client: sl<SupabaseClient>()),
+  );
+
+  // ── Group Support Services ─────────────────────────────────────────────────
   sl.registerLazySingleton<GroupActivityNotificationService>(
-    () => GroupActivityNotificationService(
-      dataSource: sl(),
-    ),
+    () => GroupActivityNotificationService(dataSource: sl<GroupRemoteDataSource>()),
   );
 
   sl.registerLazySingleton<NotificationCoordinator>(
-    () => NotificationCoordinator(
-      activityService: sl(),
+    () => NotificationCoordinator(activityService: sl<GroupActivityNotificationService>()),
+  );
+
+  // ── Repositories ──────────────────────────────────────────────────────────
+  sl.registerLazySingleton<PrayerRepository>(
+    () => PrayerRepositoryImpl(prayerService: sl<PrayerService>()),
+  );
+
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(
+      remoteDataSource: sl<AuthRemoteDataSource>(),
+      tokenProvider: sl<TokenProvider>(),
     ),
   );
-
-  // ── Repositories ──
-  sl.registerLazySingleton<PrayerRepository>(
-    () => PrayerRepositoryImpl(remoteDataSource: sl()),
-  );
-  sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(remoteDataSource: sl(), tokenProvider: sl()),
-  );
-
-  // Token refresh coordinator - registered after AuthRepository
-  sl.registerLazySingleton(() => TokenRefreshCoordinator(
-    authRepo: sl<AuthRepository>() as AuthRepositoryImpl,
-    tokenProvider: sl<TokenProvider>(),
-  ));
-
-  // Auth interceptor
-  dio.interceptors.add(AuthInterceptor(
-    coordinator: sl<TokenRefreshCoordinator>(),
-    dio: dio,
-  ));
 
   sl.registerLazySingleton<GroupRepository>(
-    () => GroupRepositoryImpl(sl()),
+    () => GroupRepositoryImpl(sl<GroupRemoteDataSource>()),
   );
 
-  // ── Use Cases ──
-  sl.registerLazySingleton(() => LogPrayerUseCase(sl()));
-  sl.registerLazySingleton(() => GetDailyStatusUseCase(sl()));
-  sl.registerLazySingleton(() => GetStreakUseCase(sl()));
-  sl.registerLazySingleton(() => GetWeeklyHistoryUseCase(sl()));
-  sl.registerLazySingleton(() => GetDetailedMonthHistoryUseCase(sl()));
-  sl.registerLazySingleton(() => GetReasonSummaryUseCase(sl()));
-  // Phase 2: Streak Freeze System
-  sl.registerLazySingleton(() => ConsumeProtectorTokenUseCase(sl()));
-  sl.registerLazySingleton(() => SetExcusedDayUseCase(sl()));
-  sl.registerLazySingleton(() => ClearExcusedDayUseCase(sl()));
-  // Phase 3: New Backend Features
-  sl.registerLazySingleton(() => UndoLastPrayerLogUseCase(sl()));
-  sl.registerLazySingleton(() => GetSyncMetadataUseCase(sl()));
-  sl.registerLazySingleton(() => PauseNotificationsForTodayUseCase(sl()));
-  sl.registerLazySingleton(() => GetNotificationsPauseStatusUseCase(sl()));
-  sl.registerLazySingleton(() => ResumeNotificationsForTodayUseCase(sl()));
-
-  // ── Domain Services ──
-  sl.registerLazySingleton(
-    () => OfflineSyncService(queueRepository: sl(), logPrayerUseCase: sl()),
+  // ── Use Cases ─────────────────────────────────────────────────────────────
+  sl.registerLazySingleton<LogPrayerUseCase>(
+    () => LogPrayerUseCase(sl<PrayerRepository>()),
   );
-  sl.registerLazySingleton(
-    () => PrayerSchedulerService(notificationService: sl()),
+  sl.registerLazySingleton<GetDailyStatusUseCase>(
+    () => GetDailyStatusUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<GetStreakUseCase>(
+    () => GetStreakUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<GetWeeklyHistoryUseCase>(
+    () => GetWeeklyHistoryUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<GetDetailedMonthHistoryUseCase>(
+    () => GetDetailedMonthHistoryUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<GetReasonSummaryUseCase>(
+    () => GetReasonSummaryUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<ConsumeProtectorTokenUseCase>(
+    () => ConsumeProtectorTokenUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<SetExcusedDayUseCase>(
+    () => SetExcusedDayUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<ClearExcusedDayUseCase>(
+    () => ClearExcusedDayUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<UndoLastPrayerLogUseCase>(
+    () => UndoLastPrayerLogUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<GetSyncMetadataUseCase>(
+    () => GetSyncMetadataUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<PauseNotificationsForTodayUseCase>(
+    () => PauseNotificationsForTodayUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<GetNotificationsPauseStatusUseCase>(
+    () => GetNotificationsPauseStatusUseCase(sl<PrayerRepository>()),
+  );
+  sl.registerLazySingleton<ResumeNotificationsForTodayUseCase>(
+    () => ResumeNotificationsForTodayUseCase(sl<PrayerRepository>()),
   );
 
-  // ── BLoC ──
-  sl.registerLazySingleton(() => SunnahBloc(remoteDataSource: sl()));
-  sl.registerLazySingleton(
+  // ── Domain Services ───────────────────────────────────────────────────────
+  sl.registerLazySingleton<OfflineSyncService>(
+    () => OfflineSyncService(
+      queueRepository: sl<OfflineQueueRepository>(),
+      logPrayerUseCase: sl<LogPrayerUseCase>(),
+    ),
+  );
+  sl.registerLazySingleton<PrayerSchedulerService>(
+    () => PrayerSchedulerService(notificationService: sl<NotificationService>()),
+  );
+
+  // ── BLoC ──────────────────────────────────────────────────────────────────
+  sl.registerLazySingleton<SunnahRemoteDataSource>(
+    () => SunnahRemoteDataSource(client: sl<SupabaseClient>()),
+  );
+
+  sl.registerLazySingleton<SunnahBloc>(
+    () => SunnahBloc(remoteDataSource: sl<SunnahRemoteDataSource>()),
+  );
+
+  sl.registerLazySingleton<SettingsBloc>(
     () => SettingsBloc(
-      notificationService: sl(),
-      authRepository: sl(),
-      pauseNotificationsForTodayUseCase: sl(),
-      getNotificationsPauseStatusUseCase: sl(),
-      resumeNotificationsForTodayUseCase: sl(),
+      notificationService: sl<NotificationService>(),
+      authRepository: sl<AuthRepository>(),
+      pauseNotificationsForTodayUseCase: sl<PauseNotificationsForTodayUseCase>(),
+      getNotificationsPauseStatusUseCase: sl<GetNotificationsPauseStatusUseCase>(),
+      resumeNotificationsForTodayUseCase: sl<ResumeNotificationsForTodayUseCase>(),
     ),
   );
 
-  // HistoryBloc and StatsBloc must be registered before PrayerBloc and StreakBloc
-  sl.registerLazySingleton(
-    () => HistoryBloc(getDetailedMonthHistoryUseCase: sl()),
+  sl.registerLazySingleton<HistoryBloc>(
+    () => HistoryBloc(getDetailedMonthHistoryUseCase: sl<GetDetailedMonthHistoryUseCase>()),
   );
 
-  sl.registerLazySingleton(() => StatsBloc(getReasonSummaryUseCase: sl()));
+  sl.registerLazySingleton<StatsBloc>(
+    () => StatsBloc(getReasonSummaryUseCase: sl<GetReasonSummaryUseCase>()),
+  );
 
-  // StreakBloc listens to HistoryBloc, so must be registered after HistoryBloc
-  sl.registerLazySingleton(
+  sl.registerLazySingleton<StreakBloc>(
     () => StreakBloc(
-      getStreakUseCase: sl(),
-      consumeProtectorTokenUseCase: sl(),
-      setExcusedDayUseCase: sl(),
-      historyBloc: sl(),
+      getStreakUseCase: sl<GetStreakUseCase>(),
+      consumeProtectorTokenUseCase: sl<ConsumeProtectorTokenUseCase>(),
+      setExcusedDayUseCase: sl<SetExcusedDayUseCase>(),
+      historyBloc: sl<HistoryBloc>(),
     ),
   );
 
-  sl.registerFactory(
+  sl.registerFactory<PrayerBloc>(
     () => PrayerBloc(
-      logPrayerUseCase: sl(),
-      getDailyStatusUseCase: sl(),
-      clearExcusedDayUseCase: sl(),
-      undoLastPrayerLogUseCase: sl(),
-      offlineSyncService: sl(),
-      prayerSchedulerService: sl(),
-      notificationService: sl(),
-      settingsBloc: sl(),
-      historyBloc: sl(),
-      statsBloc: sl(),
+      logPrayerUseCase: sl<LogPrayerUseCase>(),
+      getDailyStatusUseCase: sl<GetDailyStatusUseCase>(),
+      clearExcusedDayUseCase: sl<ClearExcusedDayUseCase>(),
+      undoLastPrayerLogUseCase: sl<UndoLastPrayerLogUseCase>(),
+      offlineSyncService: sl<OfflineSyncService>(),
+      prayerSchedulerService: sl<PrayerSchedulerService>(),
+      notificationService: sl<NotificationService>(),
+      settingsBloc: sl<SettingsBloc>(),
+      historyBloc: sl<HistoryBloc>(),
+      statsBloc: sl<StatsBloc>(),
     ),
   );
 
-  sl.registerLazySingleton(
-    () => AuthBloc(authRepository: sl(), tokenProvider: sl()),
+  sl.registerLazySingleton<AuthBloc>(
+    () => AuthBloc(
+      authRepository: sl<AuthRepository>(),
+      tokenProvider: sl<TokenProvider>(),
+    ),
   );
 
-  sl.registerLazySingleton(
+  sl.registerLazySingleton<SessionCoordinator>(
     () => SessionCoordinator(
-      authBloc: sl(),
-      settingsBloc: sl(),
-      authRepository: sl(),
-      prayerSchedulerService: sl(),
+      authBloc: sl<AuthBloc>(),
+      settingsBloc: sl<SettingsBloc>(),
+      authRepository: sl<AuthRepository>(),
+      prayerSchedulerService: sl<PrayerSchedulerService>(),
     ),
   );
 
-  sl.registerFactory(
-    () => GroupDashboardBloc(repository: sl()),
+  sl.registerFactory<GroupDashboardBloc>(
+    () => GroupDashboardBloc(repository: sl<GroupRepository>()),
   );
 
-  sl.registerFactory(
-    () => GroupsBloc(repository: sl()),
+  sl.registerFactory<GroupsBloc>(
+    () => GroupsBloc(repository: sl<GroupRepository>()),
   );
 }

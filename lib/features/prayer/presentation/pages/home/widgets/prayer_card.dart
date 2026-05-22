@@ -134,26 +134,11 @@ class _BasePrayerView extends StatelessWidget {
                   ),
                   // Check button
                   customCheckIcon ??
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: c.surface,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: c.border, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: c.border,
-                              offset: const Offset(2, 2),
-                              blurRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-                          color: isCompleted ? (isExcused ? c.textSecondary : cardColor) : c.textSecondary,
-                          size: 30,
-                        ),
+                      BouncyCheckIcon(
+                        isCompleted: isCompleted,
+                        isExcused: isExcused,
+                        cardColor: cardColor,
+                        c: c,
                       ),
                 ],
               ),
@@ -360,6 +345,121 @@ class ExcusedPrayerView extends StatelessWidget {
           Icons.shield_outlined,
           color: c.textSecondary,
           size: 28,
+        ),
+      ),
+    );
+  }
+}
+
+class BouncyCheckIcon extends StatefulWidget {
+  final bool isCompleted;
+  final bool isExcused;
+  final Color cardColor;
+  final AppColorPalette c;
+
+  const BouncyCheckIcon({
+    super.key,
+    required this.isCompleted,
+    required this.isExcused,
+    required this.cardColor,
+    required this.c,
+  });
+
+  @override
+  State<BouncyCheckIcon> createState() => _BouncyCheckIconState();
+}
+
+class _BouncyCheckIconState extends State<BouncyCheckIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.25)
+            .chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.25, end: 0.95)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.95, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 25,
+      ),
+    ]).animate(_controller);
+
+    if (widget.isCompleted) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant BouncyCheckIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isCompleted && !oldWidget.isCompleted) {
+      _controller.forward(from: 0.0);
+    } else if (!widget.isCompleted && oldWidget.isCompleted) {
+      _controller.reverse(from: 1.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.c;
+    final isCompleted = widget.isCompleted;
+    final isExcused = widget.isExcused;
+    final cardColor = widget.cardColor;
+
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: c.surface,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isCompleted
+                ? (isExcused ? c.textSecondary : c.border)
+                : c.border,
+            width: 2,
+          ),
+          boxShadow: isCompleted
+              ? null
+              : [
+                  BoxShadow(
+                    color: c.border,
+                    offset: const Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ],
+        ),
+        child: Icon(
+          isCompleted
+              ? Icons.check_circle
+              : Icons.radio_button_unchecked,
+          color: isCompleted
+              ? (isExcused ? c.textSecondary : cardColor)
+              : c.textSecondary,
+          size: 30,
         ),
       ),
     );

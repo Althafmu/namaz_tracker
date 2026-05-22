@@ -38,7 +38,7 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
     emit(const GroupsInviteValidating());
     try {
       final result = await repository.validateInviteCode(event.inviteCode);
-      final groupId = result['group_id'] as int;
+      final groupId = result['group_id'] as String;
       final groupName = result['group_name'] as String;
       final isAlreadyMember = result['is_already_member'] as bool? ?? false;
 
@@ -83,7 +83,7 @@ class GroupsBloc extends Bloc<GroupsEvent, GroupsState> {
     emit(const GroupsCreating());
     try {
       final data = await repository.createGroup(event.name);
-      final groupId = data['id'] as int;
+      final groupId = data['id'] as String;
       final inviteCode = data['invite_code'] as String;
       emit(GroupsCreateSuccess(groupId, inviteCode));
       add(LoadGroups());

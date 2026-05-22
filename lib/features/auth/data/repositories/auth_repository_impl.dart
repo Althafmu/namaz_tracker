@@ -1,10 +1,17 @@
 import 'package:flutter/foundation.dart';
+// Hide Supabase types that clash with our domain entities
+import 'package:supabase_flutter/supabase_flutter.dart'
+    hide User, AuthResponse;
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
 import '../models/user_model.dart';
 import '../../../../core/network/token_provider.dart';
 
+/// Auth repository implementation.
+///
+/// Google Sign-In via Supabase is ACTIVE.
+/// All Django-era token management and backend calls are STUBBED.
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
   final TokenProvider tokenProvider;
@@ -14,42 +21,84 @@ class AuthRepositoryImpl implements AuthRepository {
     required this.tokenProvider,
   });
 
+  static const _tag = '[AuthRepositoryImpl]';
+
+  // ── ACTIVE: Supabase Google Sign-In ──────────────────────────────────────
+
+  @override
+  Future<AuthResponse> googleSignIn({
+    required String idToken,
+    required String accessToken,
+  }) async {
+    // AuthRemoteDataSource calls AuthService.signInWithGoogleTokens + profile upsert
+    await remoteDataSource.googleSignIn(
+      idToken: idToken,
+      accessToken: accessToken,
+    );
+
+    // Read real user from Supabase session
+    final supabaseUser = Supabase.instance.client.auth.currentUser;
+    if (supabaseUser == null) {
+      throw Exception('Supabase sign-in succeeded but no session found.');
+    }
+
+    final fullName =
+        supabaseUser.userMetadata?['full_name'] as String? ?? '';
+    final parts = fullName.trim().split(' ');
+    final firstName = parts.isNotEmpty ? parts.first : '';
+    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+    final user = UserModel(
+      id: supabaseUser.id,
+      username: fullName,
+      email: supabaseUser.email ?? '',
+      firstName: firstName,
+      lastName: lastName,
+    );
+
+    return AuthResponse(
+      access: 'supabase_managed',
+      refresh: 'supabase_managed',
+      user: user,
+    );
+  }
+
+  @override
+  Future<void> logout() async {
+    try {
+      await remoteDataSource.logout(refreshToken: '');
+    } catch (e) {
+      debugPrint('$_tag Server logout failed (non-fatal): $e');
+    } finally {
+      await tokenProvider.clearAll();
+    }
+  }
+
+  // ── ACTIVE: Supabase Email/Password Auth ──────────────────────────────────────
+
   @override
   Future<AuthResponse> register({
     required String name,
     required String email,
     required String password,
   }) async {
-    final username = email;
-    final names = name.split(' ');
-    final firstName = names.isNotEmpty ? names.first : '';
-    final lastName = names.length > 1 ? names.sublist(1).join(' ') : '';
+    final parts = name.trim().split(' ');
+    final firstName = parts.isNotEmpty ? parts.first : '';
+    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
 
-    final responseData = await remoteDataSource.register(
-      username: username,
+    final data = await remoteDataSource.register(
+      username: name,
       email: email,
       password: password,
       firstName: firstName,
       lastName: lastName,
     );
 
-    final token = responseData['access'] as String? ?? responseData['token'] as String?;
-    final refreshToken = responseData['refresh'] as String? ?? responseData['refresh_token'] as String?;
-
-    if (token == null || refreshToken == null) {
-      throw Exception('Server response missing tokens');
-    }
-
-    await tokenProvider.updateTokens(access: token, refresh: refreshToken);
-
-    User user;
-    if (responseData['user'] != null) {
-      user = UserModel.fromJson(responseData['user']);
-    } else {
-      user = UserModel.fromJson(responseData);
-    }
-
-    return AuthResponse(access: token, refresh: refreshToken, user: user);
+    return AuthResponse(
+      access: data['access'] as String,
+      refresh: data['refresh'] as String,
+      user: UserModel.fromJson(data['user'] as Map<String, dynamic>),
+    );
   }
 
   @override
@@ -57,98 +106,21 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    final responseData = await remoteDataSource.login(
+    final data = await remoteDataSource.login(
       username: email,
       password: password,
     );
-    final token = responseData['access'] as String? ?? responseData['token'] as String?;
-    final refreshToken = responseData['refresh'] as String? ?? responseData['refresh_token'] as String?;
-    if (token == null) {
-      throw Exception('Server response missing access token');
-    }
-    if (refreshToken == null) {
-      throw Exception('Server response missing refresh token');
-    }
 
-    // Persist both tokens atomically via single write path
-    await tokenProvider.updateTokens(access: token, refresh: refreshToken);
-
-    // throw if server omits user data instead of creating phantom user
-    User user;
-    if (responseData['user'] != null) {
-      user = UserModel.fromJson(responseData['user']);
-    } else {
-      debugPrint(
-        '[AuthRepo] Server response missing user field — creating minimal user from email',
-      );
-      throw Exception(
-        'Login succeeded but server did not return user profile. Please try again.',
-      );
-    }
-
-    return AuthResponse(access: token!, refresh: refreshToken!, user: user);
-  }
-
-  @override
-  Future<AuthResponse> googleSignIn({required String idToken}) async {
-    final responseData = await remoteDataSource.googleSignIn(idToken: idToken);
-
-    final access = responseData['access'] as String?;
-    final refreshToken = responseData['refresh'] as String?;
-
-    if (access == null || refreshToken == null) {
-      throw Exception('Server response missing tokens');
-    }
-
-    await tokenProvider.updateTokens(access: access, refresh: refreshToken);
-
-    User user;
-    if (responseData['user'] != null) {
-      user = UserModel.fromJson(responseData['user']);
-    } else {
-      user = UserModel.fromJson(responseData);
-    }
-
-    return AuthResponse(access: access, refresh: refreshToken, user: user);
-  }
-
-  @override
-  Future<void> logout() async {
-    final currentRefresh = tokenProvider.refreshToken;
-    try {
-      if (currentRefresh != null) {
-        await remoteDataSource.logout(refreshToken: currentRefresh);
-      }
-    } catch (e) {
-      // Backend blacklist failure is non-fatal — local state must still be cleared.
-      debugPrint('[AuthRepo] Server logout failed (non-fatal): $e');
-    } finally {
-      // CRITICAL: always wipe local tokens, regardless of backend outcome.
-      await tokenProvider.clearAll();
-    }
+    return AuthResponse(
+      access: data['access'] as String,
+      refresh: data['refresh'] as String,
+      user: UserModel.fromJson(data['user'] as Map<String, dynamic>),
+    );
   }
 
   @override
   Future<void> deleteAccount() async {
     await remoteDataSource.deleteAccount();
-  }
-
-  /// Attempt to refresh the access token using the stored refresh token.
-  /// Returns the new access token, or null if refresh failed.
-  Future<String?> refreshAccessToken() async {
-    final currentRefresh = tokenProvider.refreshToken;
-    if (currentRefresh == null) return null;
-
-    try {
-      final newAccess = await remoteDataSource.refreshToken(
-        refreshToken: currentRefresh,
-      );
-      await tokenProvider.updateAccessToken(newAccess);
-      return newAccess;
-    } catch (e) {
-      debugPrint('[AuthRepo] Token refresh failed: $e');
-      return null;
-    }
   }
 
   @override
@@ -170,20 +142,13 @@ class AuthRepositoryImpl implements AuthRepository {
     String? intentLevel,
     bool? sunnahEnabled,
   }) async {
-    final data = <String, dynamic>{'manual_offsets': manualOffsets};
-    if (calculationMethod != null) {
-      data['calculation_method'] = calculationMethod;
-    }
-    if (useHanafi != null) {
-      data['use_hanafi'] = useHanafi;
-    }
-    if (intentLevel != null) {
-      data['intent_level'] = intentLevel;
-    }
-    if (sunnahEnabled != null) {
-      data['sunnah_enabled'] = sunnahEnabled;
-    }
-    await remoteDataSource.patchProfileOffsets(data);
+    await remoteDataSource.patchProfileOffsets({
+      'manual_offsets': manualOffsets,
+      'calculation_method': calculationMethod,
+      'use_hanafi': useHanafi,
+      'intent_level': intentLevel,
+      'sunnah_enabled': sunnahEnabled,
+    });
   }
 
   @override
@@ -197,15 +162,25 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> confirmPasswordReset({required String token, required String newPassword}) async {
-    await remoteDataSource.confirmPasswordReset(token: token, newPassword: newPassword);
+  Future<void> confirmPasswordReset({
+    required String token,
+    required String newPassword,
+  }) async {
+    await remoteDataSource.confirmPasswordReset(
+      token: token,
+      newPassword: newPassword,
+    );
   }
 
   @override
   Future<bool> verifyEmail({String? token}) async {
-    if (token == null || token.isEmpty) {
-      return false;
-    }
-    return await remoteDataSource.verifyEmail(token: token);
+    debugPrint('$_tag verifyEmail() — stubbed (Django disabled)');
+    return false;
+  }
+
+  /// Legacy: kept for TokenRefreshCoordinator compatibility. No-ops.
+  Future<String?> refreshAccessToken() async {
+    debugPrint('$_tag refreshAccessToken() — stubbed (Supabase manages sessions)');
+    return null;
   }
 }

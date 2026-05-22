@@ -1,90 +1,33 @@
-import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../../core/errors/api_error.dart';
-import '../../../../core/errors/exceptions.dart';
+import '../../../../core/supabase/prayer_service.dart';
 import '../../domain/entities/prayer.dart';
 import '../../domain/entities/streak.dart';
 import '../../domain/repositories/prayer_repository.dart';
-import '../datasources/prayer_remote_data_source.dart';
-import '../models/prayer_model.dart';
-import '../models/streak_model.dart';
 
-/// Concrete implementation of [PrayerRepository].
-/// Calls the remote data source and maps the results to domain entities.
-/// In offline mode, the BLoC's HydratedBloc handles local persistence.
+/// Prayer repository — Supabase implementation.
 ///
-/// Error Handling Strategy:
-/// - Network failures (connection refused, timeout) → NetworkException
-/// - Server errors (4xx, 5xx) → ServerException (with structured ApiError)
-/// - BLoCs decide how to handle: use cached data, show error, or retry
+/// logPrayer and getDailyStatus are LIVE via Supabase.
+/// All other methods are stubbed pending next migration phase.
 class PrayerRepositoryImpl implements PrayerRepository {
-  final PrayerRemoteDataSource remoteDataSource;
+  final PrayerService prayerService;
 
-  PrayerRepositoryImpl({required this.remoteDataSource});
+  PrayerRepositoryImpl({required this.prayerService});
 
-  /// Converts Dio errors to appropriate AppException types.
-  ///
-  /// Parses the standardized `{code, detail, field_errors}` error contract
-  /// from the backend and attaches it to the [ServerException].
-  Never _handleDioError(DioException e, String operation) {
-    switch (e.type) {
-      case DioExceptionType.connectionError:
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-      case DioExceptionType.unknown:
-        throw NetworkException(
-          'Network error during $operation: ${e.message}',
-          originalError: e,
-        );
-      case DioExceptionType.badResponse:
-        final statusCode = e.response?.statusCode;
-        final apiError = ApiError.fromResponse(
-          e.response?.data,
-          statusCode: statusCode,
-        );
+  static const _tag = '[PrayerRepositoryImpl]';
 
-        if (statusCode != null && statusCode >= 500) {
-          throw ServerException(
-            'Server error during $operation ($statusCode)',
-            statusCode: statusCode,
-            apiError: apiError,
-            originalError: e,
-          );
-        } else if (statusCode == 404) {
-          throw NoDataException(
-            'No data found for $operation',
-            originalError: e,
-          );
-        } else {
-          throw ServerException(
-            'Request failed during $operation ($statusCode)',
-            statusCode: statusCode,
-            apiError: apiError,
-            originalError: e,
-          );
-        }
-      case DioExceptionType.cancel:
-      case DioExceptionType.badCertificate:
-        throw NetworkException(
-          'Request failed during $operation: ${e.message}',
-          originalError: e,
-        );
-    }
-  }
+  // ── LIVE: Supabase prayer_logs ────────────────────────────────────────────
 
   @override
   Future<List<Prayer>> getDailyStatus() async {
     try {
-      final data = await remoteDataSource.getTodayLog();
-      return PrayerModel.fromApiResponse(data);
-    } on DioException catch (e) {
-      _handleDioError(e, 'getDailyStatus');
-    } catch (e) {
-      throw NetworkException(
-        'Unexpected error during getDailyStatus',
-        originalError: e,
+      return await prayerService.fetchDayLogs(
+        basePrayers: Prayer.defaultPrayers(),
       );
+    } catch (e) {
+      debugPrint('$_tag getDailyStatus error: $e');
+      return Prayer.defaultPrayers();
     }
   }
 
@@ -99,64 +42,20 @@ class PrayerRepositoryImpl implements PrayerRepository {
     String? dateKey,
     bool? prayedJumah,
   }) async {
+    final resolvedStatus = status ?? (completed ? 'on_time' : 'missed');
     try {
-      final data = await remoteDataSource.logPrayer(
+      await prayerService.upsertLog(
         prayerName: prayerName,
-        completed: completed,
+        status: resolvedStatus,
         inJamaat: inJamaat,
-        location: location,
-        status: status,
         reason: reason,
         dateKey: dateKey,
-        prayedJumah: prayedJumah ?? false,
       );
-      return PrayerModel.fromApiResponse(data);
-    } on DioException catch (e) {
-      _handleDioError(e, 'logPrayer');
     } catch (e) {
-      throw NetworkException(
-        'Unexpected error during logPrayer',
-        originalError: e,
-      );
+      debugPrint('$_tag logPrayer error: $e');
     }
-  }
-
-  @override
-  Future<Streak> getStreak() async {
-    try {
-      final data = await remoteDataSource.getStreak();
-      return StreakModel.fromApiResponse(data);
-    } on DioException catch (e) {
-      _handleDioError(e, 'getStreak');
-    } catch (e) {
-      throw NetworkException(
-        'Unexpected error during getStreak',
-        originalError: e,
-      );
-    }
-  }
-
-  @override
-  Future<Map<String, int>> getWeeklyHistory({int days = 90}) async {
-    try {
-      final response = await remoteDataSource.getWeeklyHistory(days: days);
-      final results = response['results'] as List<dynamic>? ?? [];
-      final Map<String, int> history = {};
-      for (final dayData in results) {
-        final json = dayData as Map<String, dynamic>;
-        if (json['date'] != null && json['completed_count'] != null) {
-          history[json['date'] as String] = json['completed_count'] as int;
-        }
-      }
-      return history;
-    } on DioException catch (e) {
-      _handleDioError(e, 'getWeeklyHistory');
-    } catch (e) {
-      throw NetworkException(
-        'Unexpected error during getWeeklyHistory',
-        originalError: e,
-      );
-    }
+    // Return updated day so PrayerBloc can refresh
+    return getDailyStatus();
   }
 
   @override
@@ -165,83 +64,55 @@ class PrayerRepositoryImpl implements PrayerRepository {
     required int month,
   }) async {
     try {
-      final response = await remoteDataSource.getDetailedMonthHistory(
-        year: year,
-        month: month,
-      );
-      final results = response['results'] as List<dynamic>? ?? [];
-      final Map<String, List<Prayer>> result = {};
-      for (final dayData in results) {
-        final json = dayData as Map<String, dynamic>;
-        final dateStr = json['date'] as String?;
-        if (dateStr != null) {
-          result[dateStr] = PrayerModel.fromApiResponse(json);
-        }
-      }
-      // If there are more pages, fetch them and merge
-      final totalPages = response['total_pages'] as int? ?? 1;
-      if (totalPages > 1) {
-        for (var p = 2; p <= totalPages; p++) {
-          final pageResponse = await remoteDataSource.getDetailedMonthHistory(
-            year: year,
-            month: month,
-            page: p,
-          );
-          final pageResults = pageResponse['results'] as List<dynamic>? ?? [];
-          for (final dayData in pageResults) {
-            final json = dayData as Map<String, dynamic>;
-            final dateStr = json['date'] as String?;
-            if (dateStr != null) {
-              result[dateStr] = PrayerModel.fromApiResponse(json);
-            }
-          }
-        }
-      }
-      return result;
-    } on DioException catch (e) {
-      _handleDioError(e, 'getDetailedMonthHistory');
+      return await prayerService.fetchMonthLogs(year: year, month: month);
     } catch (e) {
-      throw NetworkException(
-        'Unexpected error during getDetailedMonthHistory',
-        originalError: e,
-      );
+      debugPrint('$_tag getDetailedMonthHistory error: $e');
+      return const {};
+    }
+  }
+
+  // ── STUBBED: pending next phase ───────────────────────────────────────────
+
+  @override
+  Future<Streak> getStreak() async {
+    try {
+      return await prayerService.getStreak();
+    } catch (e) {
+      debugPrint('$_tag getStreak error: $e');
+      return const Streak();
+    }
+  }
+
+  @override
+  Future<Streak> consumeProtectorToken({String? date}) async {
+    try {
+      return await prayerService.consumeProtectorToken(date: date);
+    } catch (e) {
+      debugPrint('$_tag consumeProtectorToken error: $e');
+      return const Streak();
+    }
+  }
+
+  @override
+  Future<Map<String, int>> getWeeklyHistory({int days = 90}) async {
+    try {
+      return await prayerService.getWeeklyHistory(days: days);
+    } catch (e) {
+      debugPrint('$_tag getWeeklyHistory error: $e');
+      return const {};
     }
   }
 
   @override
   Future<Map<String, int>> getReasonSummary() async {
     try {
-      final data = await remoteDataSource.getReasonSummary();
-      final reasons = data['reasons'] as Map<String, dynamic>? ?? {};
-      return reasons.map((key, value) => MapEntry(key, value as int));
-    } on DioException catch (e) {
-      _handleDioError(e, 'getReasonSummary');
+      return await prayerService.getReasonSummary();
     } catch (e) {
-      throw NetworkException(
-        'Unexpected error during getReasonSummary',
-        originalError: e,
-      );
+      debugPrint('$_tag getReasonSummary error: $e');
+      return const {};
     }
   }
 
-  // ── Phase 2: Streak Freeze System ──
-
-  @override
-  Future<Streak> consumeProtectorToken({String? date}) async {
-    try {
-      final data = await remoteDataSource.consumeProtectorToken(date: date);
-      // Response includes 'streak' object with updated token count
-      final streakData = data['streak'] as Map<String, dynamic>? ?? data;
-      return StreakModel.fromApiResponse(streakData);
-    } on DioException catch (e) {
-      _handleDioError(e, 'consumeProtectorToken');
-    } catch (e) {
-      throw NetworkException(
-        'Unexpected error during consumeProtectorToken',
-        originalError: e,
-      );
-    }
-  }
 
   @override
   Future<List<Prayer>> setExcusedDay({
@@ -249,114 +120,102 @@ class PrayerRepositoryImpl implements PrayerRepository {
     String? reason,
     Set<String>? prayerNames,
   }) async {
-    try {
-      final data = await remoteDataSource.setExcusedDay(
-        date: date,
-        reason: reason,
-        prayerNames: prayerNames,
-      );
-      return PrayerModel.fromApiResponse(data);
-    } on DioException catch (e) {
-      _handleDioError(e, 'setExcusedDay');
-    } catch (e) {
-      throw NetworkException(
-        'Unexpected error during setExcusedDay',
-        originalError: e,
-      );
-    }
+    return prayerService.setExcusedDay(
+      date: date,
+      reason: reason,
+      prayerNames: prayerNames,
+    );
   }
 
   @override
   Future<List<Prayer>> clearExcusedDay({required String date}) async {
-    try {
-      final data = await remoteDataSource.clearExcusedDay(date: date);
-      return PrayerModel.fromApiResponse(data);
-    } on DioException catch (e) {
-      _handleDioError(e, 'clearExcusedDay');
-    } catch (e) {
-      throw NetworkException(
-        'Unexpected error during clearExcusedDay',
-        originalError: e,
-      );
-    }
+    return prayerService.clearExcusedDay(date: date);
   }
-
-  // ── Phase 3: New Backend Features ──
 
   @override
   Future<List<Prayer>> undoLastPrayerLog({
     String? prayerName,
     String? dateKey,
   }) async {
-    try {
-      final data = await remoteDataSource.undoLastPrayerLog(
-        prayerName: prayerName,
-        dateKey: dateKey,
-      );
-      return PrayerModel.fromApiResponse(data);
-    } on DioException catch (e) {
-      _handleDioError(e, 'undoLastPrayerLog');
-    } catch (e) {
-      throw NetworkException(
-        'Unexpected error during undoLastPrayerLog',
-        originalError: e,
-      );
-    }
+    if (prayerName == null) return const [];
+    
+    await prayerService.undoLastPrayerLog(
+      prayerName: prayerName,
+      dateKey: dateKey,
+    );
+    
+    return prayerService.fetchDayLogs(
+      dateKey: dateKey,
+      basePrayers: Prayer.defaultPrayers(),
+    );
   }
 
   @override
-  Future<Map<String, dynamic>> getSyncMetadata() async {
-    try {
-      return await remoteDataSource.getSyncMetadata();
-    } on DioException catch (e) {
-      _handleDioError(e, 'getSyncMetadata');
-    } catch (e) {
-      throw NetworkException(
-        'Unexpected error during getSyncMetadata',
-        originalError: e,
-      );
-    }
-  }
+  Future<Map<String, dynamic>> getSyncMetadata() async => const {};
 
   @override
   Future<Map<String, dynamic>> pauseNotificationsForToday() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return const {'is_paused': false, 'paused': false};
+
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
     try {
-      return await remoteDataSource.pauseNotificationsForToday();
-    } on DioException catch (e) {
-      _handleDioError(e, 'pauseNotificationsForToday');
+      await client.from('user_settings').upsert({
+        'id': user.id,
+        'pause_notifications_until': todayStr,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'id');
+      return {'is_paused': true, 'paused': true};
     } catch (e) {
-      throw NetworkException(
-        'Unexpected error during pauseNotificationsForToday',
-        originalError: e,
-      );
+      debugPrint('$_tag pauseNotificationsForToday error: $e');
+      return {'is_paused': false, 'paused': false};
     }
   }
 
   @override
   Future<Map<String, dynamic>> getNotificationsPauseStatus() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return const {'is_paused': false, 'paused': false};
+
     try {
-      return await remoteDataSource.getNotificationsPauseStatus();
-    } on DioException catch (e) {
-      _handleDioError(e, 'getNotificationsPauseStatus');
+      final response = await client
+          .from('user_settings')
+          .select('pause_notifications_until')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (response != null && response['pause_notifications_until'] != null) {
+        final now = DateTime.now();
+        final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        final isPaused = response['pause_notifications_until'] == todayStr;
+        return {'is_paused': isPaused, 'paused': isPaused};
+      }
     } catch (e) {
-      throw NetworkException(
-        'Unexpected error during getNotificationsPauseStatus',
-        originalError: e,
-      );
+      debugPrint('$_tag getNotificationsPauseStatus error: $e');
     }
+    return const {'is_paused': false, 'paused': false};
   }
 
   @override
   Future<Map<String, dynamic>> resumeNotificationsForToday() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return const {'is_paused': false, 'paused': false};
+
     try {
-      return await remoteDataSource.resumeNotificationsForToday();
-    } on DioException catch (e) {
-      _handleDioError(e, 'resumeNotificationsForToday');
+      await client.from('user_settings').upsert({
+        'id': user.id,
+        'pause_notifications_until': null,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'id');
+      return {'is_paused': false, 'paused': false};
     } catch (e) {
-      throw NetworkException(
-        'Unexpected error during resumeNotificationsForToday',
-        originalError: e,
-      );
+      debugPrint('$_tag resumeNotificationsForToday error: $e');
+      return {'is_paused': false, 'paused': false};
     }
   }
 }

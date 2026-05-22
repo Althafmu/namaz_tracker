@@ -21,7 +21,7 @@ abstract class AuthRepository {
 
   Future<AuthResponse> login({required String email, required String password});
 
-  Future<AuthResponse> googleSignIn({required String idToken});
+  Future<AuthResponse> googleSignIn({required String idToken, required String accessToken});
 
   Future<void> logout();
 

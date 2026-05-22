@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'skeleton_widget.dart';
+import '../../../../core/widgets/skeleton_widget.dart';
 
 class LoadingViewWidget extends StatelessWidget {
   const LoadingViewWidget({super.key});

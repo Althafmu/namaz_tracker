@@ -192,8 +192,64 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     LoadSettingsFromCloud event,
     Emitter<SettingsState> emit,
   ) async {
-    // HydratedBloc restores state automatically; this handler is for
-    // post-login cloud load if needed in the future.
+    if (authRepository == null) return;
+    try {
+      final config = await authRepository!.getUserConfig();
+      if (config.isNotEmpty) {
+        // 1. Manual offsets
+        final Map<String, int> manualOffsets = Map<String, int>.from(state.manualOffsets);
+        if (config['manual_offsets'] != null) {
+          final offsetsJson = config['manual_offsets'] as Map<String, dynamic>;
+          offsetsJson.forEach((key, value) {
+            if (value is int) {
+              manualOffsets[key] = value;
+            }
+          });
+        }
+
+        // 2. Calculation method
+        final calculationMethod = config['calculation_method'] as String? ?? state.calculationMethod;
+
+        // 3. Hanafi preference
+        final useHanafi = config['use_hanafi'] as bool? ?? state.useHanafi;
+
+        // 4. Intent level
+        final intentLevelStr = config['intent_level'] as String? ?? state.intentLevel.name;
+        final intentLevel = IntentLevel.fromString(intentLevelStr);
+
+        // 5. Sunnah enabled
+        final sunnahEnabled = config['sunnah_enabled'] as bool? ?? state.sunnahEnabled;
+
+        // 6. Notification pause status
+        final pauseUntilStr = config['pause_notifications_until'] as String?;
+        bool notificationsPausedToday = false;
+        if (pauseUntilStr != null) {
+          final now = DateTime.now();
+          final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+          notificationsPausedToday = (pauseUntilStr == todayStr);
+        }
+
+        final (style, nudge) = _styleForIntent(intentLevel);
+
+        _emitInitialized(
+          emit,
+          state.copyWith(
+            manualOffsets: manualOffsets,
+            calculationMethod: calculationMethod,
+            useHanafi: useHanafi,
+            intentLevel: intentLevel,
+            sunnahEnabled: intentLevel == IntentLevel.growth ? sunnahEnabled : false,
+            notificationsPausedToday: notificationsPausedToday,
+            isIntentSet: true,
+            isFallbackIntent: false,
+            behaviorStyle: style,
+            nudgeIntensity: nudge,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[SettingsBloc] Load settings from cloud failed: $e');
+    }
   }
 
   void _onAddExcusedDay(AddExcusedDay event, Emitter<SettingsState> emit) {

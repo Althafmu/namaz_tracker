@@ -20,7 +20,7 @@ import '../../../../core/widgets/neo_button.dart';
 import '../../../../core/widgets/neo_card.dart';
 
 class GroupDashboardPage extends StatefulWidget {
-  final int groupId;
+  final String groupId;
   final String groupName;
 
   const GroupDashboardPage({
@@ -198,82 +198,103 @@ class _GroupDashboardPageState extends State<GroupDashboardPage> {
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
-        backgroundColor: c.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: c.border, width: 2),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.group_add, color: c.primary, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'INVITE CODE',
-                      style: AppTextStyles.headlineSmall.copyWith(
-                        color: c.textPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 360,
+                maxHeight: constraints.maxHeight,
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Share this code to invite members:',
-                style: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
-              ),
-              const SizedBox(height: 16),
-              NeoCard(
-                borderColor: c.primary,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      inviteCode,
-                      style: AppTextStyles.headlineSmall.copyWith(
-                        color: c.primary,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.copy, color: c.primary),
-                      tooltip: 'Copy',
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: inviteCode));
-                        HapticFeedback.lightImpact();
-                        Navigator.pop(dialogContext);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Invite code copied!',
-                              style: AppTextStyles.bodyMedium.copyWith(color: c.surface),
-                            ),
-                          ),
-                        );
-                      },
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: c.background,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: c.border, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: c.border,
+                      offset: const Offset(4, 4),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: NeoButton(
-                  text: 'CLOSE',
-                  color: c.surface,
-                  textColor: c.textPrimary,
-                  onPressed: () => Navigator.pop(dialogContext),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.group_add, color: c.primary, size: 28),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'INVITE CODE',
+                              style: AppTextStyles.headlineSmall.copyWith(
+                                color: c.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Share this code to invite members:',
+                        style: AppTextStyles.bodyMedium.copyWith(color: c.textSecondary),
+                      ),
+                      const SizedBox(height: 16),
+                      NeoCard(
+                        borderColor: c.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              inviteCode,
+                              style: AppTextStyles.headlineSmall.copyWith(
+                                color: c.primary,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.copy, color: c.primary),
+                              tooltip: 'Copy',
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: inviteCode));
+                                HapticFeedback.lightImpact();
+                                Navigator.pop(dialogContext);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Invite code copied!',
+                                      style: AppTextStyles.bodyMedium.copyWith(color: c.surface),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: NeoButton(
+                          text: 'CLOSE',
+                          color: c.surface,
+                          textColor: c.textPrimary,
+                          onPressed: () => Navigator.pop(dialogContext),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

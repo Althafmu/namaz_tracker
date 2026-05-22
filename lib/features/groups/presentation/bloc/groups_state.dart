@@ -39,7 +39,7 @@ class GroupsJoining extends GroupsState {
 }
 
 class GroupsJoinSuccess extends GroupsState {
-  final int groupId;
+  final String groupId;
   const GroupsJoinSuccess(this.groupId);
 
   @override
@@ -59,7 +59,7 @@ class GroupsCreating extends GroupsState {
 }
 
 class GroupsCreateSuccess extends GroupsState {
-  final int groupId;
+  final String groupId;
   final String inviteCode;
   const GroupsCreateSuccess(this.groupId, this.inviteCode);
 
@@ -80,7 +80,7 @@ class GroupsInviteValidating extends GroupsState {
 }
 
 class GroupsInviteConfirmed extends GroupsState {
-  final int groupId;
+  final String groupId;
   final String groupName;
   const GroupsInviteConfirmed({required this.groupId, required this.groupName});
 

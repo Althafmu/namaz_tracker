@@ -14,7 +14,7 @@ class GroupDashboardLoading extends GroupDashboardState {}
 
 class GroupDashboardLoaded extends GroupDashboardState {
   final GroupDashboardModel dashboard;
-  final int groupId;
+  final String groupId;
   final bool isCached;
   final String? errorMessage;
 
@@ -31,7 +31,7 @@ class GroupDashboardLoaded extends GroupDashboardState {
 
 class GroupDashboardError extends GroupDashboardState {
   final String message;
-  final int? groupId;
+  final String? groupId;
 
   const GroupDashboardError({
     required this.message,
@@ -44,7 +44,7 @@ class GroupDashboardError extends GroupDashboardState {
 
 class GroupDashboardRefreshing extends GroupDashboardState {
   final GroupDashboardModel dashboard;
-  final int groupId;
+  final String groupId;
 
   const GroupDashboardRefreshing({
     required this.dashboard,

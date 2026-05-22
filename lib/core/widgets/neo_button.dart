@@ -14,6 +14,7 @@ class NeoButton extends StatefulWidget {
   final Color? color;
   final Color? textColor;
   final IconData? icon;
+  final Widget? leading;
   final double borderRadius;
   final double height;
   final bool isFullWidth;
@@ -26,6 +27,7 @@ class NeoButton extends StatefulWidget {
     this.color,
     this.textColor,
     this.icon,
+    this.leading,
     this.borderRadius = 16.0,
     this.height = 56.0,
     this.isFullWidth = true,
@@ -97,6 +99,10 @@ class _NeoButtonState extends State<NeoButton> {
           mainAxisSize:
               widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
           children: [
+            if (widget.leading != null) ...[
+              widget.leading!,
+              const SizedBox(width: 8),
+            ],
             Text(
               widget.text,
               style: AppTextStyles.bodyLarge.copyWith(
