@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
@@ -33,104 +34,113 @@ const String kStorageCorruptionFlag = 'storage_corruption_wiped';
 const String kStorageRecoveryAttempted = 'storage_recovery_attempted';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = 'https://examplePublicKey@o0.ingest.sentry.io/0'; // Replace with your Sentry DSN
+      options.tracesSampleRate = 1.0;
+    },
+    appRunner: () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  // Global error handler to prevent crashes from uncaught errors
-  FlutterError.onError = (details) {
-    debugPrint('[FlutterError] ${details.exception}');
-    debugPrint('[FlutterError] ${details.stack}');
-    // In production, you would send to Crashlytics here
-  };
+      // Global error handler to prevent crashes from uncaught errors
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        debugPrint('[FlutterError] ${details.exception}');
+        debugPrint('[FlutterError] ${details.stack}');
+        Sentry.captureException(details.exception, stackTrace: details.stack);
+      };
 
-  await Supabase.initialize(
-    url: 'https://nholhoqqkmeyrzxlwmbp.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ob2xob3Fxa21leXJ6eGx3bWJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODI1MjEsImV4cCI6MjA5NDA1ODUyMX0.1ON5I6mbhNdsh0_q02m1TF-PoCqyZdqYqboXTX3eaEs',
-  );
-
-  // Initialize HydratedBloc storage for offline persistence
-  // With recovery attempt and user notification support.
-  bool storageWasCorrupted = false;
-  final docDir = await getApplicationDocumentsDirectory();
-  final storageDir = HydratedStorageDirectory(docDir.path);
-
-  try {
-    HydratedBloc.storage = await HydratedStorage.build(
-      storageDirectory: storageDir,
-    );
-  } catch (e) {
-    debugPrint('[Main] HydratedStorage corrupted: $e');
-    storageWasCorrupted = true;
-
-    // Attempt recovery: Try to preserve any readable data before wiping
-    bool recovered = false;
-    try {
-      recovered = await _attemptStorageRecovery(docDir);
-    } catch (recoveryError) {
-      debugPrint('[Main] Recovery attempt failed: $recoveryError');
-    }
-
-    // If recovery failed, wipe corrupted data as last resort
-    if (!recovered) {
-      debugPrint('[Main] Wiping corrupted storage as last resort');
-      await _wipeCorruptedStorage(docDir);
-    }
-
-    // Retry storage initialization
-    try {
-      HydratedBloc.storage = await HydratedStorage.build(
-        storageDirectory: storageDir,
+      await Supabase.initialize(
+        url: 'https://nholhoqqkmeyrzxlwmbp.supabase.co',
+        anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ob2xob3Fxa21leXJ6eGx3bWJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0ODI1MjEsImV4cCI6MjA5NDA1ODUyMX0.1ON5I6mbhNdsh0_q02m1TF-PoCqyZdqYqboXTX3eaEs',
       );
-      debugPrint('[Main] Storage reinitialized successfully');
-    } catch (e) {
-      debugPrint('[Main] CRITICAL: Failed to reinitialize storage: $e');
-      // App cannot function without storage, but we'll let it run
-      // with in-memory storage that won't persist
-    }
-  }
 
-  // Store corruption flag for app to show user notice
-  if (storageWasCorrupted) {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(kStorageCorruptionFlag, true);
-    } catch (_) {}
-  }
+      // Initialize HydratedBloc storage for offline persistence
+      // With recovery attempt and user notification support.
+      bool storageWasCorrupted = false;
+      final docDir = await getApplicationDocumentsDirectory();
+      final storageDir = HydratedStorageDirectory(docDir.path);
 
-  // Initialize Hive for dashboard cache
-  try {
-    await Hive.initFlutter();
-    await GroupDashboardCache.init();
-  } catch (e) {
-    debugPrint('GroupDashboardCache init failed: $e');
-  }
+      try {
+        HydratedBloc.storage = await HydratedStorage.build(
+          storageDirectory: storageDir,
+        );
+      } catch (e) {
+        debugPrint('[Main] HydratedStorage corrupted: $e');
+        storageWasCorrupted = true;
 
-  // Initialize dependency injection
-  await initDependencies();
+        // Attempt recovery: Try to preserve any readable data before wiping
+        bool recovered = false;
+        try {
+          recovered = await _attemptStorageRecovery(docDir);
+        } catch (recoveryError) {
+          debugPrint('[Main] Recovery attempt failed: $recoveryError');
+        }
 
-  // Initialize encrypted offline queue (non-blocking)
-  try {
-    await sl<OfflineQueueRepository>().initialize();
-  } catch (e) {
-    debugPrint('OfflineQueueRepository init failed: $e');
-  }
+        // If recovery failed, wipe corrupted data as last resort
+        if (!recovered) {
+          debugPrint('[Main] Wiping corrupted storage as last resort');
+          await _wipeCorruptedStorage(docDir);
+        }
 
-  // Start offline sync listener
-  sl<OfflineSyncService>().startListening();
+        // Retry storage initialization
+        try {
+          HydratedBloc.storage = await HydratedStorage.build(
+            storageDirectory: storageDir,
+          );
+          debugPrint('[Main] Storage reinitialized successfully');
+        } catch (e) {
+          debugPrint('[Main] CRITICAL: Failed to reinitialize storage: $e');
+          // App cannot function without storage, but we'll let it run
+          // with in-memory storage that won't persist
+        }
+      }
 
-  // Initialize notification plugin (non-blocking)
-  try {
-    await sl<NotificationService>().initialize();
-  } catch (e) {
-    debugPrint('NotificationService init failed: $e');
-  }
+      // Store corruption flag for app to show user notice
+      if (storageWasCorrupted) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool(kStorageCorruptionFlag, true);
+        } catch (_) {}
+      }
 
-  // Initialize app router using injected blocs
-  final appRouter = buildAppRouter(sl<AuthBloc>(), sl<SettingsBloc>());
+      // Initialize Hive for dashboard cache
+      try {
+        await Hive.initFlutter();
+        await GroupDashboardCache.init();
+      } catch (e) {
+        debugPrint('GroupDashboardCache init failed: $e');
+      }
 
-  // Start the session coordinator to manage background data syncing
-  sl<SessionCoordinator>();
+      // Initialize dependency injection
+      await initDependencies();
 
-  runApp(FalahApp(appRouter: appRouter));
+      // Initialize encrypted offline queue (non-blocking)
+      try {
+        await sl<OfflineQueueRepository>().initialize();
+      } catch (e) {
+        debugPrint('OfflineQueueRepository init failed: $e');
+      }
+
+      // Start offline sync listener
+      sl<OfflineSyncService>().startListening();
+
+      // Initialize notification plugin (non-blocking)
+      try {
+        await sl<NotificationService>().initialize();
+      } catch (e) {
+        debugPrint('NotificationService init failed: $e');
+      }
+
+      // Initialize app router using injected blocs
+      final appRouter = buildAppRouter(sl<AuthBloc>(), sl<SettingsBloc>());
+
+      // Start the session coordinator to manage background data syncing
+      sl<SessionCoordinator>();
+
+      runApp(FalahApp(appRouter: appRouter));
+    },
+  );
 }
 
 /// Attempts to recover data from corrupted Hive storage.

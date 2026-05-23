@@ -542,17 +542,45 @@ class PrayerBloc extends HydratedBloc<PrayerEvent, PrayerState> {
         'yyyy-MM-dd',
       ).format(TimeService.effectiveNow());
       final isToday = targetDateKey == todayKey;
-      final updatedPrayers = await undoLastPrayerLogUseCase!(
+      final serverPrayers = await undoLastPrayerLogUseCase!(
         prayerName: event.prayerName,
         dateKey: targetDateKey,
       );
+
+      // Merge server status data with local prayers to preserve prayer times
+      // and other local-only fields that the server doesn't store.
+      final localPrayers = isToday
+          ? state.prayers
+          : (historyBloc.state.historicalLog[targetDateKey] ??
+                Prayer.defaultPrayers());
+      final mergedPrayers = localPrayers.map((local) {
+        final server = serverPrayers.where(
+          (s) => s.name.toLowerCase() == local.name.toLowerCase(),
+        );
+        if (server.isNotEmpty) {
+          return local.copyWith(
+            isCompleted: server.first.isCompleted,
+            inJamaat: server.first.inJamaat,
+            status: server.first.status,
+            reason: server.first.reason,
+          );
+        }
+        // Prayer was deleted from server — reset to default (uncompleted)
+        return local.copyWith(
+          isCompleted: false,
+          inJamaat: false,
+          status: 'pending',
+          reason: null,
+        );
+      }).toList();
+
       historyBloc.add(
-        UpdateDayLog(dateStr: targetDateKey, prayers: updatedPrayers),
+        UpdateDayLog(dateStr: targetDateKey, prayers: mergedPrayers),
       );
 
       emit(
         state.copyWith(
-          prayers: isToday ? updatedPrayers : state.prayers,
+          prayers: isToday ? mergedPrayers : state.prayers,
           undoStatus: UndoStatus.success,
           lastActionMessage: event.prayerName != null
               ? '${event.prayerName} log removed.'

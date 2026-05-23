@@ -130,6 +130,7 @@ class PrayerSchedulerService {
         excusedDays: settings.excusedDays,
         excusedPrayers: settings.excusedPrayers,
         intentLevel: settings.intentLevel,
+        notificationsPausedToday: settings.notificationsPausedToday,
       );
     } catch (e) {
       debugPrint('[PrayerScheduler] Failed to schedule notifications: $e');

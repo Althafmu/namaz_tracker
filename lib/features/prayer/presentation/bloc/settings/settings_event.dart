@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/prayer_notification_config.dart';
 
@@ -98,7 +99,11 @@ class SyncSettingsToCloud extends SettingsEvent {
 
 /// Loads settings from cloud on app startup / login.
 class LoadSettingsFromCloud extends SettingsEvent {
-  const LoadSettingsFromCloud();
+  final Completer<void>? completer;
+  const LoadSettingsFromCloud({this.completer});
+
+  @override
+  List<Object?> get props => [completer];
 }
 
 /// Marks a date as excused — suppresses all notifications for that day.

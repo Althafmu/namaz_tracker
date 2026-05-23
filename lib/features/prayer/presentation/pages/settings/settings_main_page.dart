@@ -186,6 +186,15 @@ class SettingsMainPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   NeoSettingsTile(
+                    title: 'Tracker Focus / Path',
+                    subtitle: 'Change your focus plan (Foundation, Strengthening, or Growth)',
+                    icon: Icons.track_changes,
+                    iconColor: c.primary,
+                    iconBg: c.primaryLight,
+                    onTap: () => context.push('/intent-setup'),
+                  ),
+                  const SizedBox(height: 16),
+                  NeoSettingsTile(
                     title: 'Sunna Tracker',
                     subtitle: settingsState.intentLevel == IntentLevel.growth
                         ? settingsState.sunnahEnabled

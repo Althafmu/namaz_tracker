@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/services/time_service.dart';
 import '../../../../core/supabase/prayer_service.dart';
 import '../../domain/entities/prayer.dart';
 import '../../domain/entities/streak.dart';
@@ -159,7 +160,7 @@ class PrayerRepositoryImpl implements PrayerRepository {
     final user = client.auth.currentUser;
     if (user == null) return const {'is_paused': false, 'paused': false};
 
-    final now = DateTime.now();
+    final now = TimeService.effectiveNow();
     final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     try {
@@ -189,7 +190,7 @@ class PrayerRepositoryImpl implements PrayerRepository {
           .maybeSingle();
 
       if (response != null && response['pause_notifications_until'] != null) {
-        final now = DateTime.now();
+        final now = TimeService.effectiveNow();
         final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
         final isPaused = response['pause_notifications_until'] == todayStr;
         return {'is_paused': isPaused, 'paused': isPaused};

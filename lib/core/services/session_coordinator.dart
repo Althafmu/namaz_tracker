@@ -32,7 +32,13 @@ class SessionCoordinator {
     _authSub = authBloc.stream.listen((state) async {
       if (state.status == AuthStatus.loadingConfig) {
         debugPrint('[SessionCoordinator] Starting config hydration from Supabase.');
-        settingsBloc.add(const LoadSettingsFromCloud());
+        final completer = Completer<void>();
+        settingsBloc.add(LoadSettingsFromCloud(completer: completer));
+        try {
+          await completer.future.timeout(const Duration(seconds: 4));
+        } catch (e) {
+          debugPrint('[SessionCoordinator] Config hydration timed out: $e');
+        }
         _applyLocalFallback();
         authBloc.add(ConfigLoadComplete());
       } else if (state.status == AuthStatus.unauthenticated) {

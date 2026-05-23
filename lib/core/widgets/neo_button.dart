@@ -103,11 +103,15 @@ class _NeoButtonState extends State<NeoButton> {
               widget.leading!,
               const SizedBox(width: 8),
             ],
-            Text(
-              widget.text,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: effectiveTextColor,
-                letterSpacing: 0.5,
+            Flexible(
+              child: Text(
+                widget.text,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: effectiveTextColor,
+                  letterSpacing: 0.5,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
             if (widget.icon != null) ...[

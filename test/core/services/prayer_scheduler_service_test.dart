@@ -32,6 +32,7 @@ class _RecordingNotificationService extends NotificationService {
     Map<String, Set<String>>? excusedPrayers,
     IntentLevel? intentLevel,
     DateTime? now,
+    bool notificationsPausedToday = false,
   }) async {
     scheduleCallCount += 1;
     return 7;

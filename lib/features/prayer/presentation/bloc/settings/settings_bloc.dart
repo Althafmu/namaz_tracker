@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import '../../../../../core/errors/exceptions.dart';
 import '../../../../../core/services/notification_service.dart';
+import '../../../../../core/services/time_service.dart';
 import '../../../../auth/domain/repositories/auth_repository.dart';
 import '../../../domain/entities/prayer_notification_config.dart';
 import '../../../domain/usecases/pause_notifications_for_today_usecase.dart';
@@ -192,7 +194,10 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
     LoadSettingsFromCloud event,
     Emitter<SettingsState> emit,
   ) async {
-    if (authRepository == null) return;
+    if (authRepository == null) {
+      event.completer?.complete();
+      return;
+    }
     try {
       final config = await authRepository!.getUserConfig();
       if (config.isNotEmpty) {
@@ -224,7 +229,7 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
         final pauseUntilStr = config['pause_notifications_until'] as String?;
         bool notificationsPausedToday = false;
         if (pauseUntilStr != null) {
-          final now = DateTime.now();
+          final now = TimeService.effectiveNow();
           final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
           notificationsPausedToday = (pauseUntilStr == todayStr);
         }
@@ -249,6 +254,10 @@ class SettingsBloc extends HydratedBloc<SettingsEvent, SettingsState> {
       }
     } catch (e) {
       debugPrint('[SettingsBloc] Load settings from cloud failed: $e');
+    } finally {
+      if (event.completer != null && !event.completer!.isCompleted) {
+        event.completer!.complete();
+      }
     }
   }
 

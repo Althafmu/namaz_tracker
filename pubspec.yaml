@@ -36,6 +36,7 @@ dependencies:
   fl_chart: ^0.69.0
   flutter_svg: ^2.0.9
   supabase_flutter: ^2.8.0
+  sentry_flutter: ^8.8.0
 
 dev_dependencies:
   flutter_test:

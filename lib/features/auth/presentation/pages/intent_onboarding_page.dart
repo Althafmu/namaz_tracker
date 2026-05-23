@@ -24,6 +24,7 @@ class _IntentOnboardingPageState extends State<IntentOnboardingPage> {
     final settingsBloc = GetIt.I<SettingsBloc>();
     final currentIntent = settingsBloc.state.intentLevel;
     final currentStreak = settingsBloc.state.lastStreak;
+    final canPop = Navigator.canPop(context);
 
     return Scaffold(
       backgroundColor: c.background,
@@ -35,6 +36,15 @@ class _IntentOnboardingPageState extends State<IntentOnboardingPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (canPop) ...[
+                    IconButton(
+                      icon: Icon(Icons.arrow_back, color: c.textPrimary),
+                      onPressed: () => Navigator.of(context).pop(),
+                      alignment: Alignment.centerLeft,
+                      padding: EdgeInsets.zero,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Text(
                     'Choose Your Path',
                     style: AppTextStyles.headlineLarge,
@@ -73,7 +83,13 @@ class _IntentOnboardingPageState extends State<IntentOnboardingPage> {
                   const SizedBox(height: 16),
                   Center(
                     child: TextButton(
-                      onPressed: () => context.go('/'),
+                      onPressed: () {
+                        if (canPop) {
+                          Navigator.of(context).pop();
+                        } else {
+                          context.go('/');
+                        }
+                      },
                       child: Text(
                         'Not ready? Just continue with your current path.',
                         style: AppTextStyles.bodyLarge.copyWith(
@@ -107,7 +123,11 @@ class _IntentOnboardingPageState extends State<IntentOnboardingPage> {
 
   void _selectIntent(BuildContext context, IntentLevel intent) {
     GetIt.I<SettingsBloc>().add(UpdateIntentLevel(intent.name));
-    context.go('/');
+    if (Navigator.canPop(context)) {
+      Navigator.of(context).pop();
+    } else {
+      context.go('/');
+    }
   }
 }
 

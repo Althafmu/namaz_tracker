@@ -405,6 +405,7 @@ class NotificationService implements NotificationServiceInterface {
     Map<String, Set<String>>? excusedPrayers,
     IntentLevel? intentLevel,
     DateTime? now,
+    bool notificationsPausedToday = false,
   }) async {
     await cancelAllNotifications();
 
@@ -428,8 +429,9 @@ class NotificationService implements NotificationServiceInterface {
       final date = currentNow.add(Duration(days: dayOffset));
       final dateKey = dateFormat.format(date);
 
-      // Skip entire day if marked as fully excused
-      if (excusedDays != null && excusedDays.contains(dateKey)) {
+      // Skip entire day if marked as fully excused, or if notifications are paused for today (and it is day 0)
+      if ((excusedDays != null && excusedDays.contains(dateKey)) ||
+          (notificationsPausedToday && dayOffset == 0)) {
         continue;
       }
 
@@ -555,6 +557,7 @@ class NotificationService implements NotificationServiceInterface {
       now: currentNow,
       excusedDays: excusedDays,
       intentLevel: intentLevel,
+      notificationsPausedToday: notificationsPausedToday,
     );
     scheduledCount += reminderCount;
 
@@ -565,6 +568,7 @@ class NotificationService implements NotificationServiceInterface {
     required DateTime now,
     Set<String>? excusedDays,
     IntentLevel? intentLevel,
+    bool notificationsPausedToday = false,
   }) async {
     int count = 0;
     final dateFormat = DateFormat('yyyy-MM-dd');
@@ -574,7 +578,8 @@ class NotificationService implements NotificationServiceInterface {
       final date = now.add(Duration(days: dayOffset));
       final dateKey = dateFormat.format(date);
 
-      if (excusedDays != null && excusedDays.contains(dateKey)) {
+      if ((excusedDays != null && excusedDays.contains(dateKey)) ||
+          (notificationsPausedToday && dayOffset == 0)) {
         continue;
       }
 

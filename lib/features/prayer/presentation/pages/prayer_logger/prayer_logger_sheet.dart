@@ -16,7 +16,6 @@ import '../../bloc/history/history_state.dart';
 import '../../bloc/settings/settings_bloc.dart';
 import '../../bloc/settings/settings_state.dart';
 import 'widgets/jamaat_toggle.dart';
-import 'widgets/location_button.dart';
 import 'widgets/status_button.dart';
 
 /// Prayer Logger Bottom Sheet — matches prayer_logger.html Stitch mockup.
@@ -31,7 +30,6 @@ class PrayerLoggerSheet extends StatefulWidget {
 
 class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
   late bool _inJamaat;
-  late String _selectedLocation;
   late String _status;
   String? _selectedReason;
   bool? _withRawatib;
@@ -61,9 +59,6 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
     _inJamaat = widget.prayer.isCompleted && !isExcused
         ? widget.prayer.inJamaat
         : true;
-    _selectedLocation = widget.prayer.isCompleted && !isExcused
-        ? widget.prayer.location
-        : 'mosque';
     _status = isExcused
         ? 'on_time'
         : (widget.prayer.isCompleted ? widget.prayer.status : 'on_time');
@@ -303,42 +298,6 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
 
                     const SizedBox(height: 24),
 
-                    // Location Selector
-                    Text(
-                      'LOCATION',
-                      style: AppTextStyles.sectionHeader.copyWith(
-                        color: c.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        LocationButton(
-                          icon: Icons.mosque,
-                          label: 'Mosque',
-                          isSelected: _selectedLocation == 'mosque',
-                          onTap: () =>
-                              setState(() => _selectedLocation = 'mosque'),
-                        ),
-                        const SizedBox(width: 12),
-                        LocationButton(
-                          icon: Icons.home,
-                          label: 'Home',
-                          isSelected: _selectedLocation == 'home',
-                          onTap: () =>
-                              setState(() => _selectedLocation = 'home'),
-                        ),
-                        const SizedBox(width: 12),
-                        LocationButton(
-                          icon: Icons.work,
-                          label: 'Work',
-                          isSelected: _selectedLocation == 'work',
-                          onTap: () =>
-                              setState(() => _selectedLocation = 'work'),
-                        ),
-                      ],
-                    ),
-
                     const SizedBox(height: 24),
 
                     // Prayer Status
@@ -567,26 +526,80 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                                   HistoryState.todayKey;
                               final confirmed = await showDialog<bool>(
                                 context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text('Delete Prayer Log'),
-                                  content: Text(
-                                    'Remove the log for ${widget.prayer.name}? This cannot be undone.',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(ctx).pop(false),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(ctx).pop(true),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: c.error,
+                                builder: (ctx) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 360),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(24),
+                                      decoration: BoxDecoration(
+                                        color: c.background,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: c.border, width: 2),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: c.border,
+                                            offset: const Offset(4, 4),
+                                          ),
+                                        ],
                                       ),
-                                      child: const Text('Delete'),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(Icons.delete_outline, color: c.error, size: 28),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text(
+                                                  'DELETE PRAYER LOG',
+                                                  style: AppTextStyles.headlineSmall.copyWith(
+                                                    color: c.textPrimary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'Remove the log for ${widget.prayer.name}? This cannot be undone.',
+                                            style: AppTextStyles.bodyMedium.copyWith(
+                                              color: c.textSecondary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 24),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              SizedBox(
+                                                width: 100,
+                                                child: NeoButton(
+                                                  text: 'CANCEL',
+                                                  color: c.surface,
+                                                  textColor: c.textPrimary,
+                                                  height: 44,
+                                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              SizedBox(
+                                                width: 100,
+                                                child: NeoButton(
+                                                  text: 'DELETE',
+                                                  color: c.error,
+                                                  height: 44,
+                                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ],
+                                  ),
                                 ),
                               );
                               if (confirmed == true) {
@@ -619,7 +632,6 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                                   prayerName: widget.prayer.name,
                                   completed: true,
                                   inJamaat: _inJamaat,
-                                  location: _selectedLocation,
                                   status: _status,
                                   reason: _selectedReason,
                                   prayedJumah: isDhuhrOnFriday ? _prayedJumah : false,
@@ -645,7 +657,6 @@ class _PrayerLoggerSheetState extends State<PrayerLoggerSheet> {
                             prayerName: widget.prayer.name,
                             completed: true,
                             inJamaat: _inJamaat,
-                            location: _selectedLocation,
                             status: _status,
                             reason: _selectedReason,
                             prayedJumah: isDhuhrOnFriday ? _prayedJumah : false,

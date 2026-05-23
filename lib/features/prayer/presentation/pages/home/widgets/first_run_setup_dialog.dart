@@ -20,25 +20,32 @@ class _FirstRunSetupDialogState extends State<FirstRunSetupDialog> {
 
   static const _cards = [
     _TipCard(
-      icon: Icons.touch_app_rounded,
-      title: 'Tap to log your prayer',
+      icon: Icons.favorite_rounded,
+      title: 'Assalamu Alaikum',
       body:
-          'Tap any prayer card on this screen, choose your status (Done, Missed, Qada…), and your day updates instantly.',
-      highlights: ['Quick — takes 2 seconds', 'Edit the last 2 days anytime'],
+          'Assalamu Alaikum! Falah means "spiritual success" in Arabic. This space is designed to support your relationship with prayer, starting from where you are today — with zero shame and complete honesty.',
+      highlights: ['Zero shame', 'Honest tracking'],
     ),
     _TipCard(
-      icon: Icons.nightlight_round,
-      title: 'Having a tough day?',
+      icon: Icons.bolt_rounded,
+      title: 'Keep the flame alive',
       body:
-          'Use excused mode when you\'re travelling, unwell, or on your period. Your streak stays safe, and you can resume logging later.',
-      highlights: ['Streak preserved', 'Notifications pause automatically'],
+          'Tap any prayer card on the Home screen to log. If you miss a prayer, don\'t worry: your Streak Protector automatically prevents your streak from resetting. You get 3 weekly recovery tokens.',
+      highlights: ['3 Streak Protectors', 'Edit last 2 days'],
     ),
     _TipCard(
-      icon: Icons.location_on_outlined,
-      title: 'Accurate prayer times for your location',
+      icon: Icons.event_busy_rounded,
+      title: 'Breathe on tough days',
       body:
-          'Falah uses your location to calculate prayer times specific to your area. Your location is never stored or shared — used only to determine your timezone and coordinates.',
-      highlights: ['Never stored or shared', 'Used locally only'],
+          'Travelling, sick, or on your period? Turn on Excused Mode for the day. It pauses alerts and freezes your streak so you can recover without losing your progress.',
+      highlights: ['Streak frozen', 'Alerts paused'],
+    ),
+    _TipCard(
+      icon: Icons.location_on_rounded,
+      title: 'Private & local times',
+      body:
+          'Falah calculates prayer times locally using your coordinates. We never store or share your location. If times aren\'t perfectly accurate, feel free to adjust them in Settings.',
+      highlights: ['100% Private', 'Adjustable times'],
     ),
   ];
 

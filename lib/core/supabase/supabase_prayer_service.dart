@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/prayer/domain/entities/prayer.dart';
 import '../../features/prayer/domain/entities/streak.dart';
+import '../services/time_service.dart';
 import 'prayer_service.dart';
 
 /// Production implementation of [PrayerService] backed by Supabase.
@@ -20,7 +21,7 @@ class SupabasePrayerService implements PrayerService {
   }
 
   static String _todayKey() {
-    final now = DateTime.now();
+    final now = TimeService.effectiveNow();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
@@ -181,7 +182,12 @@ class SupabasePrayerService implements PrayerService {
     // 1. Force a recalculation to ensure the streak is completely up to date
     //    (Handles cases where days passed without the user opening the app)
     try {
-      await _client.rpc('recalculate_user_streak', params: {'target_user_id': userId});
+      final today = TimeService.effectiveNow();
+      final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      await _client.rpc('recalculate_user_streak', params: {
+        'target_user_id': userId,
+        'user_today': todayStr,
+      });
     } catch (e) {
       debugPrint('$_tag rpc recalculate_user_streak failed: $e');
     }
